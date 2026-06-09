@@ -1,0 +1,372 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-size:13px;color:var(--color-text-primary);line-height:1.6}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+.tabs{display:flex;gap:4px;border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:14px;flex-wrap:wrap}
+.tab{padding:7px 13px;font-size:12px;cursor:pointer;border-radius:var(--border-radius-md) var(--border-radius-md) 0 0;color:var(--color-text-secondary);border:none;background:none;transition:all .15s}
+.tab:hover{background:var(--color-background-secondary)}
+.tab.on{color:var(--color-text-primary);font-weight:500;border-bottom:2px solid var(--color-text-primary)}
+.panel{display:none}.panel.on{display:block}
+
+/* roles */
+.roles-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+@media(max-width:480px){.roles-grid{grid-template-columns:1fr}}
+.role-card{border-radius:var(--border-radius-lg);padding:13px 14px;border:0.5px solid var(--color-border-tertiary)}
+.r1{border-left:3px solid #185FA5;background:var(--color-background-primary)}
+.r2{border-left:3px solid #854F0B;background:var(--color-background-primary)}
+.r3{border-left:3px solid #0F6E56;background:var(--color-background-primary)}
+.r4{border-left:3px solid #712B13;background:var(--color-background-primary)}
+.role-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding-bottom:8px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.role-badge{font-size:11px;padding:2px 9px;border-radius:20px;font-weight:500}
+.rb1{background:#E6F1FB;color:#0C447C}
+.rb2{background:#FAEEDA;color:#633806}
+.rb3{background:#E1F5EE;color:#085041}
+.rb4{background:#FAECE7;color:#712B13}
+.role-name{font-size:13px;font-weight:600}
+.role-url{font-family:var(--font-mono);font-size:11px;color:var(--color-text-tertiary)}
+.feat-list{display:flex;flex-direction:column;gap:3px}
+.feat{display:flex;gap:7px;align-items:flex-start;font-size:12px}
+.feat-icon{font-size:11px;margin-top:2px;flex-shrink:0}
+.feat-text{color:var(--color-text-secondary);line-height:1.5}
+.feat-text strong{color:var(--color-text-primary);font-weight:500}
+.notif-row{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px;margin-top:10px}
+.notif-title{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-tertiary);margin-bottom:7px;display:flex;align-items:center;gap:5px}
+.notif-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+@media(max-width:480px){.notif-grid{grid-template-columns:1fr}}
+.notif-item{font-size:12px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:7px 10px}
+.notif-item strong{display:block;font-size:11.5px;margin-bottom:2px}
+.notif-item span{color:var(--color-text-secondary);font-size:11.5px}
+
+/* perms matrix */
+.matrix{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:12px}
+.matrix th{padding:8px 10px;text-align:left;background:var(--color-background-secondary);font-weight:500;font-size:11.5px;border-bottom:0.5px solid var(--color-border-secondary)}
+.matrix th:first-child{min-width:160px}
+.matrix td{padding:7px 10px;border-bottom:0.5px solid var(--color-border-tertiary);vertical-align:middle}
+.matrix tr:last-child td{border-bottom:none}
+.matrix tr:hover td{background:var(--color-background-secondary)}
+.yes{color:var(--color-text-success);font-size:14px}
+.no{color:var(--color-text-tertiary);font-size:14px}
+.part{color:var(--color-text-warning);font-size:12px;font-weight:500}
+.feat-name{font-size:12px;color:var(--color-text-primary);font-weight:500}
+.feat-sec{font-size:11px;color:var(--color-text-tertiary)}
+.col-h{font-size:11.5px;font-weight:500}
+.h-doc{color:#185FA5}.h-rec{color:#854F0B}.h-lab{color:#0F6E56}.h-pat{color:#712B13}
+.section-row td{background:var(--color-background-secondary);font-size:11px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.05em;padding:5px 10px;font-weight:500}
+
+/* structure */
+.struct-wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:500px){.struct-wrap{grid-template-columns:1fr}}
+.tree{font-family:var(--font-mono);font-size:12px;line-height:2;background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:11px 13px}
+.tl{display:flex;align-items:baseline;gap:4px;border-radius:3px;padding:0 2px}
+.tl:hover{background:var(--color-background-primary)}
+.d{font-weight:500}.d-root{color:var(--color-text-primary)}
+.d-be{color:#185FA5}.d-fe{color:#0F6E56}.d-root2{color:#854F0B}
+.py{color:#3B6D11}.html{color:#854F0B}.css{color:#534AB7}.js{color:#633806}
+.cfg{color:var(--color-text-secondary)}.env{color:#993556}
+.tc{color:var(--color-text-tertiary);font-size:11px}
+.i1{padding-left:13px}.i2{padding-left:26px}.i3{padding-left:39px}.i4{padding-left:52px}
+.cmd{font-family:var(--font-mono);font-size:12px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px 12px;line-height:2;margin:8px 0}
+.cmt{color:var(--color-text-tertiary)}
+.info{background:var(--color-background-info);border:0.5px solid var(--color-border-info);border-radius:var(--border-radius-md);padding:8px 12px;font-size:12px;color:var(--color-text-info);margin:8px 0;display:flex;gap:7px}
+.success{background:var(--color-background-success);border:0.5px solid var(--color-border-success);border-radius:var(--border-radius-md);padding:8px 12px;font-size:12px;color:var(--color-text-success);margin:8px 0;display:flex;gap:7px}
+.render-box{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:12px 14px;margin-top:10px}
+.render-title{font-size:12.5px;font-weight:500;margin-bottom:8px;display:flex;align-items:center;gap:7px}
+.step-list{display:flex;flex-direction:column;gap:6px}
+.step{display:flex;gap:8px;align-items:flex-start;font-size:12px}
+.step-n{width:18px;height:18px;border-radius:50%;background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0;margin-top:1px}
+.step-t{flex:1;line-height:1.6}
+.step-t strong{color:var(--color-text-primary);font-weight:500}
+.step-t span{color:var(--color-text-secondary)}
+</style>
+
+<h2 class="sr-only">OPD roles, permissions, and final folder structure</h2>
+
+<div class="tabs">
+  <button class="tab on" onclick="sw('roles',this)">4 Roles + features</button>
+  <button class="tab" onclick="sw('matrix',this)">Permissions matrix</button>
+  <button class="tab" onclick="sw('structure',this)">Final folder structure</button>
+  <button class="tab" onclick="sw('render',this)">Render (no Docker)</button>
+</div>
+
+<!-- ROLES TAB -->
+<div id="roles" class="panel on">
+<div class="roles-grid">
+
+  <div class="role-card r1">
+    <div class="role-head">
+      <span class="role-badge rb1">DOCTOR</span>
+      <div><div class="role-name">Doctor</div><div class="role-url">/doctor/*</div></div>
+    </div>
+    <div class="feat-list">
+      <div class="feat"><span class="feat-icon">📅</span><div class="feat-text"><strong>Manage availability</strong> — set working days, time slots, max patients/slot</div></div>
+      <div class="feat"><span class="feat-icon">👁️</span><div class="feat-text"><strong>View appointments</strong> — today's list, patient details, history</div></div>
+      <div class="feat"><span class="feat-icon">✅</span><div class="feat-text"><strong>Update status</strong> — confirm, complete, mark no-show</div></div>
+      <div class="feat"><span class="feat-icon">💊</span><div class="feat-text"><strong>Write prescription</strong> — medicines, dosage, diagnosis, next visit</div></div>
+      <div class="feat"><span class="feat-icon">🧪</span><div class="feat-text"><strong>Request lab test</strong> — CBC, X-ray, etc. for patient</div></div>
+      <div class="feat"><span class="feat-icon">📋</span><div class="feat-text"><strong>View lab results</strong> — see uploaded results for own patients</div></div>
+      <div class="feat"><span class="feat-icon">🔔</span><div class="feat-text"><strong>Notifications</strong> — new appointment booked, lab result uploaded</div></div>
+    </div>
+  </div>
+
+  <div class="role-card r2">
+    <div class="role-head">
+      <span class="role-badge rb2">RECEPTIONIST</span>
+      <div><div class="role-name">Admin / Receptionist</div><div class="role-url">/reception/*</div></div>
+    </div>
+    <div class="feat-list">
+      <div class="feat"><span class="feat-icon">👥</span><div class="feat-text"><strong>Manage patients</strong> — register walk-in patients, edit profiles</div></div>
+      <div class="feat"><span class="feat-icon">📅</span><div class="feat-text"><strong>Book on behalf</strong> — book appointment for patient at counter</div></div>
+      <div class="feat"><span class="feat-icon">📋</span><div class="feat-text"><strong>View all appointments</strong> — all doctors, all dates, filter/search</div></div>
+      <div class="feat"><span class="feat-icon">❌</span><div class="feat-text"><strong>Cancel/reschedule</strong> — on patient's request</div></div>
+      <div class="feat"><span class="feat-icon">🩺</span><div class="feat-text"><strong>Manage doctors</strong> — add doctor profiles, specializations</div></div>
+      <div class="feat"><span class="feat-icon">📊</span><div class="feat-text"><strong>Dashboard stats</strong> — daily count, doctor load, slot occupancy</div></div>
+      <div class="feat"><span class="feat-icon">🔔</span><div class="feat-text"><strong>Notifications</strong> — cancellations, new registrations</div></div>
+    </div>
+  </div>
+
+  <div class="role-card r3">
+    <div class="role-head">
+      <span class="role-badge rb3">LAB</span>
+      <div><div class="role-name">Lab Technician</div><div class="role-url">/lab/*</div></div>
+    </div>
+    <div class="feat-list">
+      <div class="feat"><span class="feat-icon">📥</span><div class="feat-text"><strong>View pending tests</strong> — all doctor-requested tests, sorted by date</div></div>
+      <div class="feat"><span class="feat-icon">⬆️</span><div class="feat-text"><strong>Upload result</strong> — attach PDF/image, add notes, mark normal/abnormal</div></div>
+      <div class="feat"><span class="feat-icon">✅</span><div class="feat-text"><strong>Update test status</strong> — REQUESTED → IN_PROGRESS → DONE</div></div>
+      <div class="feat"><span class="feat-icon">🔍</span><div class="feat-text"><strong>Search tests</strong> — by patient name, test type, date</div></div>
+      <div class="feat"><span class="feat-icon">📄</span><div class="feat-text"><strong>Generate PDF report</strong> — branded lab report downloadable</div></div>
+      <div class="feat"><span class="feat-icon">🔔</span><div class="feat-text"><strong>Notifications</strong> — new test request from doctor</div></div>
+    </div>
+  </div>
+
+  <div class="role-card r4">
+    <div class="role-head">
+      <span class="role-badge rb4">PATIENT</span>
+      <div><div class="role-name">Patient</div><div class="role-url">/patient/*</div></div>
+    </div>
+    <div class="feat-list">
+      <div class="feat"><span class="feat-icon">🔍</span><div class="feat-text"><strong>Find doctor</strong> — browse by specialization, see availability</div></div>
+      <div class="feat"><span class="feat-icon">📅</span><div class="feat-text"><strong>Book appointment</strong> — pick available slot, add reason</div></div>
+      <div class="feat"><span class="feat-icon">❌</span><div class="feat-text"><strong>Cancel appointment</strong> — self-service with reason</div></div>
+      <div class="feat"><span class="feat-icon">💊</span><div class="feat-text"><strong>View prescription</strong> — after consultation, download as PDF</div></div>
+      <div class="feat"><span class="feat-icon">🧪</span><div class="feat-text"><strong>View lab results</strong> — see status, download report when ready</div></div>
+      <div class="feat"><span class="feat-icon">📜</span><div class="feat-text"><strong>Medical history</strong> — all past appointments, prescriptions, tests</div></div>
+      <div class="feat"><span class="feat-icon">🔔</span><div class="feat-text"><strong>Notifications</strong> — booking confirm, lab result ready, reminders</div></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="notif-row">
+  <div class="notif-title"><i class="ti ti-bell" aria-hidden="true"></i> Notification + reminder system — who gets what</div>
+  <div class="notif-grid">
+    <div class="notif-item"><strong>📅 Booking confirmed</strong><span>→ Patient email + in-app</span></div>
+    <div class="notif-item"><strong>⏰ 24hr reminder</strong><span>→ Patient email (Celery Beat auto-sends)</span></div>
+    <div class="notif-item"><strong>🧪 Test requested</strong><span>→ Lab Technician in-app</span></div>
+    <div class="notif-item"><strong>📋 Result uploaded</strong><span>→ Patient + Doctor in-app + email</span></div>
+    <div class="notif-item"><strong>❌ Appointment cancelled</strong><span>→ Doctor in-app</span></div>
+    <div class="notif-item"><strong>✅ Appointment confirmed</strong><span>→ Patient in-app</span></div>
+    <div class="notif-item"><strong>💊 Prescription written</strong><span>→ Patient in-app</span></div>
+    <div class="notif-item"><strong>🏥 Walk-in registered</strong><span>→ Receptionist in-app only</span></div>
+  </div>
+</div>
+</div>
+
+<!-- MATRIX TAB -->
+<div id="matrix" class="panel">
+<table class="matrix" role="grid" aria-label="Feature permissions by role">
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th class="col-h h-doc">Doctor</th>
+      <th class="col-h h-rec">Reception</th>
+      <th class="col-h h-lab">Lab Tech</th>
+      <th class="col-h h-pat">Patient</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="section-row"><td colspan="5">Authentication</td></tr>
+    <tr><td><div class="feat-name">Register / login</div></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+    <tr><td><div class="feat-name">Edit own profile</div></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+    <tr><td><div class="feat-name">Manage other users</div></td><td><span class="no">—</span></td><td><span class="yes">✓</span></td><td><span class="no">—</span></td><td><span class="no">—</span></td></tr>
+
+    <tr class="section-row"><td colspan="5">Appointments</td></tr>
+    <tr><td><div class="feat-name">Set availability slots</div></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="no">—</span></td><td><span class="no">—</span></td></tr>
+    <tr><td><div class="feat-name">Book appointment</div></td><td><span class="no">—</span></td><td><span class="yes">✓</span> <span style="font-size:11px;color:var(--color-text-tertiary)">on behalf</span></td><td><span class="no">—</span></td><td><span class="yes">✓</span></td></tr>
+    <tr><td><div class="feat-name">View own appointments</div></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span> <span style="font-size:11px;color:var(--color-text-tertiary)">all</span></td><td><span class="no">—</span></td><td><span class="yes">✓</span></td></tr>
+    <tr><td><div class="feat-name">Confirm / complete</div></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="no">—</span></td><td><span class="no">—</span></td></tr>
+    <tr><td><div class="feat-name">Cancel appointment</div></td><td><span class="no">—</span></td><td><span class="yes">✓</span></td><td><span class="no">—</span></td><td><span class="yes">✓</span></td></tr>
+    <tr><td><div class="feat-name">View appointment history</div></td><td><span class="yes">✓</span> <span style="font-size:11px;color:var(--color-text-tertiary)">own patients</span></td><td><span class="yes">✓</span> <span style="font-size:11px;color:var(--color-text-tertiary)">all</span></td><td><span class="no">—</span></td><td><span class="yes">✓</span> <span style="font-size:11px;color:var(--color-text-tertiary)">own</span></td></tr>
+
+    <tr class="section-row"><td colspan="5">Lab</td></tr>
+    <tr><td><div class="feat-name">Request lab test</div></td><td><span class="yes">✓</span></td><td><span class="no">—</span></td><td><span class="no">—</span></td><td><span class="no">—</span></td></tr>
+    <tr><td><div class="feat-name">View pending tests</div></td><td><span class="no">—</span></td><td><span class="no">—</span></td><td><span class="yes">✓</span></td><td><span class="no">—</span></td></tr>
+    <tr><td><div class="feat-name">Upload result</div></td><td><span class="no">—</span></td><td><span class="no">—</span></td><td><span class="yes">✓</span></td><td><span class="no">—</span></td></tr>
+    <tr><td><div class="feat-name">View / download result</div></td><td><span class="yes">✓</span> <span style="font-size:11px;color:var(--color-text-tertiary)">own patients</span></td><td><span class="yes">✓</span> <span style="font-size:11px;color:var(--color-text-tertiary)">all</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span> <span style="font-size:11px;color:var(--color-text-tertiary)">own</span></td></tr>
+
+    <tr class="section-row"><td colspan="5">Prescription</td></tr>
+    <tr><td><div class="feat-name">Write prescription</div></td><td><span class="yes">✓</span></td><td><span class="no">—</span></td><td><span class="no">—</span></td><td><span class="no">—</span></td></tr>
+    <tr><td><div class="feat-name">View prescription</div></td><td><span class="yes">✓</span> <span style="font-size:11px;color:var(--color-text-tertiary)">own</span></td><td><span class="yes">✓</span> <span style="font-size:11px;color:var(--color-text-tertiary)">all</span></td><td><span class="no">—</span></td><td><span class="yes">✓</span> <span style="font-size:11px;color:var(--color-text-tertiary)">own</span></td></tr>
+
+    <tr class="section-row"><td colspan="5">Notifications</td></tr>
+    <tr><td><div class="feat-name">In-app notifications</div></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+    <tr><td><div class="feat-name">Email notifications</div></td><td><span class="yes">✓</span></td><td><span class="no">—</span></td><td><span class="no">—</span></td><td><span class="yes">✓</span></td></tr>
+    <tr><td><div class="feat-name">24hr reminder</div></td><td><span class="no">—</span></td><td><span class="no">—</span></td><td><span class="no">—</span></td><td><span class="yes">✓</span></td></tr>
+
+    <tr class="section-row"><td colspan="5">Dashboard</td></tr>
+    <tr><td><div class="feat-name">Stats + charts</div></td><td><span class="part">own stats</span></td><td><span class="yes">✓</span> <span style="font-size:11px;color:var(--color-text-tertiary)">full</span></td><td><span class="part">lab stats</span></td><td><span class="no">—</span></td></tr>
+    <tr><td><div class="feat-name">Export to CSV/Excel</div></td><td><span class="no">—</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="no">—</span></td></tr>
+    <tr><td><div class="feat-name">REST API access</div></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- STRUCTURE TAB -->
+<div id="structure" class="panel">
+<div class="info" style="margin-bottom:10px"><i class="ti ti-info-circle" aria-hidden="true"></i><div><strong>requirements.txt in root.</strong> Docker removed. Procfile stays (Render needs it). media/ stays in backend only.</div></div>
+<div class="struct-wrap">
+
+<div>
+<div style="font-size:11px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Root</div>
+<div class="tree">
+<div class="tl"><span class="d d-root">opd-project/</span><span class="tc">← GitHub repo</span></div>
+<div class="tl i1"><span class="d d-be">backend/</span></div>
+<div class="tl i1"><span class="d d-fe">frontend/</span></div>
+<div class="tl i1"><span class="cfg">requirements.txt</span><span class="tc">← ROOT level ✓</span></div>
+<div class="tl i1"><span class="cfg">.gitignore</span></div>
+<div class="tl i1"><span class="cfg">README.md</span></div>
+<div class="tl i1"><span class="tc">← no Docker, no docker-compose</span></div>
+</div>
+
+<div style="font-size:11px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px">frontend/</div>
+<div class="tree">
+<div class="tl"><span class="d d-fe">frontend/</span></div>
+<div class="tl i1"><span class="d">templates/</span><span class="tc">← Django reads here</span></div>
+<div class="tl i2"><span class="html">base.html</span></div>
+<div class="tl i2"><span class="d">accounts/</span></div>
+<div class="tl i3"><span class="html">login.html</span></div>
+<div class="tl i3"><span class="html">register.html</span></div>
+<div class="tl i3"><span class="html">profile.html</span></div>
+<div class="tl i2"><span class="d">appointments/</span></div>
+<div class="tl i3"><span class="html">book.html</span></div>
+<div class="tl i3"><span class="html">list.html</span></div>
+<div class="tl i3"><span class="html">detail.html</span></div>
+<div class="tl i2"><span class="d">lab/</span></div>
+<div class="tl i3"><span class="html">dashboard.html</span></div>
+<div class="tl i3"><span class="html">result.html</span></div>
+<div class="tl i2"><span class="d">prescriptions/</span></div>
+<div class="tl i3"><span class="html">write.html</span></div>
+<div class="tl i3"><span class="html">view.html</span></div>
+<div class="tl i2"><span class="d">dashboard/</span></div>
+<div class="tl i3"><span class="html">patient.html</span></div>
+<div class="tl i3"><span class="html">doctor.html</span></div>
+<div class="tl i3"><span class="html">reception.html</span></div>
+<div class="tl i2"><span class="d">notifications/</span></div>
+<div class="tl i3"><span class="html">list.html</span></div>
+<div class="tl i1"><span class="d">static/</span><span class="tc">← Django reads here</span></div>
+<div class="tl i2"><span class="d">css/</span><span class="tc">, </span><span class="d">js/</span><span class="tc">, </span><span class="d">img/</span></div>
+<div class="tl i1"><span class="d">stitch_exports/</span><span class="tc">← raw Stitch HTML</span></div>
+</div>
+</div>
+
+<div>
+<div style="font-size:11px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">backend/</div>
+<div class="tree">
+<div class="tl"><span class="d d-be">backend/</span></div>
+<div class="tl i1"><span class="d">config/</span><span class="tc">← project config</span></div>
+<div class="tl i2"><span class="py">settings.py</span></div>
+<div class="tl i2"><span class="py">urls.py</span></div>
+<div class="tl i2"><span class="py">wsgi.py</span></div>
+<div class="tl i1"><span class="d">apps/</span></div>
+<div class="tl i2"><span class="d">accounts/</span></div>
+<div class="tl i3"><span class="py">models.py</span><span class="tc">← CustomUser</span></div>
+<div class="tl i3"><span class="py">views.py</span></div>
+<div class="tl i3"><span class="py">urls.py</span></div>
+<div class="tl i3"><span class="py">forms.py</span></div>
+<div class="tl i3"><span class="py">admin.py</span></div>
+<div class="tl i3"><span class="py">serializers.py</span></div>
+<div class="tl i3"><span class="py">permissions.py</span></div>
+<div class="tl i2"><span class="d">appointments/</span></div>
+<div class="tl i3"><span class="py">models.py</span></div>
+<div class="tl i3"><span class="py">views.py</span></div>
+<div class="tl i3"><span class="py">urls.py</span></div>
+<div class="tl i3"><span class="py">forms.py</span></div>
+<div class="tl i3"><span class="py">filters.py</span></div>
+<div class="tl i2"><span class="d">lab/</span></div>
+<div class="tl i3"><span class="py">models.py</span></div>
+<div class="tl i3"><span class="py">views.py</span></div>
+<div class="tl i3"><span class="py">urls.py</span></div>
+<div class="tl i3"><span class="py">utils.py</span><span class="tc">← PDF</span></div>
+<div class="tl i2"><span class="d">prescriptions/</span></div>
+<div class="tl i3"><span class="py">models.py</span></div>
+<div class="tl i3"><span class="py">views.py</span></div>
+<div class="tl i3"><span class="py">urls.py</span></div>
+<div class="tl i2"><span class="d">notifications/</span></div>
+<div class="tl i3"><span class="py">models.py</span></div>
+<div class="tl i3"><span class="py">views.py</span></div>
+<div class="tl i3"><span class="py">tasks.py</span><span class="tc">← Celery</span></div>
+<div class="tl i2"><span class="d">api/</span></div>
+<div class="tl i3"><span class="py">serializers.py</span></div>
+<div class="tl i3"><span class="py">views.py</span></div>
+<div class="tl i3"><span class="py">urls.py</span></div>
+<div class="tl i1"><span class="d">media/</span><span class="tc">← uploads (gitignored)</span></div>
+<div class="tl i1"><span class="env">.env</span><span class="tc">← gitignored</span></div>
+<div class="tl i1"><span class="cfg">.env.example</span></div>
+<div class="tl i1"><span class="py">manage.py</span></div>
+<div class="tl i1"><span class="cfg">Procfile</span><span class="tc">← Render needs this</span></div>
+</div>
+</div>
+
+</div>
+
+<div class="cmd" style="margin-top:12px">
+<span class="cmt"># backend/config/settings.py — point Django to frontend folder</span><br>
+BASE_DIR = Path(__file__).resolve().parent.parent<br>
+<span class="cmt"># BASE_DIR = backend/</span><br><br>
+TEMPLATES = [{'DIRS': [BASE_DIR.parent / 'frontend' / 'templates']}]<br>
+STATICFILES_DIRS = [BASE_DIR.parent / 'frontend' / 'static']<br>
+MEDIA_ROOT  = BASE_DIR / 'media'
+</div>
+</div>
+
+<!-- RENDER TAB -->
+<div id="render" class="panel">
+<div class="success"><i class="ti ti-check" aria-hidden="true"></i><div><strong>No Docker needed on Render.</strong> Render auto-detects Python. Needs: requirements.txt + Procfile. That's it.</div></div>
+<div class="render-box">
+  <div class="render-title"><i class="ti ti-cloud" aria-hidden="true"></i> Render deploy setup — 3 files only</div>
+  <div class="step-list">
+    <div class="step"><div class="step-n">1</div><div class="step-t"><strong>Procfile</strong> — in backend/ folder<br><span style="font-family:var(--font-mono);font-size:11.5px;background:var(--color-background-secondary);padding:2px 6px;border-radius:3px;display:inline-block;margin-top:3px">web: gunicorn config.wsgi --chdir backend</span></div></div>
+    <div class="step"><div class="step-n">2</div><div class="step-t"><strong>requirements.txt</strong> — in root<br><span style="color:var(--color-text-secondary)">Render finds it at root level automatically</span></div></div>
+    <div class="step"><div class="step-n">3</div><div class="step-t"><strong>Render dashboard</strong> — set env variables<br><span style="color:var(--color-text-secondary)">SECRET_KEY, DATABASE_URL, EMAIL creds — paste from .env</span></div></div>
+    <div class="step"><div class="step-n">4</div><div class="step-t"><strong>Render PostgreSQL</strong> — free tier available<br><span style="color:var(--color-text-secondary)">Create DB on Render → copy DATABASE_URL → paste in env vars</span></div></div>
+    <div class="step"><div class="step-n">5</div><div class="step-t"><strong>Auto-deploy on git push</strong><br><span style="color:var(--color-text-secondary)">Connect GitHub repo → every push to main = auto redeploy</span></div></div>
+  </div>
+</div>
+<div class="cmd" style="margin-top:10px">
+<span class="cmt"># root/requirements.txt — key packages</span><br>
+django==5.0<br>
+djangorestframework<br>
+psycopg2-binary<br>
+python-decouple<br>
+pillow<br>
+reportlab<br>
+django-filter<br>
+djangorestframework-simplejwt<br>
+drf-spectacular<br>
+celery<br>
+redis<br>
+gunicorn<br>
+whitenoise
+</div>
+</div>
+</div>
+
+<script>
+function sw(id,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  btn.classList.add('on');
+}
+</script>
