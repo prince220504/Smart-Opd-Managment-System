@@ -11,7 +11,8 @@ Step-by-step Django learning notes. Revise any time. Each file covers **what**, 
 | 3 | `django-admin startproject` + scaffold tour | [03-startproject.md](03-startproject.md) | ✅ Done |
 | 4 | First `runserver` + WSGI | [04-runserver.md](04-runserver.md) | ✅ Done |
 | 5 | `settings.py` walkthrough | [05-settings.md](05-settings.md) | ✅ Done |
-| 6 | Create the `accounts` app | _coming_ | ⏳ Next (tomorrow) |
+| 5.5 | Git & GitHub industry workflow | [05.5-git-workflow.md](05.5-git-workflow.md) | ✅ Done |
+| 6 | Create the `accounts` app | _coming_ | ⏳ Next |
 | 7 | `CustomUser` model with role field | _coming_ | |
 | 8 | Migrations (`makemigrations` vs `migrate`) | _coming_ | |
 | 9 | Django admin + superuser | _coming_ | |
