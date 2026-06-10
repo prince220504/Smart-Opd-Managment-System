@@ -145,7 +145,8 @@ Where we are in the learning journey. Update this as we progress.
 - [x] **Step 3** — `django-admin startproject` and tour the scaffold ✅ `backend/config/` exists
 - [x] **Step 4** — First `runserver`, understand WSGI ✅ Rocket page seen
 - [x] **Step 5** — `settings.py` walkthrough ✅ `TEMPLATES['DIRS']`, `TIME_ZONE='Asia/Kolkata'`, `STATICFILES_DIRS`, `STATIC_ROOT`, `MEDIA_URL`, `MEDIA_ROOT` all wired
-- [ ] **Step 6** — Create the `accounts` app (project vs app distinction) — **NEXT SESSION**
+- [x] **Step 5.5** — Git & GitHub industry workflow ✅ `.git/` re-init in project root, `.gitignore`, first commit on `main`, GitHub repo created and pushed, branching strategy + Conventional Commits established
+- [x] **Step 6** — Create the `accounts` app ✅ Scaffold (`backend/apps/__init__.py` + `backend/apps/accounts/`) + `name = 'apps.accounts'` + INSTALLED_APPS registration done. Warning `staticfiles.W004` resolved by recreating empty `frontend/static/` + `frontend/templates/`. `manage.py check` returns `no issues`. Two commits already pushed to `feature/accounts-app`.
 - [ ] **Step 7** — Build the `CustomUser` model with a role field
 - [ ] **Step 8** — Migrations (`makemigrations` vs `migrate`)
 - [ ] **Step 9** — Django admin + superuser
@@ -163,21 +164,26 @@ Where we are in the learning journey. Update this as we progress.
 
 Steps 1–5 complete. Local Django app runs cleanly. Settings wired to `frontend/templates`, `frontend/static`, `backend/media`, Indian timezone. Tutorial files written: `tutorial/01-python-venv.md` through `tutorial/05-settings.md`.
 
-### Day 2 resume point
+### Day 2 recap (2026-06-09)
 
-**Start with Step 6: `accounts` app.** Brief recap then go. User types code; do not scaffold for them.
+- Step 5.5 done — Git workflow tutorial written, repo pushed to GitHub, branching strategy locked in. User did the `.git/` cleanup + re-init themselves (misplaced `.git/` at home folder caused `git status` to list the entire user profile).
+- Empty-folder gotcha — chose Option 2 (no `.gitkeep`); empty `frontend/templates/` and `frontend/static/` exist locally only to silence `staticfiles.W004`; subfolders will appear on GitHub when real Stitch templates arrive.
+- Step 6 started on `feature/accounts-app` branch. Scaffold + INSTALLED_APPS done. `manage.py check` flagged **1 issue** — text not yet captured. Commits + push to branch still pending.
 
-Key wrinkle for Step 6: apps live in `backend/apps/<name>/` (per our folder spec), not `backend/<name>/`. `python manage.py startapp accounts` defaults to creating `backend/accounts/`. Two clean approaches:
+### Day 3 recap (2026-06-10)
 
-1. **Recommended:** `cd backend/apps && python ../manage.py startapp accounts && cd ../..` — output lands in `backend/apps/accounts/` directly.
-2. **Alternative:** run `startapp` then move folder manually.
+- `staticfiles.W004` warning fixed — recreated empty `frontend/templates/` + `frontend/static/`. `manage.py check` now clean (`no issues`).
+- Confirmed `default_auto_field = 'django.db.models.BigAutoField'` was missing from `apps.py` (Django 6 / `startapp` quirk). User added it manually — correct convention.
+- Tutorial `tutorial/06-accounts-app.md` written. `tutorial/README.md` index updated.
+- Step 6 officially closed.
 
-After scaffold:
-- Ensure `backend/apps/__init__.py` exists (makes `apps` a Python package).
-- Edit `backend/apps/accounts/apps.py` — set `name = 'apps.accounts'`.
-- Register in `INSTALLED_APPS` as `'apps.accounts'`.
+### Day 4 resume point
 
-Then Steps 7 (`CustomUser` model with `role` field), 8 (migrations), 9 (admin + superuser) follow naturally.
+1. We're still on `feature/accounts-app` branch. **Do NOT open the PR yet** — Steps 7, 8, 9 all go on the same branch. Merge to `main` only after Step 9.
+2. **Step 7 — `CustomUser` model with role field.** Critical: **set `AUTH_USER_MODEL = 'accounts.CustomUser'` in `settings.py` BEFORE running any migration** — otherwise Django creates the default user table and switching later requires a destructive reset (drop DB and start over).
+3. Plan for the model: subclass `AbstractUser`, add a `role` field as `models.CharField(max_length=20, choices=ROLE_CHOICES)`. The 4 roles per the spec: `DOCTOR`, `RECEPTION`, `LAB`, `PATIENT`.
+4. Write `tutorial/07-custom-user.md` covering: why `AbstractUser` vs `AbstractBaseUser`, why custom user from day 1 (can't change later without pain), what `AUTH_USER_MODEL` does, the `role` choices pattern.
+5. Steps 8 (`makemigrations` + `migrate`) and 9 (admin registration + superuser) follow on the same branch.
 
 ## How to help
 

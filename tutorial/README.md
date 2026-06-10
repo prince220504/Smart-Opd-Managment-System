@@ -12,8 +12,8 @@ Step-by-step Django learning notes. Revise any time. Each file covers **what**, 
 | 4 | First `runserver` + WSGI | [04-runserver.md](04-runserver.md) | ✅ Done |
 | 5 | `settings.py` walkthrough | [05-settings.md](05-settings.md) | ✅ Done |
 | 5.5 | Git & GitHub industry workflow | [05.5-git-workflow.md](05.5-git-workflow.md) | ✅ Done |
-| 6 | Create the `accounts` app | _coming_ | ⏳ Next |
-| 7 | `CustomUser` model with role field | _coming_ | |
+| 6 | Create the `accounts` app | [06-accounts-app.md](06-accounts-app.md) | ✅ Done |
+| 7 | `CustomUser` model with role field | _coming_ | ⏳ Next |
 | 8 | Migrations (`makemigrations` vs `migrate`) | _coming_ | |
 | 9 | Django admin + superuser | _coming_ | |
 | 10 | URLs + views | _coming_ | |
