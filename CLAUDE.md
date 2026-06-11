@@ -147,7 +147,7 @@ Where we are in the learning journey. Update this as we progress.
 - [x] **Step 5** — `settings.py` walkthrough ✅ `TEMPLATES['DIRS']`, `TIME_ZONE='Asia/Kolkata'`, `STATICFILES_DIRS`, `STATIC_ROOT`, `MEDIA_URL`, `MEDIA_ROOT` all wired
 - [x] **Step 5.5** — Git & GitHub industry workflow ✅ `.git/` re-init in project root, `.gitignore`, first commit on `main`, GitHub repo created and pushed, branching strategy + Conventional Commits established
 - [x] **Step 6** — Create the `accounts` app ✅ Scaffold (`backend/apps/__init__.py` + `backend/apps/accounts/`) + `name = 'apps.accounts'` + INSTALLED_APPS registration done. Warning `staticfiles.W004` resolved by recreating empty `frontend/static/` + `frontend/templates/`. `manage.py check` returns `no issues`. Two commits already pushed to `feature/accounts-app`.
-- [ ] **Step 7** — Build the `CustomUser` model with a role field
+- [x] **Step 7** — Build the `CustomUser` model with a role field ✅ `AUTH_USER_MODEL = 'accounts.CustomUser'` set in settings.py BEFORE any migration. `CustomUser(AbstractUser)` model with fields: `email` (overridden `unique=True`), `phone` (`CharField(max_length=10)` + Indian-mobile regex validator), `role` (`TextChoices` enum: DOCTOR/RECEPTION/LAB/PATIENT, default PATIENT). `@property phone_with_code` returns `+91XXXXXXXXXX` for SMS APIs. `manage.py check` clean. Two commits pushed to `feature/accounts-app`.
 - [ ] **Step 8** — Migrations (`makemigrations` vs `migrate`)
 - [ ] **Step 9** — Django admin + superuser
 - [ ] **Step 10** — URLs and views (request → URL → view → response)
@@ -177,13 +177,24 @@ Steps 1–5 complete. Local Django app runs cleanly. Settings wired to `frontend
 - Tutorial `tutorial/06-accounts-app.md` written. `tutorial/README.md` index updated.
 - Step 6 officially closed.
 
-### Day 4 resume point
+### Day 4 recap (2026-06-11)
 
-1. We're still on `feature/accounts-app` branch. **Do NOT open the PR yet** — Steps 7, 8, 9 all go on the same branch. Merge to `main` only after Step 9.
-2. **Step 7 — `CustomUser` model with role field.** Critical: **set `AUTH_USER_MODEL = 'accounts.CustomUser'` in `settings.py` BEFORE running any migration** — otherwise Django creates the default user table and switching later requires a destructive reset (drop DB and start over).
-3. Plan for the model: subclass `AbstractUser`, add a `role` field as `models.CharField(max_length=20, choices=ROLE_CHOICES)`. The 4 roles per the spec: `DOCTOR`, `RECEPTION`, `LAB`, `PATIENT`.
-4. Write `tutorial/07-custom-user.md` covering: why `AbstractUser` vs `AbstractBaseUser`, why custom user from day 1 (can't change later without pain), what `AUTH_USER_MODEL` does, the `role` choices pattern.
-5. Steps 8 (`makemigrations` + `migrate`) and 9 (admin registration + superuser) follow on the same branch.
+- Step 7 done in a 45-min session.
+- `AUTH_USER_MODEL` set in settings.py BEFORE any migration (critical sequencing).
+- `CustomUser(AbstractUser)` with `email` (unique), `phone` (10-digit Indian, regex-validated), `role` (TextChoices: DOCTOR/RECEPTION/LAB/PATIENT, default PATIENT).
+- User asked about email/phone fields proactively (good instinct) — added `phone_with_code` property to return `+91XXXXXXXXXX` for SMS APIs without polluting the DB column.
+- User asked about Indian-only mobile format — added `^[6-9]\d{9}$` regex validator (TRAI rule: Indian mobile numbers start with 6/7/8/9, exactly 10 digits).
+- Two commits pushed to `feature/accounts-app`. Tutorial `07-custom-user.md` written. CLAUDE.md + tutorial/README.md updated.
+
+### Day 5 resume point
+
+1. Still on `feature/accounts-app` branch. **DO NOT open PR yet** — Steps 8, 9 remain.
+2. **Step 8 — Migrations.** Two commands: `python manage.py makemigrations accounts` (creates the migration recipe file), then `python manage.py migrate` (applies it to the DB, plus all the built-in Django migrations).
+3. Teach: difference between `makemigrations` (recipe) and `migrate` (execution). The migration file is committed to Git (other devs / production need to replay the same recipe). The DB file (`db.sqlite3`) is NOT committed (gitignored).
+4. After migrate, inspect with `python manage.py dbshell` or just verify the user table exists. Show the user how `auth_user` is now `accounts_customuser` because of `AUTH_USER_MODEL`.
+5. **Step 9 — admin + superuser.** Register `CustomUser` in `backend/apps/accounts/admin.py`, create superuser via `python manage.py createsuperuser`, log in to `/admin/` to see CustomUser in the admin.
+6. After Step 9, the accounts module is complete → open PR → merge `feature/accounts-app` → `main`.
+7. Tutorial files to write: `08-migrations.md`, `09-admin-superuser.md`.
 
 ## How to help
 
