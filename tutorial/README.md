@@ -14,8 +14,8 @@ Step-by-step Django learning notes. Revise any time. Each file covers **what**, 
 | 5.5 | Git & GitHub industry workflow | [05.5-git-workflow.md](05.5-git-workflow.md) | ✅ Done |
 | 6 | Create the `accounts` app | [06-accounts-app.md](06-accounts-app.md) | ✅ Done |
 | 7 | `CustomUser` model with role field | [07-custom-user.md](07-custom-user.md) | ✅ Done |
-| 8 | Migrations (`makemigrations` vs `migrate`) | _coming_ | ⏳ Next |
-| 9 | Django admin + superuser | _coming_ | |
+| 8 | Migrations (`makemigrations` vs `migrate`) | [08-migrations.md](08-migrations.md) | ✅ Done |
+| 9 | Django admin + superuser | _coming_ | ⏳ Next |
 | 10 | URLs + views | _coming_ | |
 | 11 | Templates pointing at `frontend/templates` | _coming_ | |
 | 12 | Auth forms (login, register, profile) | _coming_ | |
