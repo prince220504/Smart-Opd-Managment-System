@@ -37,6 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # Local apps
+    'apps.accounts'
 ]
 
 MIDDLEWARE = [
@@ -120,3 +123,6 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Custom user model - must be set before first migration
+AUTH_USER_MODEL = 'accounts.CustomUser'
