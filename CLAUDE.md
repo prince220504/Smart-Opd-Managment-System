@@ -149,7 +149,7 @@ Where we are in the learning journey. Update this as we progress.
 - [x] **Step 6** — Create the `accounts` app ✅ Scaffold (`backend/apps/__init__.py` + `backend/apps/accounts/`) + `name = 'apps.accounts'` + INSTALLED_APPS registration done. Warning `staticfiles.W004` resolved by recreating empty `frontend/static/` + `frontend/templates/`. `manage.py check` returns `no issues`. Two commits already pushed to `feature/accounts-app`.
 - [x] **Step 7** — Build the `CustomUser` model with a role field ✅ `AUTH_USER_MODEL = 'accounts.CustomUser'` set in settings.py BEFORE any migration. `CustomUser(AbstractUser)` model with fields: `email` (overridden `unique=True`), `phone` (`CharField(max_length=10)` + Indian-mobile regex validator), `role` (`TextChoices` enum: DOCTOR/RECEPTION/LAB/PATIENT, default PATIENT). `@property phone_with_code` returns `+91XXXXXXXXXX` for SMS APIs. `manage.py check` clean. Two commits pushed to `feature/accounts-app`.
 - [x] **Step 8** — Migrations (`makemigrations` vs `migrate`) ✅ `makemigrations accounts` generated `0001_initial.py` (14 columns: 3 ours + 11 inherited from `AbstractUser`, dependency on `auth.0012`). `migrate` applied 19 migrations in order (2 contenttypes + 12 auth + 1 ours + 3 admin + 1 sessions). `backend/db.sqlite3` created with `accounts_customuser` table (NOT `auth_user` — routed via `AUTH_USER_MODEL`). "18 unapplied migrations" warning finally gone. Migration file committed; DB file gitignored.
-- [ ] **Step 9** — Django admin + superuser
+- [x] **Step 9** — Django admin + superuser ✅ `CustomUser` registered in `backend/apps/accounts/admin.py` via `UserAdmin` subclass (gives password-hashing form, change-password URL, two-form add/edit pattern). `fieldsets` and `add_fieldsets` both APPEND a "Hospital info" section (`role`, `phone`) using tuple concatenation so default auth/permissions/dates sections survive. `list_display`, `list_filter`, `search_fields` configured. First superuser created via `createsuperuser` (email REQUIRED because `unique=True`). Admin login at `/admin/` verified — list page columns, role/staff/active filters, all 5 fieldsets working. Confirmed UTC-in-DB + IST-on-display architecture (`USE_TZ=True` + `TIME_ZONE='Asia/Kolkata'`) is correct, not a bug.
 - [ ] **Step 10** — URLs and views (request → URL → view → response)
 - [ ] **Step 11** — Templates pointing at `frontend/templates`
 - [ ] **Step 12** — Auth forms (login, register, profile)
@@ -195,22 +195,33 @@ Steps 1–5 complete. Local Django app runs cleanly. Settings wired to `frontend
 - Migration committed with `feat(accounts): add initial migration for CustomUser table` and pushed.
 - "18 unapplied migrations" warning from Step 4 is finally gone forever.
 
-### Day 6 resume point
+### Day 6 recap (2026-06-13)
 
-1. Still on `feature/accounts-app` branch. **Almost done — Step 9 is the last one before PR + merge.**
-2. **Step 9 — Admin registration + superuser.**
-   - Register `CustomUser` in `backend/apps/accounts/admin.py` using `UserAdmin` from `django.contrib.auth.admin` (gives us all the built-in user admin: password hashing form, fieldsets, list_display, search). Extend `UserAdmin.fieldsets` to include our `role` and `phone` fields, and add them to `add_fieldsets` so the "Add User" form also exposes them.
-   - `python manage.py createsuperuser` → interactive prompt. Email is now REQUIRED (because we made it `unique=True`). Phone is optional. Role defaults to `PATIENT` but we'll override to whatever makes sense.
-   - `runserver`, log in to `/admin/`, see the `Users` section with the new `CustomUser` listed. Demonstrate that `get_role_display()` shows up nicely in the list.
-   - Write `tutorial/09-admin-superuser.md`.
-3. After Step 9, accounts module is feature-complete. Time for **the first PR**:
-   - On GitHub, click "Compare & pull request" for `feature/accounts-app`
-   - Review own diff (all the commits since branching)
+- Step 9 done. `backend/apps/accounts/admin.py` written: subclassed `UserAdmin` (not `ModelAdmin` — critical for password hashing); appended `'Hospital info'` section to both `fieldsets` (edit form) and `add_fieldsets` (create form) using tuple concatenation so default sections survive; set `list_display = ('username','email','role','phone','is_staff')`, `list_filter = ('role','is_staff','is_active')`, `search_fields = ('username','email','phone')`.
+- First superuser created via `python manage.py createsuperuser`. Email now REQUIRED (because `unique=True`). Credentials live in gitignored `db.sqlite3` — never reach Git.
+- Admin login at `/admin/` verified — list page columns, sidebar filters, all 5 fieldsets ("auth / personal / permissions / important dates / Hospital info") all rendering correctly.
+- **Timezone gotcha solved by understanding, not by changing anything.** User noticed DB `last_login` showed `17:49 UTC` while wall clock said `23:26 IST`. The 5h30m offset = IST = UTC + 5:30. Django stores UTC in DB (because `USE_TZ=True`) and renders in `TIME_ZONE='Asia/Kolkata'` (admin's "Important dates" section confirmed). Industry-standard architecture — never change either setting (would break Celery 24-hour reminder in Step 16).
+- One commit pushed: `feat(accounts): register CustomUser in admin with role+phone fieldsets`.
+- Tutorial `09-admin-superuser.md` written. Index + roadmap updated.
+- **Minor typo to fix:** line 11 of `admin.py` has `'Hopital info'` (missing `s`) — cosmetic but inconsistent with line 13's `'Hospital info'`. Will get a small `fix(accounts):` commit before opening the PR.
+
+### Day 7 resume point
+
+1. Confirm Day 6 docs commit landed: `git log --oneline -3` should show `docs(step-9): tutorial + roadmap mark admin+superuser complete` at top.
+2. Fix the `'Hopital info'` typo in `backend/apps/accounts/admin.py` line 11 → `'Hospital info'`. Tiny commit: `fix(accounts): typo in admin fieldset heading`. Push.
+3. **Open the first Pull Request** on GitHub for `feature/accounts-app`:
+   - GitHub auto-detects the recent push and shows a "Compare & pull request" yellow banner — click it.
    - Title: `feat(accounts): CustomUser model + admin + migration`
-   - Merge via UI ("Merge pull request" → "Confirm merge")
-   - Locally: `git checkout main && git pull` to sync
-   - Optionally delete the branch: `git branch -d feature/accounts-app` + `git push origin --delete feature/accounts-app`
-4. Step 10 (URLs + views) starts on a new branch: `feature/auth-views`.
+   - Body: bullet the commits — Step 6 scaffold, Step 7 model + AUTH_USER_MODEL, Step 8 migration, Step 9 admin + superuser.
+   - Click **"Create pull request"** → GitHub now shows the diff for the entire branch.
+   - Scroll through own diff — last sanity check before merge.
+   - Click **"Merge pull request"** → **"Confirm merge"**. The button shows the merge strategy (default "Create a merge commit" — that's fine for now).
+   - Locally: `git checkout main && git pull` — sync the merged state.
+   - Optionally delete branch: `git branch -d feature/accounts-app` (local) + `git push origin --delete feature/accounts-app` (remote).
+4. **Step 10 (URLs and views)** starts on a new branch: `git checkout -b feature/auth-views`.
+   - Wire `backend/config/urls.py` to include `backend/apps/accounts/urls.py`.
+   - Write a tiny `accounts/views.py` (login/logout/register) — first time we see the request → URL → view → response cycle.
+   - This is also the first step that needs templates from `frontend/templates/` — so it bridges backend + Stitch frontend.
 
 ## How to help
 

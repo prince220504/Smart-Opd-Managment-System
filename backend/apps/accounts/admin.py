@@ -8,6 +8,6 @@ class CustomUserAdmin(UserAdmin):
     list_filter = ('role', 'is_staff', 'is_active')
     search_fields = ('username', 'email', 'phone')
 
-    fieldsets = UserAdmin.fieldsets + (('Hopital info', {'fields': ('role', 'phone')}),)
+    fieldsets = UserAdmin.fieldsets + (('Hospital info', {'fields': ('role', 'phone')}),)
 
     add_fieldsets = UserAdmin.add_fieldsets + (('Hospital info', {'fields': ('role', 'phone')}),)
