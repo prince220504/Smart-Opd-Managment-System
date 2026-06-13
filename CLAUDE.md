@@ -205,23 +205,34 @@ Steps 1–5 complete. Local Django app runs cleanly. Settings wired to `frontend
 - Tutorial `09-admin-superuser.md` written. Index + roadmap updated.
 - **Minor typo to fix:** line 11 of `admin.py` has `'Hopital info'` (missing `s`) — cosmetic but inconsistent with line 13's `'Hospital info'`. Will get a small `fix(accounts):` commit before opening the PR.
 
-### Day 7 resume point
+### Day 7 recap (2026-06-14) — FIRST PULL REQUEST MERGED 🎯
 
-1. Confirm Day 6 docs commit landed: `git log --oneline -3` should show `docs(step-9): tutorial + roadmap mark admin+superuser complete` at top.
-2. Fix the `'Hopital info'` typo in `backend/apps/accounts/admin.py` line 11 → `'Hospital info'`. Tiny commit: `fix(accounts): typo in admin fieldset heading`. Push.
-3. **Open the first Pull Request** on GitHub for `feature/accounts-app`:
-   - GitHub auto-detects the recent push and shows a "Compare & pull request" yellow banner — click it.
-   - Title: `feat(accounts): CustomUser model + admin + migration`
-   - Body: bullet the commits — Step 6 scaffold, Step 7 model + AUTH_USER_MODEL, Step 8 migration, Step 9 admin + superuser.
-   - Click **"Create pull request"** → GitHub now shows the diff for the entire branch.
-   - Scroll through own diff — last sanity check before merge.
-   - Click **"Merge pull request"** → **"Confirm merge"**. The button shows the merge strategy (default "Create a merge commit" — that's fine for now).
-   - Locally: `git checkout main && git pull` — sync the merged state.
-   - Optionally delete branch: `git branch -d feature/accounts-app` (local) + `git push origin --delete feature/accounts-app` (remote).
-4. **Step 10 (URLs and views)** starts on a new branch: `git checkout -b feature/auth-views`.
-   - Wire `backend/config/urls.py` to include `backend/apps/accounts/urls.py`.
-   - Write a tiny `accounts/views.py` (login/logout/register) — first time we see the request → URL → view → response cycle.
-   - This is also the first step that needs templates from `frontend/templates/` — so it bridges backend + Stitch frontend.
+- Final Step 9 polish: tutorial `09-admin-superuser.md` written (8 sections: why admin, superuser bootstrap, `is_superuser` vs `role`, `UserAdmin` vs `ModelAdmin`, admin file line-by-line, `fieldsets` vs `add_fieldsets`, UTC-vs-IST timestamp architecture, verify + commit + gotchas).
+- Docs commit landed: `docs(step-9): tutorial + roadmap mark admin+superuser complete`.
+- `'Hopital info'` typo on line 11 of `admin.py` corrected → `'Hospital info'`. User did this as a `--amend` + force-push to the existing `feat(accounts):` commit instead of a separate `fix(accounts):` commit — granular history slightly compressed but result is clean.
+- **First Pull Request opened, reviewed, merged.** Title: `feat(accounts): CustomUser model + admin + migration`. PR #1. Squash-or-merge: default "Create a merge commit". Result on `main`: `ca987d5 Merge pull request #1 from prince220504/feature/accounts-app`. All 7 branch commits (Steps 6 → 9 + AUTH_USER_MODEL + typo fix) now in `main`'s history.
+- Local sync: `git checkout main && git pull` brought the merge commit + fast-forward down.
+- Branch cleanup: `git branch -d feature/accounts-app` (local) + `git push origin --delete feature/accounts-app` (remote) — both succeeded cleanly. `git branch -a` now shows only `main` and `remotes/origin/main`.
+- **This was the user's first-ever PR.** Zero errors, full flow followed (branch → push → PR → review own diff → merge → confirm → sync local → delete branch). The accounts module is officially feature-complete and merged.
+- Session ended early to mark the milestone — user explicitly chose to start Step 10 fresh tomorrow rather than push on.
+
+### Day 8 resume point
+
+1. Open Claude Code in the project folder. This file auto-loads. Greet user, congratulate on PR #1 (briefly), then confirm we're starting Step 10.
+2. From `main`: `git checkout -b feature/auth-views` — new branch for the next module.
+3. **Step 10 — URLs and views.** First time we see the request → URL → view → response cycle. Up to now everything has been data layer (models, DB, admin auto-generated). Step 10 is where we write our **own** request-handling logic.
+   - Concept teach FIRST (10 min): how Django dispatches an incoming request — root `urls.py` → app `urls.py` → view → `HttpResponse`. Cover `path()`, `path` converters (`<int:pk>`, `<slug:name>`), `include()`, namespacing via `app_name`, and `reverse()` / `{% url %}` for never hardcoding URLs.
+   - Then code:
+     - Create `backend/apps/accounts/urls.py` (this file does NOT exist yet — `startapp` skips it).
+     - Edit `backend/config/urls.py` to `include('apps.accounts.urls')` under prefix `accounts/`.
+     - Write `backend/apps/accounts/views.py` with `login_view`, `logout_view`, `register_view`. Use Django's built-in `LoginView` + `LogoutView` (CBVs) for login/logout. Custom `register_view` because Django's default form doesn't know about `role` / `phone`.
+     - Step 10 returns placeholder `HttpResponse('login page')` etc OR uses minimal templates — FULL template wiring is Step 11.
+4. Expected commits on `feature/auth-views`:
+   - `feat(accounts): add urls.py with login/logout/register routes`
+   - `feat(accounts): add login/logout/register views`
+   - `feat(accounts): minimal placeholder templates` (if we go that route)
+5. End with `tutorial/10-urls-and-views.md` + index update + roadmap update + docs commit.
+6. **No PR after Step 10** — `feature/auth-views` will also hold Step 11 (templates) and Step 12 (auth forms) before merging. One PR per logical module.
 
 ## How to help
 
