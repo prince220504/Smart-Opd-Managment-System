@@ -216,23 +216,34 @@ Steps 1–5 complete. Local Django app runs cleanly. Settings wired to `frontend
 - **This was the user's first-ever PR.** Zero errors, full flow followed (branch → push → PR → review own diff → merge → confirm → sync local → delete branch). The accounts module is officially feature-complete and merged.
 - Session ended early to mark the milestone — user explicitly chose to start Step 10 fresh tomorrow rather than push on.
 
-### Day 8 resume point
+### Day 8 recap (2026-06-15)
 
-1. Open Claude Code in the project folder. This file auto-loads. Greet user, congratulate on PR #1 (briefly), then confirm we're starting Step 10.
-2. From `main`: `git checkout -b feature/auth-views` — new branch for the next module.
-3. **Step 10 — URLs and views.** First time we see the request → URL → view → response cycle. Up to now everything has been data layer (models, DB, admin auto-generated). Step 10 is where we write our **own** request-handling logic.
-   - Concept teach FIRST (10 min): how Django dispatches an incoming request — root `urls.py` → app `urls.py` → view → `HttpResponse`. Cover `path()`, `path` converters (`<int:pk>`, `<slug:name>`), `include()`, namespacing via `app_name`, and `reverse()` / `{% url %}` for never hardcoding URLs.
+- Branch `feature/auth-views` created from `main`. Step 10 done in one focused session.
+- **Concept teach FIRST** (per Day 8 resume plan): full request lifecycle diagram + URLconf tree (root → app via `include()`) + `path()` converters + `app_name` namespacing + `reverse()`/`{% url %}` rule + FBV vs CBV trade-off. User answered concept-check questions afterwards (Q1 + Q2 wrong, Q3 right) — re-reading caught both. Good honest feedback loop.
+- Code: created `backend/apps/accounts/urls.py` with `app_name='accounts'` + 3 routes. Wired `backend/config/urls.py` with `include('apps.accounts.urls')` under `accounts/` prefix. Replaced empty `views.py` boilerplate with 3 FBV placeholders returning `HttpResponse('... — coming in Step 12')`.
+- Verified all 3 URLs return 200 + `/accounts/foo/` returns 404. User asked the great diagnostic question "why does `/` return 404 now?" — explained the welcome-rocket-only-when-empty-URLconf rule (it's gone forever now, expected, not a bug). Logged this as a curiosity-pattern moment.
+- Three commits pushed to `feature/auth-views`: `feat(accounts): add urls.py with login/logout/register routes`, `feat(accounts): add placeholder login/logout/register views`, `docs(step-10): tutorial + roadmap mark URLs and views complete`. Minor typos in two feat commit messages (`logout.register`, `logour`) left as-is — cosmetic, low cost to keep history honest rather than force-push.
+- Tutorial `10-urls-and-views.md` written (9 sections covering request lifecycle, two-level URLconf, `path()` anatomy, `include()` + `app_name`, `reverse()`/`{% url %}` rule, FBV vs CBV, `HttpResponse` vs `render()`, browser verification, two-commit split).
+- Session ended after Step 10 — user explicitly chose to stop here and resume Step 11 fresh next session.
+
+### Day 9 resume point
+
+1. Open Claude Code in the project folder. This file auto-loads. Confirm we're on `feature/auth-views` (`git branch` should show `* feature/auth-views`). If somehow on main, `git checkout feature/auth-views`.
+2. **Step 11 — Templates pointing at `frontend/templates`.** Replace placeholder `HttpResponse(...)` with real `render(request, 'accounts/login.html', context)` calls.
+   - Teach concepts FIRST: `TEMPLATES['DIRS']` (already wired Step 5), template inheritance (`{% extends 'base.html' %}` + `{% block content %}`), `{% url %}` tag (carries forward the never-hardcode rule from Step 10), `{% load static %}` + `{% static '...' %}` for CSS/JS/images, `{% csrf_token %}` for forms, context dict shape.
    - Then code:
-     - Create `backend/apps/accounts/urls.py` (this file does NOT exist yet — `startapp` skips it).
-     - Edit `backend/config/urls.py` to `include('apps.accounts.urls')` under prefix `accounts/`.
-     - Write `backend/apps/accounts/views.py` with `login_view`, `logout_view`, `register_view`. Use Django's built-in `LoginView` + `LogoutView` (CBVs) for login/logout. Custom `register_view` because Django's default form doesn't know about `role` / `phone`.
-     - Step 10 returns placeholder `HttpResponse('login page')` etc OR uses minimal templates — FULL template wiring is Step 11.
+     - Create `frontend/templates/base.html` — header + nav + `{% block content %}{% endblock %}` placeholder + footer + `{% load static %}` for CSS link.
+     - Create `frontend/templates/accounts/login.html` (extends base, login form skeleton — no real validation logic yet).
+     - Same for `register.html` and `logout.html` (logout can be a tiny confirm page).
+     - Edit `backend/apps/accounts/views.py` — swap `HttpResponse('...')` for `render(request, 'accounts/login.html')` etc.
+     - Stitch workflow: generate raw HTML in Stitch → drop into `frontend/stitch_exports/` untouched → refactor into the template at `frontend/templates/accounts/` with `{% extends %}` + `{% url %}` + `{% csrf_token %}` swapped in.
+3. Verify `runserver` — all 3 URLs now render HTML pages (no auth logic yet, that's Step 12). Confirm `{% url 'accounts:login' %}` resolves correctly in any anchor tag.
 4. Expected commits on `feature/auth-views`:
-   - `feat(accounts): add urls.py with login/logout/register routes`
-   - `feat(accounts): add login/logout/register views`
-   - `feat(accounts): minimal placeholder templates` (if we go that route)
-5. End with `tutorial/10-urls-and-views.md` + index update + roadmap update + docs commit.
-6. **No PR after Step 10** — `feature/auth-views` will also hold Step 11 (templates) and Step 12 (auth forms) before merging. One PR per logical module.
+   - `feat(accounts): add base.html template with nav + content block`
+   - `feat(accounts): add login/register/logout templates`
+   - `refactor(accounts): swap placeholder HttpResponse for render() with templates`
+5. End with `tutorial/11-templates.md` + index update + roadmap update + docs commit.
+6. **Still no PR** — `feature/auth-views` keeps growing through Step 12 (auth forms). PR #2 fires only after Step 12 = entire auth module mergeable as one unit.
 
 ## How to help
 
