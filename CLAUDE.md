@@ -151,7 +151,7 @@ Where we are in the learning journey. Update this as we progress.
 - [x] **Step 8** — Migrations (`makemigrations` vs `migrate`) ✅ `makemigrations accounts` generated `0001_initial.py` (14 columns: 3 ours + 11 inherited from `AbstractUser`, dependency on `auth.0012`). `migrate` applied 19 migrations in order (2 contenttypes + 12 auth + 1 ours + 3 admin + 1 sessions). `backend/db.sqlite3` created with `accounts_customuser` table (NOT `auth_user` — routed via `AUTH_USER_MODEL`). "18 unapplied migrations" warning finally gone. Migration file committed; DB file gitignored.
 - [x] **Step 9** — Django admin + superuser ✅ `CustomUser` registered in `backend/apps/accounts/admin.py` via `UserAdmin` subclass (gives password-hashing form, change-password URL, two-form add/edit pattern). `fieldsets` and `add_fieldsets` both APPEND a "Hospital info" section (`role`, `phone`) using tuple concatenation so default auth/permissions/dates sections survive. `list_display`, `list_filter`, `search_fields` configured. First superuser created via `createsuperuser` (email REQUIRED because `unique=True`). Admin login at `/admin/` verified — list page columns, role/staff/active filters, all 5 fieldsets working. Confirmed UTC-in-DB + IST-on-display architecture (`USE_TZ=True` + `TIME_ZONE='Asia/Kolkata'`) is correct, not a bug.
 - [x] **Step 10** — URLs and views ✅ New branch `feature/auth-views` created from `main`. Created `backend/apps/accounts/urls.py` with `app_name = 'accounts'` + 3 routes (`login/`, `logout/`, `register/`). Wired root `backend/config/urls.py` to `include('apps.accounts.urls')` under `accounts/` prefix. Wrote placeholder FBV views in `backend/apps/accounts/views.py` returning `HttpResponse('... — coming in Step 12')`. `runserver` verified — all 3 URLs return 200, `/accounts/foo/` returns 404, `/` returns 404 (welcome rocket page gone forever now that we have real routes — expected, not a bug). Two commits pushed: `feat(accounts): add urls.py with login/logout/register routes` + `feat(accounts): add placeholder login/logout/register views`. Tutorial `10-urls-and-views.md` written (9 sections covering request lifecycle, two-level URLconf, `path()` anatomy + converters, `include()` + `app_name` namespacing, `reverse()` / `{% url %}` rule, FBV vs CBV trade-off, `HttpResponse` vs `render()`, browser verification, two-commit split).
-- [ ] **Step 11** — Templates pointing at `frontend/templates`
+- [x] **Step 11** — Templates pointing at `frontend/templates` ✅ `frontend/templates/base.html` written — shared shell with `{% load static %}`, viewport meta, `<title>{% block title %}Smart OPD{% endblock %}</title>`, `{% static 'css/main.css' %}` link, nav with `{% url 'accounts:login' %}` + `{% url 'accounts:register' %}`, `{% block content %}{% endblock %}` hole, footer. Three child templates in `frontend/templates/accounts/` — `login.html` (username + password + Register link), `register.html` (6 fields: username, email, phone with `pattern="[6-9][0-9]{9}"` Indian-mobile UX hint, role dropdown PATIENT/DOCTOR/RECEPTION/LAB, password, password_confirm — note: 4-role dropdown is Step 12 fix-up since production = only PATIENT self-registers, others created by receptionist), `logout.html` (confirmation + two next-action links). All POST forms carry `{% csrf_token %}` (verified via View Source = hidden `csrfmiddlewaretoken` input). `views.py` swapped from `HttpResponse` to `render(request, 'accounts/<name>.html')` for all three views. `runserver` verified — shared header/footer on all 3 pages, `{% url %}` links resolve, no `NoReverseMatch`. Three atomic commits on `feature/auth-views`: `feat(accounts): add base.html template with nav + content block`, `feat(accounts): add login/register/logout templates`, `refactor(accounts): swap placeholder HttpResponse for render() with templates`.
 - [ ] **Step 12** — Auth forms (login, register, profile)
 - [ ] **Step 13** — `appointments` app (models with foreign keys, ORM queries)
 - [ ] **Step 14** — DRF layer (serializers, viewsets, routers, JWT)
@@ -226,24 +226,55 @@ Steps 1–5 complete. Local Django app runs cleanly. Settings wired to `frontend
 - Tutorial `10-urls-and-views.md` written (9 sections covering request lifecycle, two-level URLconf, `path()` anatomy, `include()` + `app_name`, `reverse()`/`{% url %}` rule, FBV vs CBV, `HttpResponse` vs `render()`, browser verification, two-commit split).
 - Session ended after Step 10 — user explicitly chose to stop here and resume Step 11 fresh next session.
 
-### Day 9 resume point
+### Day 9 recap (2026-06-18)
 
-1. Open Claude Code in the project folder. This file auto-loads. Confirm we're on `feature/auth-views` (`git branch` should show `* feature/auth-views`). If somehow on main, `git checkout feature/auth-views`.
-2. **Step 11 — Templates pointing at `frontend/templates`.** Replace placeholder `HttpResponse(...)` with real `render(request, 'accounts/login.html', context)` calls.
-   - Teach concepts FIRST: `TEMPLATES['DIRS']` (already wired Step 5), template inheritance (`{% extends 'base.html' %}` + `{% block content %}`), `{% url %}` tag (carries forward the never-hardcode rule from Step 10), `{% load static %}` + `{% static '...' %}` for CSS/JS/images, `{% csrf_token %}` for forms, context dict shape.
+- Step 11 done across one session (taught concepts first, then code in 3 commits).
+- **Concept teach FIRST**: `TEMPLATES['DIRS']` (already wired Step 5), template inheritance (`{% extends %}` + `{% block %}`), `{% url %}` tag (never-hardcode rule from Step 10 carried forward), `{% load static %}` + `{% static %}`, `{% csrf_token %}` (CSRF attack story explained — hidden input + cookie double-check), context dict shape.
+- Concept-check answered: Q1 partial (got folder direction right, missed `templates/` subfolder), Q2 right (URL-rename tolerance), Q3 partial (CSRF intent right but mixed up "attacker reads cookie" with Django's 403 rejection mechanic). Re-reading caught both gaps.
+- Files: `frontend/templates/base.html` (CLEAN — 2 typos caught + fixed: `device-widht`, `Mangement`), `frontend/templates/accounts/login.html` (CLEAN — 2 typos caught + fixed: `mehtod`, stray apostrophe in `type="'text"`), `frontend/templates/accounts/register.html` (had 5 typos — leading `-` on extends, stray apostrophes in 3 attributes, `{% url 'accounts:login %'}` quote placement — user fixed 4, Claude fixed line 12 via Edit), `frontend/templates/accounts/logout.html` (CLEAN — zero typos). `views.py` swap from `HttpResponse` to `render()` had 1 typo (`account/register.html` missing `s`) — user caught + fixed before Claude could Edit.
+- **Typo pattern observed Day 9**: stray apostrophes from IDE autocomplete (Antigravity quirk). Expect when pair-typing HTML with quoted attributes.
+- Three atomic commits on `feature/auth-views`: `feat(accounts): add base.html template with nav + content block`, `feat(accounts): add login/register/logout templates`, `refactor(accounts): swap placeholder HttpResponse for render() with templates`. User initially said "wrap for today, don't commit partial work" — decision pattern noted: full-step commits over WIP commits. Then user changed mind and pushed through to commits same session.
+- Tutorial `11-templates.md` written in **simpler language with concrete examples** per explicit user feedback ("from past few learning you are using every diffcult word and language for teaching i want you use some easy word and language while teaching and give examples for clartiy and better understanding"). 9 sections: what a template is, why `frontend/templates/` (settings lookup), shared shell idea (block/extends with diagram), `base.html` line by line, the 3 child templates, `{% csrf_token %}` in 60 seconds (attack story, then defense), `HttpResponse` vs `render()` + context dict bridge, browser verification checklist, three-commit split + why `refactor` not `feat` for commit 3.
+- **Known security flaw flagged for Step 12**: `register.html` exposes all 4 role options in dropdown. Real flow = only PATIENT self-registers; doctors/reception/lab created by receptionist via admin. Will be fixed alongside auth form Python in Step 12.
+
+### Day 10 resume point
+
+1. Open Claude Code in the project folder. This file auto-loads. Confirm we're on `feature/auth-views` (`git branch` should show `* feature/auth-views`). Working tree clean after Step 11 commits + docs commit.
+2. **Step 12 — Auth forms (login, register, profile).** Add real Python logic behind the HTML forms from Step 11.
+   - Teach concepts FIRST (use **simple language + concrete examples** per Day 9 feedback):
+     - `django.contrib.auth.authenticate()` and `login()` — what each does, why they're separate.
+     - Password hashing — never store plain passwords; Django uses PBKDF2 by default.
+     - Sessions — how Django remembers "this browser is Prince" after login (signed cookie + session table).
+     - Django Forms vs ModelForms — `RegisterForm(forms.ModelForm)` for the CustomUser create flow.
+     - `@login_required` decorator — gate views that need auth.
+     - `LoginView` and `LogoutView` CBVs — when to subclass vs hand-roll.
+     - **Role-based redirect after login** — override `get_success_url()` to branch on `request.user.role` → `/doctor/`, `/reception/`, `/lab/`, `/patient/`.
+     - **Restrict register dropdown to PATIENT only** — production flow = only patients self-register; staff accounts created by receptionist via admin.
    - Then code:
-     - Create `frontend/templates/base.html` — header + nav + `{% block content %}{% endblock %}` placeholder + footer + `{% load static %}` for CSS link.
-     - Create `frontend/templates/accounts/login.html` (extends base, login form skeleton — no real validation logic yet).
-     - Same for `register.html` and `logout.html` (logout can be a tiny confirm page).
-     - Edit `backend/apps/accounts/views.py` — swap `HttpResponse('...')` for `render(request, 'accounts/login.html')` etc.
-     - Stitch workflow: generate raw HTML in Stitch → drop into `frontend/stitch_exports/` untouched → refactor into the template at `frontend/templates/accounts/` with `{% extends %}` + `{% url %}` + `{% csrf_token %}` swapped in.
-3. Verify `runserver` — all 3 URLs now render HTML pages (no auth logic yet, that's Step 12). Confirm `{% url 'accounts:login' %}` resolves correctly in any anchor tag.
+     - `backend/apps/accounts/forms.py` — new file. `RegisterForm(forms.ModelForm)` with username/email/phone/password/password_confirm; `clean_password_confirm()` for match check; `save(commit=False)` to hash password via `set_password()`. Force `role = 'PATIENT'` in save — ignore any role posted from the dropdown.
+     - `backend/apps/accounts/views.py` — swap `login_view` to subclass `LoginView` (or keep FBV using `authenticate()` + `login()`). Add real `register_view` FBV that handles GET (render form) + POST (validate + save + auto-login). Add `@login_required` to wherever profile lands.
+     - `backend/apps/accounts/urls.py` — possibly add profile route.
+     - Update `register.html` — drop the role dropdown OR lock it to read-only Patient. Add `{{ form.errors }}` rendering.
+     - Update `login.html` — render `{{ form.errors }}` for bad credentials.
+     - Optionally add a logout POST flow (Django 5+ requires POST for logout).
+   - Wire homepage `/` → `RedirectView` to `accounts:login` while we're at it (Day 8 noted `/` returns 404 — fixable now).
+3. Verify in browser: register a new PATIENT, log in with those credentials, see them in `/admin/` with role=PATIENT and a hashed password.
 4. Expected commits on `feature/auth-views`:
-   - `feat(accounts): add base.html template with nav + content block`
-   - `feat(accounts): add login/register/logout templates`
-   - `refactor(accounts): swap placeholder HttpResponse for render() with templates`
-5. End with `tutorial/11-templates.md` + index update + roadmap update + docs commit.
-6. **Still no PR** — `feature/auth-views` keeps growing through Step 12 (auth forms). PR #2 fires only after Step 12 = entire auth module mergeable as one unit.
+   - `feat(accounts): add RegisterForm with password hashing + match validation`
+   - `feat(accounts): wire real login/logout/register views`
+   - `refactor(accounts): lock register form to PATIENT role (security)`
+   - `feat(config): redirect / to accounts:login`
+5. End with `tutorial/12-auth-forms.md` (use **simple language + worked examples** per Day 9 feedback) + index update + roadmap update + docs commit.
+6. **After Step 12, OPEN PR #2** — the entire auth module is now mergeable as one unit (URLs + views + templates + forms + Python auth logic).
+7. After PR #2 merge: delete `feature/auth-views` local + remote, sync `main`, start Step 13 (`appointments` app) on new branch `feature/appointments-app`.
+
+### Teaching-style rule (added Day 9, 2026-06-18)
+User explicit feedback: "from past few learning you are using every diffcult word and language for teaching i want you use some easy word and language while teaching and give examples for clartiy and better understanding so from now onwards take note of this." Apply from Step 12 onwards:
+- Avoid jargon: skip "inheritance", "namespace", "orthogonal", "ambient", "delegation", "callable", "directive". Translate to concrete phrases.
+- Every concept gets a **worked example** with a small before/after code block, not just abstract description.
+- Use analogies for plumbing concepts (e.g., template inheritance = "printed form with a hole in the middle").
+- Tables and bulleted lists over long paragraphs.
+- Keep section headings short and scan-able.
 
 ## How to help
 
