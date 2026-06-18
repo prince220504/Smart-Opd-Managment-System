@@ -268,13 +268,32 @@ Steps 1–5 complete. Local Django app runs cleanly. Settings wired to `frontend
 6. **After Step 12, OPEN PR #2** — the entire auth module is now mergeable as one unit (URLs + views + templates + forms + Python auth logic).
 7. After PR #2 merge: delete `feature/auth-views` local + remote, sync `main`, start Step 13 (`appointments` app) on new branch `feature/appointments-app`.
 
-### Teaching-style rule (added Day 9, 2026-06-18)
-User explicit feedback: "from past few learning you are using every diffcult word and language for teaching i want you use some easy word and language while teaching and give examples for clartiy and better understanding so from now onwards take note of this." Apply from Step 12 onwards:
-- Avoid jargon: skip "inheritance", "namespace", "orthogonal", "ambient", "delegation", "callable", "directive". Translate to concrete phrases.
-- Every concept gets a **worked example** with a small before/after code block, not just abstract description.
-- Use analogies for plumbing concepts (e.g., template inheritance = "printed form with a hole in the middle").
-- Tables and bulleted lists over long paragraphs.
-- Keep section headings short and scan-able.
+### Teaching-style rule (added Day 9, 2026-06-18 — REFINED same day)
+
+**Two-part feedback from user, same session:**
+1. First: "use some easy word and language while teaching and give examples for clartiy and better understanding"
+2. Then refined: "use some technical word or diffcult word but also give example for understanding... use diffcult word or technical word where need if you are using unnesscery then it is not ok... think you are expert of this field and you are one type of teacher which make every topic look use and teache every person in way that he or she understand very easily"
+
+**Net rule — bring back the early-Steps (01–07) voice:**
+
+1. **Use real Django terms when the topic needs them.** `migration`, `ORM`, `decorator`, `serializer`, `middleware`, `signal`, `CSRF`, `URLconf`, `QuerySet`, `AbstractUser`, `MRO`, `field lookup` — these are the actual vocabulary of the job. Hiding them leaves Prince fluent only in our tutorials. Use the word, then teach the word.
+2. **Always pair the term with a worked example.** Bold the term, define in one line, show a 2-3 line code block, close with one line on "why it matters". That four-beat structure was the Steps 1–7 voice — return to it.
+3. **Cut jargon used for status, not teaching.** "Orthogonal", "ambient", "polymorphic", "idempotent", "directive" — drop unless the topic genuinely IS that thing. These signal expertise instead of building it in the reader.
+4. **Expert-teacher voice.** Imagine a senior who has shipped 10 Django projects and now teaches first-years. Confident with vocabulary, patient with explanation. User comes out of each section knowing both the **word** AND the **thing**.
+
+**Template:**
+
+> **`<TERM>`** — one-line definition.
+>
+> ```python
+> # 2-3 line code example showing the term in action
+> ```
+>
+> Why it matters: one line on real-world consequence.
+
+**Reference tutorials:**
+- Target (early-Steps voice): `tutorial/03-startproject.md`, `tutorial/05-settings.md`, `tutorial/07-custom-user.md`
+- Step 11 leaned too "simple" — over-corrected the first time. Step 12 should land at the early-Steps balance: real terms + worked examples + analogy when the plumbing is abstract.
 
 ## How to help
 
