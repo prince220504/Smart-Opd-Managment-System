@@ -1,10 +1,10 @@
-from django.http import HttpResponse
+from django.shortcuts import render
 
 def login_view(request):
-    return HttpResponse('Login page - coming in Step 12')
+    return render(request, 'accounts/login.html')
 
 def logout_view(request):
-    return HttpResponse('Logout - coming in Step 12')
+    return render(request, 'accounts/logout.html')
 
 def register_view(request):
-    return HttpResponse('Register page - coming in Step 12')
+    return render(request, 'accounts/register.html')
