@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - Smart OPD {% endblock %}
+
+{% block content %}
+<h1>Create account</h1>
+
+<form method="post" action="{% url 'accounts:register' %}">
+    {% csrf_token %}
+
+    <label for="id_username">Username</label>
+    <input type="text" name="username" id="id_username" required>
+
+    <label for="id_email">Email</label>
+    <input type="email" name="email" id="id_email" required>
+
+    <label for="id_phone">Phone</label>
+    <input type="tel" name="phone" id="id_phone" pattern="[6-9][0-9]{9}" placeholder="9876543210">
+
+    <label for="id_role">Role</label>
+    <select name="role" id="id_role" required>
+        <option value="PATIENT">Patient</option>
+        <option value="DOCTOR">Doctor</option>
+        <option value="RECEPTION">Receptionist</option>
+        <option value="LAB">Lab Technician</option>
+    </select>
+
+    <label for="id_password">Password</label>
+    <input type="password" name="password" id="id_password" required>
+    
+    <label for="id_password_confirm">Confirm password</label>
+    <input type="password" name="password_confirm" id="id_password_confirm" required>
+
+    <button type="submit">Register</button>
+</form>
+
+<p>Already have an account? <a href="{% url 'accounts:login' %}">Log in</a> </p>
+
+{% endblock %}
