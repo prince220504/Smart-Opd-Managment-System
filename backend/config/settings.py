@@ -126,3 +126,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # Custom user model - must be set before first migration
 AUTH_USER_MODEL = 'accounts.CustomUser'
+
+LOGIN_URL = 'accounts:login'
+LOGIN_REDIRECT_URL = 'accounts:profile'
+LOGOUT_REDIRECT_URL = 'accounts:login'
