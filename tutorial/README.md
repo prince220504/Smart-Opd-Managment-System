@@ -18,8 +18,8 @@ Step-by-step Django learning notes. Revise any time. Each file covers **what**, 
 | 9 | Django admin + superuser | [09-admin-superuser.md](09-admin-superuser.md) | ✅ Done |
 | 10 | URLs + views | [10-urls-and-views.md](10-urls-and-views.md) | ✅ Done |
 | 11 | Templates pointing at `frontend/templates` | [11-templates.md](11-templates.md) | ✅ Done |
-| 12 | Auth forms (login, register, profile) | _coming_ | ⏳ Next |
-| 13 | `appointments` app — models with foreign keys | _coming_ | |
+| 12 | Auth forms (login, register, profile) | [12-auth-forms.md](12-auth-forms.md) | ✅ Done |
+| 13 | `appointments` app — models with foreign keys | _coming_ | ⏳ Next |
 | 14 | DRF layer (serializers, viewsets, JWT) | _coming_ | |
 | 15 | `lab`, `prescriptions`, `notifications` apps | _coming_ | |
 | 16 | Celery + Redis | _coming_ | |
