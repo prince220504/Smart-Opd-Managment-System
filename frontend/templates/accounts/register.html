@@ -5,6 +5,16 @@
 {% block content %}
 <h1>Create account</h1>
 
+{% if form.errors %}
+<div class="errors">
+    {% for field, errors in form.errors.items %}
+        {% for error in errors %}
+            <p style="color: red;">{{field}}:{{error}}</p>
+        {% endfor %}
+    {% endfor %}
+</div>
+{% endif %}
+
 <form method="post" action="{% url 'accounts:register' %}">
     {% csrf_token %}
 
@@ -17,13 +27,7 @@
     <label for="id_phone">Phone</label>
     <input type="tel" name="phone" id="id_phone" pattern="[6-9][0-9]{9}" placeholder="9876543210">
 
-    <label for="id_role">Role</label>
-    <select name="role" id="id_role" required>
-        <option value="PATIENT">Patient</option>
-        <option value="DOCTOR">Doctor</option>
-        <option value="RECEPTION">Receptionist</option>
-        <option value="LAB">Lab Technician</option>
-    </select>
+    <p>Account type: <strong>Patient</strong></p>
 
     <label for="id_password">Password</label>
     <input type="password" name="password" id="id_password" required>
