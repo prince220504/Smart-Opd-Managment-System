@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}Logged out - Smart OPD{% endblock %}
+
+{% block content %}
+<h1>Logged out</h1>
+
+<p>You have been logged out successfully</p>
+
+<p>
+    <a href="{% url 'accounts:login' %}">Log in again</a>
+    or
+    <a href="{% url 'accounts:register' %}">Register</a>
+</p>
+{% endblock %}

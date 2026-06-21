@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - Smart OPD{% endblock %}
+
+{% block content %}
+<h1>Welcome {{user.username}}</h1>
+<p>Role: {{user.role}}</p>
+<p>Email: {{user.email}}</p>
+<p>Phone: {{user.phone}}</p>
+
+<form method="post" action="{% url 'accounts:logout' %}">
+    {% csrf_token %}
+    <button type="submit">Log out</button>
+</form>
+{% endblock %}

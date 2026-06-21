@@ -16,10 +16,10 @@ Step-by-step Django learning notes. Revise any time. Each file covers **what**, 
 | 7 | `CustomUser` model with role field | [07-custom-user.md](07-custom-user.md) | ✅ Done |
 | 8 | Migrations (`makemigrations` vs `migrate`) | [08-migrations.md](08-migrations.md) | ✅ Done |
 | 9 | Django admin + superuser | [09-admin-superuser.md](09-admin-superuser.md) | ✅ Done |
-| 10 | URLs + views | _coming_ | ⏳ Next |
-| 11 | Templates pointing at `frontend/templates` | _coming_ | |
-| 12 | Auth forms (login, register, profile) | _coming_ | |
-| 13 | `appointments` app — models with foreign keys | _coming_ | |
+| 10 | URLs + views | [10-urls-and-views.md](10-urls-and-views.md) | ✅ Done |
+| 11 | Templates pointing at `frontend/templates` | [11-templates.md](11-templates.md) | ✅ Done |
+| 12 | Auth forms (login, register, profile) | [12-auth-forms.md](12-auth-forms.md) | ✅ Done |
+| 13 | `appointments` app — models with foreign keys | _coming_ | ⏳ Next |
 | 14 | DRF layer (serializers, viewsets, JWT) | _coming_ | |
 | 15 | `lab`, `prescriptions`, `notifications` apps | _coming_ | |
 | 16 | Celery + Redis | _coming_ | |
