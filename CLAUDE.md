@@ -350,6 +350,33 @@ User wrapped saying "this step 12 way big from my thinking". Step 12 is now span
 - Target (early-Steps voice): `tutorial/03-startproject.md`, `tutorial/05-settings.md`, `tutorial/07-custom-user.md`
 - Step 11 leaned too "simple" — over-corrected the first time. Step 12 should land at the early-Steps balance: real terms + worked examples + analogy when the plumbing is abstract.
 
+## Step chunking rule (added Day 13, 2026-06-22 after Step 12 ran 3 sessions)
+
+**Prince's real session budget = 1 hour to 1:30 hour.** Design steps to that, not to round numbers.
+
+### BIG step → split. NOT BIG → keep whole.
+
+A step is **BIG** if any one of these is true:
+- 4+ new files to touch
+- 5+ new concepts to teach
+- Estimated 2+ hours of typing/verifying
+- Spans multiple distinct features (model + views + templates + forms at once)
+
+If BIG → split into sub-steps (`13a`, `13b`, ...) each sized to complete in 1–1:30 hr including concept teach + typing + browser verify + 1–3 commits.
+
+If NOT BIG → one session, no chunking ceremony.
+
+### Branch + PR strategy — Option A
+
+**One branch + one PR per parent step**, not per sub-step. Reason: PR ceremony (open / review / merge / cleanup) costs 15-20 min. Doing it per sub-step would burn 60-80 min of git overhead per step. Roll sub-steps up.
+
+Example for Step 13: branch `feature/appointments-app` lives across 4 sub-steps (13a/b/c/d). PR #3 opens only when 13d is done. Same pattern PR #2 used.
+
+### Two enforced rules
+
+1. **Pre-session scope check** — at session start, propose "today we'll do X (Y minutes)" + wait for user confirm before any code typed. If estimate off → resize plan, not session.
+2. **Hard stop at session budget** — if 1:30 hits mid-code: (a) push WIP commit + flag in memory, OR (b) revert dirty changes + smaller next chunk. Never "just 15 more minutes" — that's how Step 12 leaked across 3 days.
+
 ## How to help
 
 When the developer asks for help:
