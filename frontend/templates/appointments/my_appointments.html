@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}My Appointments - Smart OPD{% endblock %}
+
+{% block content %}
+<h1>My Appointments</h1>
+
+{% if appointments %}
+    <table border="1" cellpadding="6">
+        <thead>
+            <tr>
+                <th>Doctor</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Status</th>
+                <th>Notes</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for appt in appointments %}
+            <tr>
+                <td>Dr. {{ appt.doctor.username }}</td>
+                <td>{{ appt.appointment_date }}</td>
+                <td>{{ appt.time_slot }}</td>
+                <td>{{ appt.get_status_display }}</td>
+                <td>{{ appt.notes|default:"-"}}</td>
+                <td>{% if appt.status != 'CANCELLED' %}
+                    <form method="post" action="{% url 'appointments:cancel' appt.id %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" onclick="return confirm('Cancel this appointment?');">Cancel</button>
+                    </form>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>You have no appointments yet. <a href="{% url 'appointments:doctor_list' %}">Find a doctor</a>.</p>
+{% endif %}
+{% endblock %}

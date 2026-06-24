@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}Book with Dr. {{ doctor.username }} - Smart OPD {% endblock %}
+
+{% block content %}
+<h1>Book Appointment</h1>
+<p>Doctor: <strong>Dr. {{ doctor.username }}</strong></p>
+
+{% if form.errors %}
+    <div style="color:red">
+        {% for field, errors in form.errors.items %}
+        <p>{{ field }}: {{ errors|join:", "}}</p>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Confirm Booking</button>
+</form>
+
+<p><a href="{% url 'appointments:doctor_list' %}">Back to doctors</a></p>
+
+{% endblock %} 
