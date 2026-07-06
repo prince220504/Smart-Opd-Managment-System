@@ -4,6 +4,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from .forms import BookAppointmentForm
 from .models import Appointment
+from datetime import date
+from django.db.models import Q
 
 User = get_user_model()
 
@@ -35,17 +37,35 @@ def my_appointments(request):
     )
     return render(request, 'appointments/my_appointments.html', {'appointments': appointments})
 
+@login_required 
+def doctor_today(request):
+    today = date.today()
+    appointments = (
+        request.user.doctor_appointments
+        .filter(appointment_date=today)
+        .select_related('patient')
+    )
+    return render(request,
+        'appointments/doctor_today.html', {
+            'appointments': appointments,
+            'today': today,
+        }              
+    )    
+
 @login_required
 @require_POST
 def cancel_appointment(request, appointment_id):
     appointment = get_object_or_404(
         Appointment,
-        id = appointment_id,
-        patient = request.user,
+        Q(patient=request.user) | Q(doctor=request.user),
+        id=appointment_id,
     )
 
-    if appointment.status != Appointment.Status.CANCELLED:
+    if appointment.status != Appointment.Status.CANCELLED: 
         appointment.status = Appointment.Status.CANCELLED
         appointment.save()
 
+    if request.user.role == "DOCTOR":
+        return redirect('appointments:doctor_today')
+    
     return redirect('appointments:my_appointments')
