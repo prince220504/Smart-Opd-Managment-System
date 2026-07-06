@@ -913,3 +913,273 @@ Other gotchas from 13b:
 ---
 
 **Next:** Step 13c — doctor-side view (today's appointments + doctor cancel) + role-based redirect on login. **Stays on `feature/appointments-app` branch.** PR #3 still waits for 13d.
+
+---
+
+# Step 13c — Doctor View + Role-Based Navigation
+
+> **Sub-step of Step 13.** 13b gave the patient a full booking loop. 13c gives the **doctor** their side: a "today's appointments" page, the ability to cancel, a login that lands them on the right page, and a nav bar that shows each role only its own links. Reception's side is 13d.
+
+## What we did here
+
+1. Added a `doctor_today` view — today's appointments for the logged-in doctor, using the reverse FK from the doctor side.
+2. **Widened** `cancel_appointment` so either the patient OR the doctor on a row can cancel it — using a `Q` object for the OR.
+3. Fixed the post-cancel redirect so a doctor doesn't get bounced to an empty patient page.
+4. Made `login_view` **role-aware** — a DOCTOR lands on their today-page, everyone else on their profile.
+5. Turned the nav bar in `base.html` **role-aware** — patients see booking links, doctors see their today-link, both get Profile + Logout.
+6. Added one route + one template. Verified the full doctor + patient flow in the browser.
+7. **Two atomic commits** on `feature/appointments-app`.
+
+Design decision recorded here: we chose **"dashboard = nav links"** for now, not a dedicated dashboard page. When the doctor gets advanced features (availability, prescriptions, lab requests) a real dashboard page earns its place. Today, a role-aware nav is the whole "dashboard" and it's the lazy-correct call — no page, no extra view, no extra template.
+
+---
+
+## Half 1 — The doctor's reverse FK (mirror of 13b)
+
+13b read the patient's appointments:
+
+```python
+request.user.patient_appointments.select_related('doctor').all()
+```
+
+The doctor view is the same shape from the other side:
+
+```python
+# backend/apps/appointments/views.py
+from datetime import date
+
+@login_required
+def doctor_today(request):
+    today = date.today()
+    appointments = (
+        request.user.doctor_appointments
+        .filter(appointment_date=today)
+        .select_related('patient')
+    )
+    return render(request, 'appointments/doctor_today.html', {
+        'appointments': appointments,
+        'today': today,
+    })
+```
+
+Two mirror-image choices:
+
+| 13b (patient) | 13c (doctor) | Why the flip |
+|---------------|--------------|--------------|
+| `request.user.patient_appointments` | `request.user.doctor_appointments` | Different `related_name` — walks the other FK |
+| `.select_related('doctor')` | `.select_related('patient')` | The template shows the *other* party's name, so JOIN that one |
+
+**Why `.select_related('patient')` and not `('doctor')`**: the doctor already knows they're the doctor. The template prints `{{ appt.patient.username }}` — the patient is the row we dereference, so the patient is the row we JOIN. Same N+1 rule as 13b, opposite target.
+
+> Why it matters: 13a's decision to name both reverse accessors (`patient_appointments`, `doctor_appointments`) is what lets these two views read cleanly from opposite ends of the same table.
+
+---
+
+## Half 2 — Filtering on today's date
+
+```python
+from datetime import date
+
+today = date.today()
+... .filter(appointment_date=today)
+```
+
+`date.today()` is Python stdlib — no dependency, no Django helper needed. It returns a `date` object; the ORM turns `appointment_date=today` into `WHERE appointment_date = '2026-06-25'`.
+
+**Two things to hold in your head:**
+
+1. **`date.today()` trusts the machine's clock.** The query is only as correct as the server's system time. On a real server with NTP-synced time this is fine. The lesson: if the clock is wrong, the doctor sees the wrong day's list — the ORM can't know the clock lied. (This was concept-check Q2.)
+2. **`date.today()` not `datetime.now()`.** We want calendar-day equality, not a rolling 24-hour window. `DateField` stores a day; comparing it to a day is exact. Comparing it to a timestamp would need a range.
+
+Your `TIME_ZONE = 'Asia/Kolkata'` means "today" is IST-today from the server's point of view — correct for an Indian OPD.
+
+---
+
+## Half 3 — `Q` objects: OR in a query
+
+Chained keyword filters are **AND**:
+
+```python
+filter(patient=user, doctor=user)   # patient == user AND doctor == user  → impossible
+```
+
+To say **OR**, wrap each side in `Q` and join with `|`:
+
+```python
+from django.db.models import Q
+
+get_object_or_404(
+    Appointment,
+    Q(patient=request.user) | Q(doctor=request.user),
+    id=appointment_id,
+)
+```
+
+| Operator | Meaning |
+|----------|---------|
+| `Q(a) \| Q(b)` | a OR b |
+| `Q(a) & Q(b)` | a AND b |
+| `~Q(a)` | NOT a |
+
+Django overloaded Python's bitwise operators (`|`, `&`, `~`) so query fragments compose like boolean algebra. The `Q(...)` expression goes as a **positional** argument, *before* any keyword args. The keyword `id=appointment_id` is then AND-ed onto the whole OR: `id matches AND (patient is me OR doctor is me)`.
+
+**Import trap:** `from django.db.models import Q` — not `from django.db import Q`. Wrong path → `ImportError`.
+
+> Why it matters: 13d's receptionist needs `Q(patient=...) | Q(doctor=...) | Q(booked_by=...)`. `Q` is the building block for every multi-owner query in the app.
+
+---
+
+## Half 4 — Widening cancel, and the redirect bug it exposed
+
+13b locked cancel to the patient:
+
+```python
+get_object_or_404(Appointment, id=appointment_id, patient=request.user)
+```
+
+13c widens it to either party:
+
+```python
+@login_required
+@require_POST
+def cancel_appointment(request, appointment_id):
+    appointment = get_object_or_404(
+        Appointment,
+        Q(patient=request.user) | Q(doctor=request.user),
+        id=appointment_id,
+    )
+
+    if appointment.status != Appointment.Status.CANCELLED:
+        appointment.status = Appointment.Status.CANCELLED
+        appointment.save()
+
+    if request.user.role == 'DOCTOR':
+        return redirect('appointments:doctor_today')
+    return redirect('appointments:my_appointments')
+```
+
+**The ownership widening** (concept 5): one URL, one view, one authorization rule, now serving two actors. The template's cancel form is *identical* on both the patient page and the doctor page — a URL is just an address, and the ownership check runs server-side on the POST. This is the **narrow-waist** pattern: add a third role later = one more `Q(...)` clause, not a fourth endpoint.
+
+**The redirect bug it exposed** — this is the important one, and it's a *correctness* fix, not cosmetics. The old code always did `redirect('appointments:my_appointments')`. But `my_appointments` runs `request.user.patient_appointments` — for a **doctor**, that reverse FK is **empty**. A doctor cancelling from their today-page would be bounced to a blank patient list. So we branch on role: doctor goes back to `doctor_today`, everyone else to `my_appointments`.
+
+> Why it matters: widening *who* can act forced us to fix *where* they land. A shared endpoint has to send each actor somewhere that makes sense for them. Watch for this every time you let a new role through an existing door.
+
+---
+
+## Half 5 — Role-based login redirect
+
+```python
+# backend/apps/accounts/views.py
+if user is not None:
+    login(request, user)
+    if user.role == 'DOCTOR':
+        return redirect('appointments:doctor_today')
+    return redirect('accounts:profile')
+```
+
+After `login()` starts the session, we branch on `user.role` (the `TextChoices` string from Step 7). DOCTOR → their today-page. PATIENT / RECEPTION / LAB → profile for now (reception + lab get their own homes in 13d and Step 15).
+
+Why a plain `if` and not a lookup table: with 2 real branches, `if/elif` reads better than a dispatch dict. The dict pattern (`HOMES = {'DOCTOR': ..., 'LAB': ...}`) earns its place at 4+ distinct landings — Step 14/15.
+
+> Why it matters: login is the one moment the user asks "where am I, and what can I do?" Landing a doctor on a patient-style profile page is a small thing that quietly says "this app doesn't know who you are." The redirect is the app's first correct impression.
+
+---
+
+## Half 6 — The role-aware nav (the "dashboard")
+
+This is where your "dashboard = nav links" decision lives. `base.html`:
+
+```django
+<nav>
+    {% if user.is_authenticated %}
+        {% if user.role == 'PATIENT' %}
+            <a href="{% url 'appointments:doctor_list' %}">Find a Doctor</a>
+            <a href="{% url 'appointments:my_appointments' %}">My Appointments</a>
+        {% elif user.role == 'DOCTOR' %}
+            <a href="{% url 'appointments:doctor_today' %}">Today's Appointments</a>
+        {% endif %}
+        <a href="{% url 'accounts:profile' %}">Profile</a>
+        <form method="post" action="{% url 'accounts:logout' %}" style="display:inline">
+            {% csrf_token %}
+            <button type="submit">Log out</button>
+        </form>
+    {% else %}
+        <a href="{% url 'accounts:login' %}">Log in</a>
+        <a href="{% url 'accounts:register' %}">Register</a>
+    {% endif %}
+</nav>
+```
+
+Four things worth knowing:
+
+- **`user` is always in the template.** Django's auth context processor (on by default) injects `user` into every template — no view has to pass it. For an anonymous visitor it's `AnonymousUser`, whose `is_authenticated` is `False` and whose `.role` is a missing attribute that templates silently render as empty. So the `{% else %}` branch shows.
+- **Each role sees only its links.** Patient gets the two booking pages; doctor gets the today-page. This fixed the real gap from 13b — a patient previously had no on-screen link to their own pages and had to type URLs.
+- **Logout is a POST form, not a link.** Django 5+ refuses GET logout (CSRF safety). Same pattern as `profile.html`.
+- **Nested `{% if %}` needs two `{% endif %}`.** One closes the role check, one closes the auth check. Miss one → `TemplateSyntaxError: Unclosed tag`.
+
+**A gotcha you hit and self-diagnosed:** while still logged in from earlier testing, the login page showed your authenticated nav. That's not a bug or a bypass — it's **session persistence**. Your session cookie was still valid, so `user.is_authenticated` was `True` even on `/login/`. Proof: an incognito window (no cookie) shows only Login/Register. The optional polish is a guard at the top of `login_view`/`register_view` that bounces already-authenticated users to their home — standard, cheap, deferred to 13d.
+
+---
+
+## Half 7 — Two atomic commits
+
+```bash
+# Commit 1: the doctor-side feature (view + route + template + widened cancel)
+git add backend/apps/appointments/views.py \
+        backend/apps/appointments/urls.py \
+        frontend/templates/appointments/doctor_today.html
+git commit -m "feat(appointments): add doctor today view + widen cancel to patient-or-doctor"
+
+# Commit 2: role-based navigation (login redirect + nav) — spans two apps
+git add backend/apps/accounts/views.py frontend/templates/base.html
+git commit -m "feat(accounts): role-based login redirect + role-aware nav"
+
+git push origin feature/appointments-app
+```
+
+Why the split: commit 1 is one app's feature (appointments doctor flow). Commit 2 answers a single cross-cutting question — "where does each role go?" — in the login redirect and the nav together. Two questions in history, two commits.
+
+---
+
+## Gotchas (Day 16 silent-failure typos)
+
+Every typo this session passed `manage.py check` and only failed at first request. The running grep-list before declaring clean:
+
+| Typo | File | Crash | Why check missed it |
+|------|------|-------|---------------------|
+| `Appointment.status.CANCELLED` (lowercase `status`) | views.py | `AttributeError` at cancel — `status` is the field, `Status` is the enum | Attribute is resolved at call time, not import |
+| `'appointment:doctor_today'` (singular namespace) | views.py | `NoReverseMatch` | Reverse strings aren't resolved at boot |
+| `'appointment:my_appointments'` (singular — a *regression* from working plural) | views.py | `NoReverseMatch` | Same |
+| `{% url 'appointments:doctor_list %'}` (quote/`%`/`}` scrambled) | base.html | `TemplateSyntaxError` | Templates compile at first render |
+| `'appointments:profile'` (wrong namespace — profile is in `accounts`) | base.html | `NoReverseMatch` | Same |
+| Duplicate `<nav>` left in place (new added, old not deleted) | base.html | No crash — just shows wrong links | Valid HTML, valid template |
+
+New patterns added to the list this session:
+1. **Enum vs field casing** — `Model.Status.X` (enum) vs `Model.status` (field). Lowercase = `AttributeError`.
+2. **Namespace singular/plural** — `'appointment:'` vs `'appointments:'`. The namespace is `app_name`, always plural here.
+3. **Wrong namespace on a shared name** — `profile` lives in `accounts`, not `appointments`. Reverse names are namespaced; grep which app owns the name.
+4. **Add-without-delete** — editing a block by adding the new version above/below the old and forgetting to remove the old. Reread the whole block, not just the lines you added.
+
+---
+
+## Where each future feature plugs in
+
+| Feature | Sub-step | Builds on 13c |
+|---------|----------|---------------|
+| Receptionist book-on-behalf | 13d | Sets `patient=<user>` — the field patients can't set. New form, new view |
+| Receptionist global list + filters | 13d | `Appointment.objects.select_related('patient','doctor')` + a filter form; a 3rd `Q` clause in cancel |
+| Doctor confirms a PENDING appointment | 13d / later | `appointment.status = Status.CONFIRMED` — same save pattern as cancel |
+| Real doctor dashboard page | Step 15+ | When availability + prescriptions + lab exist, the nav-as-dashboard graduates to a page with those widgets |
+| Role dispatch table | Step 14/15 | The `if/elif` login branch becomes `HOMES = {...}` when 4 roles need distinct homes |
+
+---
+
+## Revise (3-line summary)
+
+1. **Doctor side mirrors the patient side.** `doctor_today` reads `request.user.doctor_appointments.filter(appointment_date=date.today()).select_related('patient')` — reverse FK from the doctor end, JOIN the patient because that's whose name the page prints.
+2. **One cancel endpoint, two owners, via `Q`.** `Q(patient=u) | Q(doctor=u)` widens ownership; the exposed redirect bug (doctor bounced to an empty patient list) is fixed by a role branch. Narrow-waist: add a role = add a `Q` clause, not an endpoint.
+3. **Role-aware login + nav = the "dashboard."** `login_view` sends a doctor to their today-page; `base.html` shows each role only its links. No dashboard page yet — a page earns its place when the doctor has more features (Step 15+).
+
+---
+
+**Next:** Step 13d — receptionist book-on-behalf + global appointment list + filters. **Then PR #3** (Option A — one PR per parent step, opens after 13d closes Step 13).
