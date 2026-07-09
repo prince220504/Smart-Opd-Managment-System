@@ -25,12 +25,23 @@
                     <td>{{ appt.notes|default:"-" }}</td>
                     <td>
                         {% if appt.status == 'PENDING' %}
-                        <form method="post" action="{% url 'appointments:confirm' appt.id %}" style="display:inline">
-                            {% csrf_token %}
-                            <button type="submit">Accept</button>
-                        </form>
-                        {% endif %}
-                        {% if appt.status != 'CANCELLED' %}
+                            <form method="post" action="{% url 'appointments:confirm' appt.id %}" style="display:inline">
+                                {% csrf_token %}
+                                <button type="submit">Accept</button>
+                            </form>
+                            <form method="post" action="{% url 'appointments:cancel' appt.id %}" style="display:inline">
+                                {% csrf_token %}
+                                <button type="submit" onclick="return confirm('Cancel this appointment?');">Cancel</button>
+                            </form>
+                        {% elif appt.status == 'CONFIRMED' %}
+                            <form method="post" action="{% url 'appointments:complete' appt.id %}" style="display:inline">
+                                {% csrf_token %}
+                                <button type="submit">Complete</button>
+                            </form>
+                            <form method="post" action="{% url 'appointments:no_show' appt.id %}" style="display:inline">
+                                {% csrf_token %}
+                                <button type="submit">No-show</button>
+                            </form>
                             <form method="post" action="{% url 'appointments:cancel' appt.id %}" style="display:inline">
                                 {% csrf_token %}
                                 <button type="submit" onclick="return confirm('Cancel this appointment?');">Cancel</button>
