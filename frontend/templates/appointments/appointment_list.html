@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}All Appointments - Smart OPD{% endblock %}
+
+{% block content %}
+<h1>All Appointments</h1>
+
+<form method="get">
+    <label>Status:
+        <select name="status">
+            <option value="">All</option>
+            {% for value, label in statuses %}
+                <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </label>
+    <label>Doctor:
+        <select name="doctor">
+            <option value="">All</option>
+            {% for doc in doctors %}
+                <option value="{{ doc.id }}" {% if request.GET.doctor == doc.id|stringformat:"s" %}selected{% endif %}>{{ doc.username }}</option>
+            {% endfor %}
+        </select>
+    </label>
+    <label>Date: <input type="date" name="date" value="{{ request.GET.date }}"></label>
+    <button type="submit">Filter</button>
+    <a href="{% url 'appointments:appointment_list' %}">Clear</a>
+</form>
+
+{% if appointments %}
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Patient</th>
+                <th>Doctor</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for appt in appointments %}
+                <tr>
+                    <td>{{ appt.patient.username }}</td>
+                    <td>{{ appt.doctor.username }}</td>
+                    <td>{{ appt.appointment_date }}</td>
+                    <td>{{ appt.time_slot }}</td>
+                    <td>{{ appt.get_status_display }}</td>
+                    <td>
+                        {% if appt.status == 'PENDING' %}
+                            <form method="post" action="{% url 'appointments:confirm' appt.id %}" style="display:inline">
+                                {% csrf_token %}
+                                <button type="submit">Accept</button>
+                            </form>
+                        {% endif %}
+                        {% if appt.status != 'CANCELLED' %}
+                            <form method="post" action="{% url 'appointments:cancel' appt.id %}" style="display:inline">
+                                {% csrf_token %}
+                                <button type="submit" onclick="return confirm('Cancel this appointment?')">Cancel</button>
+                            </form>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>No appointments found.</p>
+{% endif %}
+{% endblock %}

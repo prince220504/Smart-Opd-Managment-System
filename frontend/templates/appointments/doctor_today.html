@@ -23,7 +23,14 @@
                     <td>{{ appt.time_slot }}</td>
                     <td>{{ appt.get_status_display }}</td>
                     <td>{{ appt.notes|default:"-" }}</td>
-                    <td>{% if appt.status != 'CANCELLED' %}
+                    <td>
+                        {% if appt.status == 'PENDING' %}
+                        <form method="post" action="{% url 'appointments:confirm' appt.id %}" style="display:inline">
+                            {% csrf_token %}
+                            <button type="submit">Accept</button>
+                        </form>
+                        {% endif %}
+                        {% if appt.status != 'CANCELLED' %}
                             <form method="post" action="{% url 'appointments:cancel' appt.id %}" style="display:inline">
                                 {% csrf_token %}
                                 <button type="submit" onclick="return confirm('Cancel this appointment?');">Cancel</button>
