@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Find a Doctor - Smart OPD{% endblock %}
+
+{% block content %}
+<h1>Available Doctors</h1>
+
+{% if doctors %}
+<ul>
+    {% for doctor in doctors %}
+    <li>
+        <strong>Dr. {{ doctor.username }}</strong>
+        {% if doctor.email %} - {{ doctor.email }}{% endif %}
+        <a href="{% url 'appointments:book' doctor.id %}">Book appointment</a>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+    <p>No doctor available right now.</p>
+{% endif %}
+{% endblock %}

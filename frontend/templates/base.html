@@ -10,8 +10,25 @@
     <body>
         <header>
             <nav>
-                <a href="{% url 'accounts:login' %}">Log in</a>
-                <a href="{% url 'accounts:register' %}">Register</a>
+                {% if user.is_authenticated %}
+                    {% if user.role == 'PATIENT' %}
+                        <a href="{% url 'appointments:doctor_list' %}">Find a Doctor</a>
+                        <a href="{% url 'appointments:my_appointments' %}">My Appointments</a>
+                    {% elif user.role == 'DOCTOR' %}
+                        <a href="{% url 'appointments:doctor_today' %}">Today's Appointments</a>
+                    {% elif user.role == 'RECEPTION' %}
+                        <a href="{% url 'appointments:reception_book' %}">Book for Patient</a>
+                        <a href="{% url 'appointments:appointment_list' %}">All Appointments</a>
+                    {% endif %}
+                    <a href="{% url 'accounts:profile' %}">Profile</a>
+                    <form method="post" action="{% url 'accounts:logout' %}" style="display:inline">
+                        {% csrf_token %}
+                        <button type="submit">Log out</button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'accounts:login' %}">Log in</a>
+                    <a href="{% url 'accounts:register' %}">Register</a>
+                {% endif %}
             </nav>
         </header>
 
