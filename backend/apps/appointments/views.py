@@ -2,12 +2,20 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
-from .forms import BookAppointmentForm
+from .forms import BookAppointmentForm, ReceptionBookingForm
 from .models import Appointment
 from datetime import date
 from django.db.models import Q
+from django.http import Http404
 
 User = get_user_model()
+
+def _redirect_after_action(request):
+    if request.user.role == 'RECEPTION':
+        return redirect('appointments:appointment_list')
+    if request.user.role == 'DOCTOR':
+        return redirect('appointments:doctor_today')
+    return redirect('appointments:my_appointments')
 
 @login_required
 def doctor_list(request):
@@ -53,19 +61,74 @@ def doctor_today(request):
     )    
 
 @login_required
+def reception_book(request):
+    if request.user.role != 'RECEPTION':
+        raise Http404()
+    if request.method == 'POST':
+        form = ReceptionBookingForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('appointments:appointment_list')
+    else:
+        form = ReceptionBookingForm()
+    
+    return render(request, 'appointments/reception_book.html', {'form': form})
+
+@login_required
+@require_POST
+def confirm_appointment(request, appointment_id):
+    if request.user.role == 'RECEPTION':
+        appointment = get_object_or_404(Appointment, id=appointment_id)
+    else:
+        appointment = get_object_or_404(Appointment, id=appointment_id, doctor=request.user)
+
+    if appointment.status == Appointment.Status.PENDING:
+        appointment.status = Appointment.Status.CONFIRMED
+        appointment.save()
+    
+    return _redirect_after_action(request)
+
+@login_required
 @require_POST
 def cancel_appointment(request, appointment_id):
-    appointment = get_object_or_404(
-        Appointment,
-        Q(patient=request.user) | Q(doctor=request.user),
-        id=appointment_id,
-    )
-
-    if appointment.status != Appointment.Status.CANCELLED: 
+    if request.user.role == 'RECEPTION':
+        appointment = get_object_or_404(Appointment, id=appointment_id)
+    else:
+        appointment = get_object_or_404(Appointment, Q(patient=request.user) | Q(doctor=request.user), id=appointment_id,)
+    
+    if appointment.status != Appointment.Status.CANCELLED:
         appointment.status = Appointment.Status.CANCELLED
         appointment.save()
-
-    if request.user.role == "DOCTOR":
-        return redirect('appointments:doctor_today')
     
-    return redirect('appointments:my_appointments')
+    return _redirect_after_action(request)
+
+@login_required
+def appointment_list(request):
+    if request.user.role != 'RECEPTION':
+        raise Http404()
+    
+    appointments = (
+        Appointment.objects
+        .select_related('patient', 'doctor')
+        .order_by('-appointment_date','-time_slot')
+    )
+
+    status = request.GET.get('status')
+    if status:
+        appointments = appointments.filter(status=status)
+
+    doctor_id = request.GET.get('doctor')
+    if doctor_id:
+        appointments = appointments.filter(doctor_id=doctor_id)
+
+    appt_date = request.GET.get('date')
+    if appt_date:
+        appointments = appointments.filter(appointment_date=appt_date)
+    
+    doctors = User.objects.filter(role='DOCTOR').order_by('username')
+
+    return render(request, 'appointments/appointment_list.html', {
+        'appointments':appointments,
+        'doctors': doctors,
+        'statuses': Appointment.Status.choices,
+    })
