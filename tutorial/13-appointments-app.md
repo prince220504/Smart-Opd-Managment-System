@@ -1183,3 +1183,255 @@ New patterns added to the list this session:
 ---
 
 **Next:** Step 13d — receptionist book-on-behalf + global appointment list + filters. **Then PR #3** (Option A — one PR per parent step, opens after 13d closes Step 13).
+
+---
+
+# Step 13d — Receptionist: Book-on-Behalf + Global List + Filters + Confirm
+
+> **Final sub-step of Step 13.** 13b gave the patient a booking loop, 13c gave the doctor their day. 13d gives the **receptionist** their tools — book for any patient, see every appointment, filter the list, and confirm pending bookings. It also adds the **confirm** action for doctors. After this, Step 13 is complete and PR #3 opens.
+
+## What we did here
+
+1. `ReceptionBookingForm` — a `ModelForm` that **exposes** the `patient` field (the field patient/doctor forms deliberately hide).
+2. `reception_book` view — role-gated, reception books for any patient.
+3. `confirm_appointment` view — `PENDING → CONFIRMED`, for doctor (own) or reception (any).
+4. `appointment_list` view — the receptionist's global, unscoped list with status/date/doctor filters.
+5. Widened `cancel_appointment` again — reception can now cancel any appointment.
+6. A shared `_redirect_after_action` helper — sends each role to their home after a cancel/confirm.
+7. RECEPTION login redirect + reception nav branch + Accept/Cancel buttons on the relevant pages.
+8. **Three atomic commits.** Then PR #3 closes Step 13.
+
+---
+
+## Half 1 — A form that exposes `patient` (two trust levels, one model)
+
+`BookAppointmentForm` (13b) hid `patient` — the patient booked for themselves, forced server-side. Reception books **on behalf of** someone, so the form must show a patient dropdown:
+
+```python
+# backend/apps/appointments/forms.py
+class ReceptionBookingForm(forms.ModelForm):
+    class Meta:
+        model = Appointment
+        fields = ['patient', 'doctor', 'appointment_date', 'time_slot', 'notes']
+        widgets = {
+            'appointment_date': forms.DateInput(attrs={'type': 'date'}),
+            'time_slot': forms.TimeInput(attrs={'type': 'time'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['patient'].queryset = User.objects.filter(role='PATIENT')
+        self.fields['doctor'].queryset = User.objects.filter(role='DOCTOR')
+```
+
+| Form | `patient` in fields? | Who sets patient |
+|------|---------------------|------------------|
+| `BookAppointmentForm` (13b) | No | Server: `appointment.patient = request.user` |
+| `ReceptionBookingForm` (13d) | Yes | Reception picks from a PATIENT-scoped dropdown |
+
+Two `__init__` querysets now — patient dropdown scoped to `role='PATIENT'`, doctor dropdown to `role='DOCTOR'`. The scoping still matters for staff: it keeps non-patients out of the patient dropdown AND validates the submitted PK is genuinely a patient.
+
+Because reception fills `patient` in the form, the view saves **directly** — no `commit=False`:
+
+```python
+if form.is_valid():
+    form.save()          # patient is already on the form
+```
+
+> Why it matters: the entire difference between "book for myself" and "book for anyone" is one line — whether `patient` is in `Meta.fields`. Same model, two forms, two trust levels.
+
+---
+
+## Half 2 — Role-gated views (the door, not the query)
+
+Reception's two new views (`reception_book`, `appointment_list`) are for staff only. `@login_required` checks *logged in*, not *which role*. So we add an explicit role gate:
+
+```python
+@login_required
+def reception_book(request):
+    if request.user.role != 'RECEPTION':
+        raise Http404()
+    ...
+```
+
+`raise Http404()` returns a clean 404 — a patient poking at `/appointments/reception/book/` is told "nothing here," leaking nothing about the endpoint's existence.
+
+This is a different authorization model from patient/doctor views:
+
+| Model | Used by | Mechanic |
+|-------|---------|----------|
+| **Ownership** | patient, doctor | `Q(patient=me) \| Q(doctor=me)` in the lookup — "is this row yours?" |
+| **Role** | reception | `if role != 'RECEPTION': raise Http404` at the view top — "are you staff?" |
+
+The receptionist's *query* is wide open (`Appointment.objects`, all rows). The safety is the **role gate on the view door** — lock the door, then the room can be open.
+
+> Why it matters: mixing these up is how you get a leak (staff query reachable by a patient) or a lockout (ownership query applied to staff). Gate reception at the door; scope patients in the query.
+
+---
+
+## Half 3 — The status transitions (confirm, and the full lifecycle)
+
+Confirm mirrors cancel — a tiny POST view with a from-state guard:
+
+```python
+@login_required
+@require_POST
+def confirm_appointment(request, appointment_id):
+    if request.user.role == 'RECEPTION':
+        appointment = get_object_or_404(Appointment, id=appointment_id)
+    else:
+        appointment = get_object_or_404(Appointment, id=appointment_id, doctor=request.user)
+
+    if appointment.status == Appointment.Status.PENDING:
+        appointment.status = Appointment.Status.CONFIRMED
+        appointment.save()
+
+    return _redirect_after_action(request)
+```
+
+Two important details:
+
+- **Guard is `== PENDING`** (not `!= CANCELLED` like cancel). You can only confirm something waiting. Already-cancelled or already-confirmed → silently skipped.
+- **Patients can't confirm — for free.** Reception gets any row; everyone else is scoped to `doctor=request.user`. A patient's lookup by `doctor=request.user` matches nothing (they're the patient, not the doctor) → 404. No explicit "block patient" line needed; the scope does it.
+
+The lifecycle so far:
+
+```
+PENDING ──confirm──▶ CONFIRMED
+   │                     │
+   └──────cancel─────────┴──────▶ CANCELLED   (terminal)
+```
+
+(Step 13e will add `CONFIRMED → COMPLETED`.)
+
+> Why it matters: a status machine is just a set of allowed transitions, each a small guarded POST view. `PENDING→CONFIRMED`, `*→CANCELLED` — same skeleton, different from-state guard and target.
+
+---
+
+## Half 4 — The shared redirect helper (DRY where it's truly identical)
+
+Cancel and confirm scope *differently* (patient can cancel but not confirm), so they do **not** share a lookup helper — forcing that would be wrong. But the *redirect after acting* is identical for both, across all three roles. That's the right thing to extract:
+
+```python
+def _redirect_after_action(request):
+    if request.user.role == 'RECEPTION':
+        return redirect('appointments:appointment_list')
+    if request.user.role == 'DOCTOR':
+        return redirect('appointments:doctor_today')
+    return redirect('appointments:my_appointments')
+```
+
+Both `cancel_appointment` and `confirm_appointment` end with `return _redirect_after_action(request)`. The leading underscore marks it module-private (not a view, don't route to it).
+
+> Why it matters: extract what's *identical* (the redirect), inline what *diverges* (the ownership lookup). Blindly DRY-ing the lookup too would have let a patient confirm. Same-looking code isn't the same code.
+
+---
+
+## Half 5 — The global list + GET-param filtering
+
+```python
+@login_required
+def appointment_list(request):
+    if request.user.role != 'RECEPTION':
+        raise Http404()
+
+    appointments = (
+        Appointment.objects
+        .select_related('patient', 'doctor')
+        .order_by('-appointment_date', '-time_slot')
+    )
+
+    status = request.GET.get('status')
+    if status:
+        appointments = appointments.filter(status=status)
+
+    doctor_id = request.GET.get('doctor')
+    if doctor_id:
+        appointments = appointments.filter(doctor_id=doctor_id)
+
+    appt_date = request.GET.get('date')
+    if appt_date:
+        appointments = appointments.filter(appointment_date=appt_date)
+
+    doctors = User.objects.filter(role='DOCTOR').order_by('username')
+    return render(request, 'appointments/appointment_list.html', {
+        'appointments': appointments,
+        'doctors': doctors,
+        'statuses': Appointment.Status.choices,
+    })
+```
+
+Two ideas:
+
+**Unscoped query, both FKs JOINed.** `Appointment.objects` = every row. `.select_related('patient', 'doctor')` JOINs both because the list prints both names — one query, not 1+2N.
+
+**Conditional filter chaining.** Each `request.GET.get('x')` reads one URL param (`None` if absent). Each `if` conditionally narrows the QuerySet. Because QuerySets are lazy and chainable (13b), stacking `.filter()` builds ONE `WHERE` with all active conditions AND-ed, executed once at render.
+
+Why **GET**, not POST: filtering is a safe, bookmarkable *read*. Params live in the URL (`/appointments/all/?status=PENDING&doctor=3`) — reception can bookmark or share a filtered view. POST would be wrong (no mutation happens).
+
+Why not the `django-filter` library: for 3 fields, nine lines of `if request.GET.get()` beats a dependency + its API. Add the library when filters get complex (ranges, search, many fields) — DRF territory, Step 14.
+
+The template's filter form is `method="get"`, and each dropdown re-selects the active param (`{% if request.GET.status == value %}selected{% endif %}`) so the filter state survives the round-trip. `doc.id|stringformat:"s"` converts the int id to a string to compare against the string GET param.
+
+> Why it matters: this conditional-chain pattern is most admin/dashboard filtering in real Django. Lazy QuerySets make it clean — assemble the query in pieces, run it once.
+
+---
+
+## Half 6 — Wiring: login redirect, nav, buttons
+
+- **`accounts/views.py`** — `login_view` gains a RECEPTION branch → lands them on `appointments:appointment_list`.
+- **`base.html`** — a `{% elif user.role == 'RECEPTION' %}` nav branch: "Book for Patient" + "All Appointments".
+- **`doctor_today.html` + `appointment_list.html`** — an **Accept** button (POST → `confirm`) on `status == 'PENDING'` rows, next to Cancel. Two separate `{% if %}` blocks: Accept shows for PENDING, Cancel shows for non-CANCELLED.
+
+---
+
+## Half 7 — Three atomic commits, then PR #3
+
+```bash
+git add backend/apps/appointments/forms.py frontend/templates/appointments/reception_book.html
+git commit -m "feat(appointments): add reception book-on-behalf form + template"
+
+git add backend/apps/appointments/views.py backend/apps/appointments/urls.py backend/apps/accounts/views.py
+git commit -m "feat(appointments): reception book + global list + confirm action + widen cancel"
+
+git add frontend/templates/appointments/appointment_list.html frontend/templates/appointments/doctor_today.html frontend/templates/base.html
+git commit -m "feat(appointments): reception templates + confirm buttons + reception nav"
+
+git push origin feature/appointments-app
+```
+
+Then **PR #3** — Step 13 (13a+13b+13c+13d) as one reviewable unit. Option A: one PR per parent step. Review own diff → merge → delete branch local+remote → sync `main`.
+
+---
+
+## Gotchas (Day 17)
+
+| Typo | File | Crash | Why check missed it |
+|------|------|-------|---------------------|
+| `def confirm_appointments` (plural — mismatch with `views.confirm_appointment` in urls) | views.py | `AttributeError` at boot once URL references it | The URL wasn't written yet when `check` ran |
+| `{{ erros\|join }}` (missing `r`) | reception_book.html | Renders empty — field errors silently vanish | Template missing-variable = empty string, never errors |
+
+Both from the same IDE letter-drop pattern. The running grep-list before "no issues": namespace singular/plural, enum-vs-field casing, `' %}`→`%'}` scrambles, plural drops (`.items`/`.errors`), **view-name singular/plural mismatch with its URL**, add-without-delete blocks.
+
+---
+
+## Where each future feature plugs in
+
+| Feature | Step | Builds on 13d |
+|---------|------|---------------|
+| `COMPLETED` status + Complete button | 13e | New `Status` value + `complete_appointment` view, mirror of confirm; `CONFIRMED → COMPLETED` guard |
+| Doctor history (past+today) + upcoming views | 13e | `doctor_appointments.filter(appointment_date__lte=today)` and `__gt=today` |
+| Booking-confirmed email to patient | Step 15/16 | Fires on `confirm_appointment` — the transition already exists |
+| DRF appointment API | Step 14 | `ReceptionBookingForm` logic → serializer; GET filters → `django-filter` FilterSet |
+
+---
+
+## Revise (3-line summary)
+
+1. **Reception = book-on-behalf + global list + filters.** `ReceptionBookingForm` exposes `patient` (the one field that separates "book for me" from "book for anyone"); `appointment_list` is unscoped with conditional GET-param filters; both views are role-gated at the door (`raise Http404` for non-reception).
+2. **Confirm mirrors cancel; scopes diverge.** `PENDING → CONFIRMED`, guard on the from-state. Reception acts on any row, doctor on own; a patient's `doctor=me` lookup 404s, so patients can't confirm — no explicit block needed. Extract only what's identical (the redirect helper), not the lookup.
+3. **Step 13 complete → PR #3.** Three atomic commits close 13d; PR #3 merges 13a+13b+13c+13d as one unit (Option A). Then a fresh branch for Step 13e (lifecycle: COMPLETED + doctor time-split views).
+
+---
+
+**Step 13 done.** Next: **Step 13e** on a new branch — `COMPLETED` status + doctor history/upcoming views. Then PR #4. (Step 14 DRF deferred.)
