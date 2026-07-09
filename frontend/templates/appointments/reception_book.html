@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Book for Patient - Smart OPD{% endblock %}
+
+{% block content %}
+<h1>Book Appointment (Reception)</h1>
+
+{% if form.errors %}
+    <div style="color:red">
+        {% for field, errors in form.errors.items %}
+        <p>{{ field }} : {{ errors|join:", " }}</p>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Book Appointment</button>
+</form>
+{% endblock %}
