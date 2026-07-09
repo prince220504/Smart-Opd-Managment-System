@@ -90,6 +90,34 @@ def confirm_appointment(request, appointment_id):
 
 @login_required
 @require_POST
+def complete_appointment(request, appointment_id):
+    if request.user.role == 'RECEPTION':
+        appointment = get_object_or_404(Appointment, id=appointment_id)
+    else:
+        appointment = get_object_or_404(Appointment, id=appointment_id, doctor=request.user)
+
+    if appointment.status == Appointment.Status.CONFIRMED:
+        appointment.status = Appointment.Status.COMPLETED
+        appointment.save()
+    
+    return _redirect_after_action(request)
+
+@login_required
+@require_POST
+def no_show_appointment(request, appointment_id):
+    if request.user.role == 'RECEPTION':
+        appointment = get_object_or_404(Appointment, id=appointment_id)
+    else:
+        appointment = get_object_or_404(Appointment, id=appointment_id, doctor=request.user)
+    
+    if appointment.status == Appointment.Status.CONFIRMED:
+        appointment.status = Appointment.Status.NO_SHOW
+        appointment.save()
+
+    return _redirect_after_action(request)
+
+@login_required
+@require_POST
 def cancel_appointment(request, appointment_id):
     if request.user.role == 'RECEPTION':
         appointment = get_object_or_404(Appointment, id=appointment_id)
