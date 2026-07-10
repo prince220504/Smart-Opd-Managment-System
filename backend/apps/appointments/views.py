@@ -60,6 +60,31 @@ def doctor_today(request):
         }              
     )    
 
+@login_required 
+def doctor_history(request):
+    today = date.today()
+    appointments = (
+        request.user.doctor_appointments
+        .filter(appointment_date__lte=today)
+        .select_related('patient')
+    )
+    return render(request, 'appointments/doctor_history.html', {
+        'appointments': appointments,
+    })
+
+@login_required
+def doctor_upcoming(request):
+    today = date.today()
+    appointments = (
+        request.user.doctor_appointments
+        .filter(appointment_date__gt=today)
+        .select_related('patient')
+        .order_by('appointment_date', 'time_slot')
+    )
+    return render(request, 'appointments/doctor_upcoming.html', {
+        'appointments': appointments,
+    })
+
 @login_required
 def reception_book(request):
     if request.user.role != 'RECEPTION':
