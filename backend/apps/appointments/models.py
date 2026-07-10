@@ -5,6 +5,8 @@ class Appointment(models.Model):
     class Status(models.TextChoices):
         PENDING = 'PENDING', 'Pending'
         CONFIRMED = 'CONFIRMED', 'Confirmed'
+        COMPLETED = 'COMPLETED', 'Completed'
+        NO_SHOW = 'NO_SHOW', 'No show'
         CANCELLED = 'CANCELLED', 'Cancelled'
 
     patient = models.ForeignKey(

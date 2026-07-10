@@ -1,25 +1,27 @@
 {% extends 'base.html' %}
 
-{% block title %}Today's Appointments - Smart OPD {% endblock %}
+{% block title %}Upcoming Appointments - Smart OPD{% endblock %}
 
 {% block content %}
-<h1>Today's Appointments - {{ today }}</h1>
+<h1>Upcoming Appointments</h1>
 
 {% if appointments %}
     <table border="1">
         <thead>
             <tr>
-                <th>Patient</th>
-                <th>Time</th>
-                <th>Status</th>
-                <th>Notes</th>
-                <th>Action</th>
+                <td>Patient</td>
+                <td>Date</td>
+                <td>Time</td>
+                <td>Status</td>
+                <td>Notes</td>
+                <td>Action</td>
             </tr>
         </thead>
         <tbody>
             {% for appt in appointments %}
                 <tr>
                     <td>{{ appt.patient.username }}</td>
+                    <td>{{ appt.appointment_date }}</td>
                     <td>{{ appt.time_slot }}</td>
                     <td>{{ appt.get_status_display }}</td>
                     <td>{{ appt.notes|default:"-" }}</td>
@@ -34,14 +36,6 @@
                                 <button type="submit" onclick="return confirm('Cancel this appointment?');">Cancel</button>
                             </form>
                         {% elif appt.status == 'CONFIRMED' %}
-                            <form method="post" action="{% url 'appointments:complete' appt.id %}" style="display:inline">
-                                {% csrf_token %}
-                                <button type="submit">Complete</button>
-                            </form>
-                            <form method="post" action="{% url 'appointments:no_show' appt.id %}" style="display:inline">
-                                {% csrf_token %}
-                                <button type="submit">No-show</button>
-                            </form>
                             <form method="post" action="{% url 'appointments:cancel' appt.id %}" style="display:inline">
                                 {% csrf_token %}
                                 <button type="submit" onclick="return confirm('Cancel this appointment?');">Cancel</button>
@@ -51,10 +45,10 @@
                         {% endif %}
                     </td>
                 </tr>
-                {% endfor %}
+            {% endfor %}
         </tbody>
     </table>
 {% else %}
-    <p>No appointments today.</p>
+    <p>No upcoming appointments.</p>
 {% endif %}
 {% endblock %}

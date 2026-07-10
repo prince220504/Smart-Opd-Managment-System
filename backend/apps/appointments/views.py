@@ -60,6 +60,31 @@ def doctor_today(request):
         }              
     )    
 
+@login_required 
+def doctor_history(request):
+    today = date.today()
+    appointments = (
+        request.user.doctor_appointments
+        .filter(appointment_date__lte=today)
+        .select_related('patient')
+    )
+    return render(request, 'appointments/doctor_history.html', {
+        'appointments': appointments,
+    })
+
+@login_required
+def doctor_upcoming(request):
+    today = date.today()
+    appointments = (
+        request.user.doctor_appointments
+        .filter(appointment_date__gt=today)
+        .select_related('patient')
+        .order_by('appointment_date', 'time_slot')
+    )
+    return render(request, 'appointments/doctor_upcoming.html', {
+        'appointments': appointments,
+    })
+
 @login_required
 def reception_book(request):
     if request.user.role != 'RECEPTION':
@@ -86,6 +111,34 @@ def confirm_appointment(request, appointment_id):
         appointment.status = Appointment.Status.CONFIRMED
         appointment.save()
     
+    return _redirect_after_action(request)
+
+@login_required
+@require_POST
+def complete_appointment(request, appointment_id):
+    if request.user.role == 'RECEPTION':
+        appointment = get_object_or_404(Appointment, id=appointment_id)
+    else:
+        appointment = get_object_or_404(Appointment, id=appointment_id, doctor=request.user)
+
+    if appointment.status == Appointment.Status.CONFIRMED:
+        appointment.status = Appointment.Status.COMPLETED
+        appointment.save()
+    
+    return _redirect_after_action(request)
+
+@login_required
+@require_POST
+def no_show_appointment(request, appointment_id):
+    if request.user.role == 'RECEPTION':
+        appointment = get_object_or_404(Appointment, id=appointment_id)
+    else:
+        appointment = get_object_or_404(Appointment, id=appointment_id, doctor=request.user)
+    
+    if appointment.status == Appointment.Status.CONFIRMED:
+        appointment.status = Appointment.Status.NO_SHOW
+        appointment.save()
+
     return _redirect_after_action(request)
 
 @login_required
