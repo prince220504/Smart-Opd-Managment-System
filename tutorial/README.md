@@ -20,6 +20,7 @@ Step-by-step Django learning notes. Revise any time. Each file covers **what**, 
 | 11 | Templates pointing at `frontend/templates` | [11-templates.md](11-templates.md) | ✅ Done |
 | 12 | Auth forms (login, register, profile) | [12-auth-forms.md](12-auth-forms.md) | ✅ Done |
 | 13 | `appointments` app — models + booking + roles | [13-appointments-app.md](13-appointments-app.md) | ✅ Done (13a–13d) |
+| 13e | Appointment lifecycle + doctor history/upcoming | [13e-appointments-lifecycle.md](13e-appointments-lifecycle.md) | ✅ Done |
 | 14 | DRF layer (serializers, viewsets, JWT) | _coming_ | |
 | 15 | `lab`, `prescriptions`, `notifications` apps | _coming_ | |
 | 16 | Celery + Redis | _coming_ | |
