@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Appointment History - Smart OPD{% endblock %}
+
+{% block content %}
+<h1>Appointment History</h1>
+
+{% if appointments %}
+    <table border="1">
+        <thead>
+            <tr>
+                <td>Patient</td>
+                <td>Date</td>
+                <td>Time</td>
+                <td>Status</td>
+                <td>Notes</td>
+                <td>Action</td>
+            </tr>
+        </thead>
+        <tbody>
+            {% for appt in appointments %}
+                <tr>
+                    <td>{{ appt.patient.username }}</td>
+                    <td>{{ appt.appointment_date }}</td>
+                    <td>{{ appt.time_slot }}</td>
+                    <td>{{ appt.get_status_display }}</td>
+                    <td>{{ appt.notes|default:"-" }}</td>
+                    <td>
+                        {% if appt.status == 'PENDING' %}
+                            <form method="post" action="{% url 'appointments:confirm' appt.id %}" style="display:inline">
+                                {% csrf_token %}
+                                <button type="submit">Accept</button>
+                            </form>
+                            <form method="post" action="{% url 'appointments:cancel' appt.id %}" style="display:inline">
+                                {% csrf_token %}
+                                <button type="submit" onclick="return confirm('Cancel this appointment?');">Cancel</button>
+                            </form>
+                        {% elif appt.status == 'CONFIRMED' %}
+                            <form method="post" action="{% url 'appointments:complete' appt.id %}" style="display:inline">
+                                {% csrf_token %}
+                                <button type="submit">Complete</button>
+                            </form>
+                            <form method="post" action="{% url 'appointments:no_show' appt.id %}" style="display:inline">
+                                {% csrf_token %}
+                                <button type="submit">No-show</button>
+                            </form>
+                            <form method="post" action="{% url 'appointments:cancel' appt.id %}" style="display:inline">
+                                {% csrf_token %}
+                                <button type="submit" onclick="return confirm('Cancel this appointment?');">Cancel</button>
+                            </form>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>No past appointments.</p>
+{% endif %}
+{% endblock %}
