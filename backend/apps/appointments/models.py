@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 
 class Appointment(models.Model):
     class Status(models.TextChoices):
@@ -34,6 +35,14 @@ class Appointment(models.Model):
 
     class Meta:
         ordering = ['-appointment_date', '-time_slot']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['doctor', 'appointment_date', 'time_slot'],
+                condition=~Q(status='CANCELLED'),
+                name='unique_doctor_slot',
+                violation_error_message='This slot is already booked for this doctor.',
+            )
+        ]
     
     def __str__(self):
         return f"{self.patient.username} -> {self.doctor.username} on {self.appointment_date} {self.time_slot}"
