@@ -5,6 +5,8 @@ from django.views.decorators.http import require_POST
 from .forms import RegisterForm
 
 def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('accounts:profile')
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -22,6 +24,8 @@ def login_view(request):
     return render(request, 'accounts/login.html')
 
 def register_view(request):
+    if request.user.is_authenticated:
+        return redirect('accounts:profile')
     if request.method == 'POST':
         form = RegisterForm(request.POST)
         if form.is_valid():
