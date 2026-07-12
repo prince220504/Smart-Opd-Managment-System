@@ -40,7 +40,8 @@ INSTALLED_APPS = [
 
     # Local apps
     'apps.accounts',
-    'apps.appointments'
+    'apps.appointments',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
