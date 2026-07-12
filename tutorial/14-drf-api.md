@@ -134,4 +134,104 @@ Sessions live in the **database** (`django_session` table), not in the server pr
 
 ---
 
-**Next:** 14b — install DRF, first serializer, read-only ViewSet + router at `/api/appointments/`.
+**Next:** 14b — install DRF, first serializer.
+
+---
+
+# Step 14b — DRF Install + First Serializer
+
+## What we did here
+
+1. Installed `djangorestframework`, froze it into `requirements.txt`, registered `'rest_framework'` in `INSTALLED_APPS`.
+2. Wrote `AppointmentSerializer` (a `ModelSerializer`).
+3. Proved it in the Django shell — a real appointment row → JSON dict — before writing any view.
+
+---
+
+## Half 1 — A serializer is a ModelForm for JSON
+
+You already own this concept from Step 12. A `ModelForm` converts between HTTP form data and a model instance. A **serializer** does the same job between JSON and a model instance — the API's translator.
+
+| Job | `ModelForm` | `Serializer` |
+|-----|-------------|--------------|
+| instance → output | HTML `<input>`s | JSON dict |
+| incoming data → validated instance | form POST → `.save()` | JSON body → `.save()` |
+| declare fields from a model | `class Meta: model, fields` | `class Meta: model, fields` (identical) |
+| per-field validation | `clean_<field>()` | `validate_<field>()` |
+| cross-field validation | `clean()` | `validate()` |
+
+Same muscle memory. `ModelSerializer` auto-builds fields from the model exactly like `ModelForm` does.
+
+---
+
+## Half 2 — `AppointmentSerializer`
+
+```python
+# backend/apps/appointments/serializers.py
+from rest_framework import serializers
+from .models import Appointment
+
+
+class AppointmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Appointment
+        fields = [
+            'id', 'patient', 'doctor', 'appointment_date',
+            'time_slot', 'status', 'notes', 'created_at',
+        ]
+        read_only_fields = ['id', 'status', 'created_at']
+```
+
+- **Same `Meta` shape** as your booking forms — `model` + `fields`.
+- **`read_only_fields`** — the one new idea vs `ModelForm`. These go *out* in responses but are ignored on *input*: `id` and `created_at` are server-owned; `status` starts PENDING and only moves through the lifecycle views (confirm/complete/cancel), never set directly via the API.
+- **FKs serialize as IDs by default** — `patient` and `doctor` become their primary keys (integers). Human-readable names are an opt-in for later (nested serializer or a `StringRelatedField`), skipped until a view actually needs them.
+
+**Where the file lives:** inside the `appointments` app, next to the model — not a separate `api/` app. One serializer doesn't justify a new app and cross-app imports. Revisit if the API grows to span apps.
+
+---
+
+## Half 3 — Shell-test before building views
+
+The lazy, correct way to verify a serializer: prove it in the shell before wiring a single URL.
+
+```bash
+python manage.py shell
+```
+
+```python
+from apps.appointments.models import Appointment
+from apps.appointments.serializers import AppointmentSerializer
+
+a = Appointment.objects.first()
+AppointmentSerializer(a).data
+```
+
+Output:
+
+```python
+{'id': 16, 'patient': 2, 'doctor': 4, 'appointment_date': '2026-07-12',
+ 'time_slot': '11:00:00', 'status': 'PENDING', 'notes': '',
+ 'created_at': '2026-07-11T20:09:08.397458+05:30'}
+```
+
+That dict **is** your API's JSON response. The ViewSet in 14c just wraps this — takes a queryset, runs each row through the serializer, returns the list. Seeing the shape now means 14c has no surprises.
+
+Note the `created_at` — `+05:30` is IST, the timezone rendering from Step 6's `USE_TZ=True` + `TIME_ZONE='Asia/Kolkata'`. The DB stores UTC; the serializer renders IST. Same architecture, now visible in JSON.
+
+---
+
+## Gotchas (Day 21)
+
+- **`pip freeze` location.** Run it from the repo root so `requirements.txt` lands at root (where Render reads it), not inside `backend/`.
+
+---
+
+## Revise (3-line summary)
+
+1. **Serializer = ModelForm for JSON.** `ModelSerializer` with `class Meta: model, fields` — same shape you already know; `validate_<field>()` / `validate()` replace `clean_<field>()` / `clean()`.
+2. **`read_only_fields`** ships fields out but ignores them on input — used for `id`, `status`, `created_at`. FKs serialize as IDs by default.
+3. **Shell-test first.** `AppointmentSerializer(obj).data` returns the exact JSON your API will send — verify the shape before building the ViewSet.
+
+---
+
+**Next:** 14c — role-scoped `AppointmentViewSet` + `DefaultRouter` under `/api/`, browsable API.
