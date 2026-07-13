@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'apps.accounts',
     'apps.appointments',
     'rest_framework',
+    'apps.api',
 ]
 
 MIDDLEWARE = [
