@@ -235,3 +235,143 @@ Note the `created_at` — `+05:30` is IST, the timezone rendering from Step 6's 
 ---
 
 **Next:** 14c — role-scoped `AppointmentViewSet` + `DefaultRouter` under `/api/`, browsable API.
+
+---
+
+# Step 14c — Role-Scoped ViewSet + Router
+
+## What we did here
+
+1. Created a dedicated `api` app (`backend/apps/api/`) to own the DRF layer — viewsets + router.
+2. `AppointmentViewSet(ModelViewSet)` with role-scoped `get_queryset()` and server-side `perform_create()`.
+3. `DefaultRouter` registering the viewset, mounted at `/api/`.
+4. Verified the live browsable API across all four roles + the IDOR guard.
+
+**Structure decision:** the `api` app owns viewsets + routing; each feature app keeps its own serializer (`appointments/serializers.py`). Clean separation — no cross-app model imports pile into one file, and adding a future app's API means adding its viewset here + its serializer there.
+
+---
+
+## Half 1 — ViewSet: all CRUD from one class
+
+The HTML side needed a separate FBV per action (`doctor_list`, `book_appointment`, `cancel_appointment`...). A **ViewSet** collapses the five standard CRUD operations into one class:
+
+```python
+# backend/apps/api/views.py
+from rest_framework import viewsets, permissions
+from apps.appointments.models import Appointment
+from apps.appointments.serializers import AppointmentSerializer
+
+
+class AppointmentViewSet(viewsets.ModelViewSet):
+    serializer_class = AppointmentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'RECEPTION':
+            return Appointment.objects.select_related('patient', 'doctor')
+        if user.role == 'DOCTOR':
+            return user.doctor_appointments.select_related('patient')
+        return user.patient_appointments.select_related('doctor')
+
+    def perform_create(self, serializer):
+        serializer.save(patient=self.request.user)
+```
+
+`ModelViewSet` gives you five actions for free:
+
+| HTTP | URL | Action |
+|------|-----|--------|
+| GET | `/api/appointments/` | `list` |
+| POST | `/api/appointments/` | `create` |
+| GET | `/api/appointments/5/` | `retrieve` |
+| PUT/PATCH | `/api/appointments/5/` | `update` |
+| DELETE | `/api/appointments/5/` | `destroy` |
+
+You write zero of those. You override only the **hooks**: `get_queryset()` (which rows this user sees) and `perform_create()` (fill server-owned fields). `permission_classes = [IsAuthenticated]` → anonymous gets 401.
+
+---
+
+## Half 2 — `get_queryset()` scopes every action at once
+
+This is the same patient/doctor/reception branching from the HTML views — but written **once** and reused by `list` *and* `retrieve` automatically.
+
+The powerful part: **retrieve is scoped for free.** `GET /api/appointments/5/` internally runs `get_queryset().get(pk=5)`. If appointment 5 isn't in this user's queryset → 404. So a patient probing `/api/appointments/<someone-else's-id>/` gets 404 with no ownership check written in a detail method. The single `get_queryset()` guards all five actions — the same IDOR protection as your HTML `get_object_or_404(..., patient=request.user)`, now automatic and unforgettable.
+
+`perform_create()` mirrors your HTML `commit=False` → set patient: a patient POSTing a new appointment has `patient` injected server-side from `request.user`, never trusted from the request body.
+
+(LAB role falls to the last line → `patient_appointments` → empty. Fine; lab gets its own API surface later.)
+
+---
+
+## Half 3 — Router: auto-generated URLconf
+
+Hand-written `urlpatterns` needed one `path()` per view. A **router** generates all of a viewset's routes from one registration:
+
+```python
+# backend/apps/api/urls.py
+from rest_framework.routers import DefaultRouter
+from .views import AppointmentViewSet
+
+router = DefaultRouter()
+router.register('appointments', AppointmentViewSet, basename='appointment')
+
+urlpatterns = router.urls
+```
+
+```python
+# backend/config/urls.py
+path('api/', include('apps.api.urls')),
+```
+
+`router.register('appointments', ...)` produces `/appointments/` (list+create) and `/appointments/<pk>/` (retrieve+update+destroy) — the whole CRUD table, no hand-written paths. Under the `/api/` mount that's `/api/appointments/`.
+
+**Why `basename` is required here.** The router names the auto-generated URL patterns (`appointment-list`, `appointment-detail`). Normally DRF *infers* that name from the viewset's `queryset` **attribute** — reads the model off it. We don't set a `queryset` attribute; we override the `get_queryset()` **method** (rows depend on the request user). DRF can't call that method at URL-registration time (no request yet), so it can't infer the model or the name → error unless we pass `basename` explicitly. **Rule: override `get_queryset()` → you must set `basename`.**
+
+---
+
+## Half 4 — The browsable API + content negotiation
+
+`DefaultRouter` + DRF's default renderer means visiting `/api/appointments/` **in a browser** returns a clickable HTML page — styled, with forms and buttons and a JSON preview — not raw JSON. A free API explorer; no Postman needed for manual testing.
+
+That's **content negotiation**: the *same* URL returns different formats based on the request's `Accept` header —
+
+| Client | `Accept` header | Gets back |
+|--------|-----------------|-----------|
+| Browser | `text/html` | Browsable HTML page |
+| `requests` / fetch | `application/json` | Raw JSON |
+
+The server reads the header and picks the renderer. Same data, same user, same URL — the format is negotiated, not role-based.
+
+The browsable API authenticates via your normal **login session** (DRF's `SessionAuthentication`), which is why the verification below just uses the HTML login. Token auth (JWT) comes in 14d for script/mobile clients.
+
+---
+
+## Verification (all five passed)
+
+| # | As | URL | Result |
+|---|-----|-----|--------|
+| 1 | anonymous | `/api/appointments/` | 403 — auth required |
+| 2 | patient | `/api/appointments/` | only own appointments |
+| 3 | doctor | `/api/appointments/` | only their appointments |
+| 4 | reception | `/api/appointments/` | all appointments |
+| 5 | patient | `/api/appointments/<other-id>/` | 404 — `get_queryset` scoping |
+
+---
+
+## Gotchas (Day 22)
+
+- **Quoting the viewset in `register`.** `router.register('appointments', 'AppointmentViewSet', ...)` — the class name as a *string*. The router calls `.get_extra_actions()` on it → `AttributeError: 'str' object has no attribute 'get_extra_actions'` at import time. The URL prefix is a string; the viewset must be the imported class. (`'appointments'` quoted = correct; `AppointmentViewSet` quoted = wrong.)
+- **Attribute-name typo (`user.roel`).** Passed `manage.py check`, then `AttributeError: 'CustomUser' object has no attribute 'roel'` at first request — attribute access resolves at call time, not import. New grep-list entry: attribute names on `request.user` / model instances.
+
+---
+
+## Revise (3-line summary)
+
+1. **ViewSet = five CRUD actions from one class.** Override only the hooks: `get_queryset()` (visibility) + `perform_create()` (server-owned fields). `IsAuthenticated` blocks anonymous.
+2. **`get_queryset()` scopes list AND retrieve.** Retrieve does `get_queryset().get(pk=...)`, so other people's IDs 404 automatically — IDOR protection written once, applied everywhere.
+3. **Router auto-generates routes; `basename` required when you override `get_queryset()`** (DRF can't infer the model without a `queryset` attribute). `DefaultRouter` also gives the browsable API — HTML to browsers, JSON to scripts, chosen by content negotiation on the `Accept` header.
+
+---
+
+**Next:** 14d — SimpleJWT auth (`/api/token/` + refresh) so non-browser clients authenticate, API write operations, and the django-filter decision.
