@@ -375,3 +375,173 @@ The browsable API authenticates via your normal **login session** (DRF's `Sessio
 ---
 
 **Next:** 14d — SimpleJWT auth (`/api/token/` + refresh) so non-browser clients authenticate, API write operations, and the django-filter decision.
+
+---
+
+# Step 14d — SimpleJWT Token Auth
+
+## What we did here
+
+1. Installed `djangorestframework-simplejwt`, added a `REST_FRAMEWORK` config with JWT + Session auth.
+2. Wired `/api/token/` (obtain) + `/api/token/refresh/` (refresh).
+3. Proved the full flow: POST credentials → get token → call the API with `Authorization: Bearer <token>` from a cookieless client.
+4. Decided **against** django-filter (YAGNI).
+
+---
+
+## Half 1 — JWT vs session: stateless token vs server memory
+
+The browsable API works on **session auth**: login writes a `django_session` row, the browser holds a `sessionid` cookie, every request looks that row up. State lives on the **server**.
+
+Non-browser clients (mobile app, `requests` script, React SPA) have no cookie jar and no login form. They need **token auth**. A JWT is a signed string sent in a header:
+
+```
+Authorization: Bearer eyJhbGci...
+```
+
+The key property: a JWT is **stateless**. The token itself contains the user id + expiry, signed with `SECRET_KEY`. The server verifies the signature and reads the user *straight from the token* — no database lookup, no session row.
+
+| | Session | JWT |
+|--|---------|-----|
+| State | server (`django_session`) | none — inside the token |
+| Carrier | cookie (automatic) | `Authorization` header (manual) |
+| For | browsers | scripts, mobile, SPAs |
+| Verify | DB lookup each request | signature check, no DB |
+
+We keep **both** auth classes — Session for the convenient in-browser browsable API, JWT for real clients.
+
+---
+
+## Half 2 — The access + refresh pair
+
+`/api/token/` returns two tokens:
+
+```json
+{"access": "eyJ...", "refresh": "eyJ..."}
+```
+
+- **access** — short-lived (default 5 min). Sent on *every* API call.
+- **refresh** — long-lived (default 1 day). Used *only* against `/api/token/refresh/` to mint a fresh access token.
+
+Why split them — it's about **exposure, not just lifespan**. The access token rides on every request (logs, proxies, network — many chances to leak), so it gets a short fuse: a stolen access token dies in minutes. The refresh token touches the network rarely (only at refresh time), so it can safely live longer. The long-lived secret sits on the low-exposure path; the high-exposure token is short-lived. Refresh tokens can also be blacklisted server-side to force logout.
+
+The lifecycle: log in once → hold both → use access until it expires → POST refresh to `/api/token/refresh/` → new access → continue. Password re-entry only when the *refresh* expires.
+
+---
+
+## Half 3 — Wiring
+
+```python
+# settings.py
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
+```
+
+JWT listed **first** = APIs prefer the Bearer header; Session stays for the browsable UI. `DEFAULT_PERMISSION_CLASSES` makes auth the global default. No `INSTALLED_APPS` entry — SimpleJWT works purely as an auth class.
+
+```python
+# api/urls.py
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+urlpatterns = [
+    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+]
+urlpatterns += router.urls
+```
+
+Both views ship with SimpleJWT — zero custom code.
+
+**Gotcha caught:** `token/refresh` (no trailing slash). Django's `APPEND_SLASH` redirects a slash-less GET, but it **can't redirect a POST** (the body would be lost), so a client POSTing there would 404. Every DRF route ends in `/`.
+
+---
+
+## Half 4 — Proving it (the real test)
+
+```bash
+# 1. get tokens
+curl -X POST http://127.0.0.1:8000/api/token/ \
+  -H "Content-Type: application/json" \
+  -d '{"username":"<patient>","password":"<pw>"}'
+# → {"refresh":"...","access":"..."}
+
+# 2. call the API as a cookieless client
+curl http://127.0.0.1:8000/api/appointments/ \
+  -H "Authorization: Bearer <access>"
+# → that patient's appointments as JSON
+
+# 3. no header = refused
+curl http://127.0.0.1:8000/api/appointments/
+# → {"detail":"Authentication credentials were not provided."}
+```
+
+Step 2 is the whole point: `curl` has **no cookie, never logged in through a browser**. The only thing identifying the user is the token in the header. The server verifies its signature, reads the user from the token (no session lookup), and runs `get_queryset()` scoped to them. That's exactly how a mobile app or SPA would authenticate. (`curl` runs in a terminal — not the browser bar; the browser can't attach a custom `Authorization` header to a plain navigation.)
+
+---
+
+## The django-filter decision — skipped
+
+The catalogue listed `django-filter` for list filtering. Decision: **don't install it.** The API list is already role-scoped by `get_queryset()`, and no client has asked for status/date filtering on the API. Adding a dependency for unused filtering is the opposite of lazy.
+
+`skipped: django-filter → add a FilterSet to the api viewset when a real client needs list filtering.`
+
+---
+
+# Step 14e — Auto API Docs (drf-spectacular)
+
+## Concept
+
+`drf-spectacular` introspects your serializers + viewsets and generates an **OpenAPI schema** — a machine-readable description of every endpoint, field, method, and auth scheme. Swagger UI then renders that schema as an interactive HTML page: every route listed, expandable, with a "Try it out" button. Zero hand-written docs — it reads the code you already wrote.
+
+## Wiring
+
+```bash
+pip install drf-spectacular
+```
+
+```python
+# settings.py — INSTALLED_APPS
+'drf_spectacular',
+
+# settings.py — one line inside REST_FRAMEWORK
+'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+```
+
+```python
+# api/urls.py
+from drf_spectacular.views import (
+    SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView,
+)
+
+# inside urlpatterns = [ ... ]
+path('schema/', SpectacularAPIView.as_view(), name='schema'),
+path('docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+path('redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+```
+
+| Route | Serves |
+|-------|--------|
+| `/api/schema/` | Raw OpenAPI YAML — the UIs read from it |
+| `/api/docs/` | Swagger UI — interactive, "Try it out" (README screenshot goes here) |
+| `/api/redoc/` | Redoc — cleaner read-only alternative |
+
+Both UIs render the same schema; keeping both costs nothing. `/api/docs/` lists `/api/appointments/`, `/api/token/`, `/api/token/refresh/` automatically — introspected from the router + serializers.
+
+---
+
+## Revise (Step 14d + 14e, 3 lines)
+
+1. **JWT = stateless auth for machines.** Token carries the signed user id; server verifies the signature, no DB session lookup. `/api/token/` mints access (short, high-exposure) + refresh (long, low-exposure); refresh trades for new access at `/api/token/refresh/`.
+2. **Both auth classes coexist** — Session for the browsable API, JWT for scripts/mobile. Proven with `curl` + `Authorization: Bearer` from a cookieless client.
+3. **Docs generate themselves.** drf-spectacular introspects serializers + viewsets → OpenAPI schema → Swagger UI at `/api/docs/`. Skipped django-filter (YAGNI — no client needs API filtering yet).
+
+---
+
+**Step 14 complete (14a–14e).** DRF layer: booking integrity, serializer, role-scoped viewset + router, JWT auth, auto docs. Next: PR #5, then Step 15 (lab module + the TimeSlot/availability design decision).
