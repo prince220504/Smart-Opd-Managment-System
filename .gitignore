@@ -36,3 +36,6 @@ Thumbs.db
 dist/
 build/
 *.egg-info/
+
+# Local-only working files (never push)
+OPD_PROJECT_STATUS.md
