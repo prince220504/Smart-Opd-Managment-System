@@ -151,6 +151,7 @@ def cancel_appointment(request, appointment_id):
     
     if appointment.status != Appointment.Status.CANCELLED:
         appointment.status = Appointment.Status.CANCELLED
+        appointment.cancel_reason = request.POST.get('cancel_reason', '')
         appointment.save()
     
     return _redirect_after_action(request)

@@ -31,6 +31,7 @@ class Appointment(models.Model):
     )
 
     notes = models.TextField(blank=True)
+    cancel_reason = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
