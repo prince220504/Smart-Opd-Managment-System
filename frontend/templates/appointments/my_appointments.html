@@ -23,7 +23,7 @@
                 <td>Dr. {{ appt.doctor.username }}</td>
                 <td>{{ appt.appointment_date }}</td>
                 <td>{{ appt.time_slot }}</td>
-                <td>{{ appt.get_status_display }}</td>
+                <td>{{ appt.get_status_display }}{% if appt.status == 'CANCELLED' and appt.cancel_reason %}<br><small>{{ appt.cancel_reason }}</small>{% endif %}</td>
                 <td>{{ appt.notes|default:"-"}}</td>
                 <td>{% if appt.status == 'PENDING' or appt.status == 'CONFIRMED' %}
                     <form method="post" action="{% url 'appointments:cancel' appt.id %}" style="display: inline;">
