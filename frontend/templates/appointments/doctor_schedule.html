@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}My Schedule - Smart OPD{% endblock %}
+
+{% block content %}
+<h1>Set Your Schedule</h1>
+
+{% if form.errors %}
+    <div style="color:red">
+        {% for field, errors in form.errors.items %}
+        <p>{{ field }}: {{errors|join:", "}}</p>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <h3>Breaks</h3>
+    <div id="breaks">
+        <p class="break-row">
+            <input type="time" name="break_start"> to <input type="time" name="break_end">
+        </p>
+    </div>
+    <button type="button" onclick="addBreak()">+ Add break</button>
+
+    <p><button type="submit">Save Schedule</button></p>
+</form>
+
+<script>
+    function addBreak() {
+        const row = document.querySelector('.break-row');
+        const copy = row.cloneNode(true);
+        copy.querySelectorAll('input').forEach(i => i.value = '');
+        document.getElementById('breaks').appendChild(copy);
+    }
+</script>
+{% endblock %}
