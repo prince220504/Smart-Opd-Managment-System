@@ -2,8 +2,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
-from .forms import BookAppointmentForm, ReceptionBookingForm
-from .models import Appointment
+from .forms import BookAppointmentForm, ReceptionBookingForm, DoctorScheduleForm
+from .models import Appointment, DoctorAvailability
 from datetime import date
 from django.db.models import Q
 from django.http import Http404
@@ -84,6 +84,34 @@ def doctor_upcoming(request):
     return render(request, 'appointments/doctor_upcoming.html', {
         'appointments': appointments,
     })
+
+@login_required
+def doctor_schedule(request):
+    if request.user.role != 'DOCTOR':
+        raise Http404()
+    
+    if request.method == 'POST':
+        form = DoctorScheduleForm(request.POST)
+        if form.is_valid():
+            availability = form.save(commit=False)
+            availability.doctor = request.user
+            break_starts = request.POST.getlist('break_start')
+            break_ends = request.POST.getlist('break_end')
+            breaks = []
+            for bs, be in zip(break_starts, break_ends):
+                if bs and be:
+                    breaks.append({'start':bs, 'end':be})
+            availability.breaks = breaks
+            if availability.recurrence != DoctorAvailability.Recurrence.DATE:
+                DoctorAvailability.objects.filter(doctor=request.user).exclude(
+                    recurrence=DoctorAvailability.Recurrence.DATE
+                ).delete()
+            availability.save()
+            return redirect('appointments:doctor_today')
+    else:
+        form = DoctorScheduleForm()
+
+    return render(request, 'appointments/doctor_schedule.html', {'form':form})
 
 @login_required
 def reception_book(request):

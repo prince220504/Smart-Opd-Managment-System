@@ -14,6 +14,8 @@ def login_view(request):
         if user is not None:
             login(request, user)
             if user.role == 'DOCTOR':
+                if not user.availabilities.exclude(recurrence='DATE').exists():
+                    return redirect('appointments:doctor_schedule')
                 return redirect('appointments:doctor_today')
             if user.role == 'RECEPTION':
                 return redirect('appointments:appointment_list')
