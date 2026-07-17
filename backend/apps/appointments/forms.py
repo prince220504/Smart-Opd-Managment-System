@@ -18,6 +18,39 @@ def _validate_slot_free(cleaned_data):
         if clash:
             raise forms.ValidationError('This slot is already booked for this doctor.')
 
+def _validate_doctor_available(cleaned_data):
+    doctor = cleaned_data.get('doctor')
+    appt_date = cleaned_data.get('appointment_date')
+    slot = cleaned_data.get('time_slot')
+    if not (doctor and appt_date and slot):
+        return
+    
+    availability = doctor.availabilities.filter(
+        recurrence=DoctorAvailability.Recurrence.DATE, date=appt_date
+    ).first()
+    if availability is None:
+        availability = doctor.availabilities.exclude(
+            recurrence=DoctorAvailability.Recurrence.DATE
+        ).first()
+    
+    if availability is None:
+        raise forms.ValidationError('This doctor has not set a schedule yet.')
+    
+    weekday = appt_date.weekday() # Mon=0 ... Sun=6
+    rec = availability.recurrence
+    if rec == DoctorAvailability.Recurrence.WEEKDAYS and weekday > 4:
+        raise forms.ValidationError('Doctor is not available on weekends.')
+    if rec == DoctorAvailability.Recurrence.MON_SAT and weekday > 5 :
+        raise forms.ValidationError('Doctor is not available on Sundays.')
+    
+    if not (availability.start_time <= slot < availability.end_time):
+        raise forms.ValidationError('Doctor is not available at this time.')
+    
+    slot_str = slot.strftime('%H:%M')
+    for b in availability.breaks:
+        if b['start'] <= slot_str < b['end']:
+            raise forms.ValidationError('Doctor is on a break at this time.')
+
 class BookAppointmentForm(forms.ModelForm):
     class Meta:
         model = Appointment
@@ -34,6 +67,7 @@ class BookAppointmentForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         _validate_slot_free(cleaned_data)
+        _validate_doctor_available(cleaned_data)
         return cleaned_data
         
 class ReceptionBookingForm(forms.ModelForm):
@@ -53,6 +87,7 @@ class ReceptionBookingForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         _validate_slot_free(cleaned_data)
+        _validate_doctor_available(cleaned_data)
         return cleaned_data
 
 class DoctorScheduleForm(forms.ModelForm):

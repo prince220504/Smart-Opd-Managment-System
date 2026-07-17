@@ -36,7 +36,11 @@ def book_appointment(request, doctor_id):
     else:
         form = BookAppointmentForm(initial={'doctor': doctor})
 
-    return render(request, 'appointments/book.html', {'form':form, 'doctor': doctor})
+    availability = doctor.availabilities.exclude(
+        recurrence=DoctorAvailability.Recurrence.DATE
+    ).first()
+
+    return render(request, 'appointments/book.html', {'form':form, 'doctor': doctor, 'availability': availability})
 
 @login_required
 def my_appointments(request):
@@ -90,7 +94,13 @@ def doctor_schedule(request):
     if request.user.role != 'DOCTOR':
         raise Http404()
     
+    current = request.user.availabilities.exclude(
+        recurrence=DoctorAvailability.Recurrence.DATE 
+    ).first()
+    editing = current is None or request.GET.get('edit') == '1'
+
     if request.method == 'POST':
+        editing = True
         form = DoctorScheduleForm(request.POST)
         if form.is_valid():
             availability = form.save(commit=False)
@@ -100,18 +110,29 @@ def doctor_schedule(request):
             breaks = []
             for bs, be in zip(break_starts, break_ends):
                 if bs and be:
-                    breaks.append({'start':bs, 'end':be})
+                    breaks.append({'start': bs, 'end': be})
             availability.breaks = breaks
             if availability.recurrence != DoctorAvailability.Recurrence.DATE:
                 DoctorAvailability.objects.filter(doctor=request.user).exclude(
                     recurrence=DoctorAvailability.Recurrence.DATE
                 ).delete()
             availability.save()
-            return redirect('appointments:doctor_today')
+            return redirect('appointments:doctor_schedule')
+    elif current:
+        form = DoctorScheduleForm(initial={
+            'recurrence': current.recurrence,
+            'date': current.date,
+            'start_time': current.start_time,
+            'end_time': current.end_time,
+        })
     else:
         form = DoctorScheduleForm()
 
-    return render(request, 'appointments/doctor_schedule.html', {'form':form})
+    return render(request, 'appointments/doctor_schedule.html', {
+        'form': form,
+        'current': current,
+        'editing': editing,
+    })
 
 @login_required
 def reception_book(request):
