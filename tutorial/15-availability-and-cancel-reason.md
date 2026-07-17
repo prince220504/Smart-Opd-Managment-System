@@ -229,3 +229,119 @@ No recurring rule → setup page. DATE-only overrides don't count as "has a sche
 ---
 
 **Next (15d):** booking validation — both booking forms' `clean()` check the doctor's availability for the chosen date (DATE override wins, else recurring rule): weekday allowed + time inside [start, end] + not inside any break → else "Doctor not available". Plus cheap add: show the doctor's hours as text on the booking page. Then PR #6.
+
+---
+
+# Step 15d — Booking Validation Against Availability
+
+## What we did here
+
+1. `_validate_doctor_available()` — the availability check, called from **both** booking forms' `clean()`.
+2. Doctor's hours shown as text on the booking page.
+3. Schedule page upgraded: view-mode block + "Update Schedule" → prefilled form (user-requested mid-session).
+
+## Half 1 — Comparing times across two representations
+
+`time_slot` in `cleaned_data` is a `datetime.time`. The doctor's `start_time`/`end_time` are also `time` objects → compare directly. But **breaks** live in JSON as `"HH:MM"` strings — a `time` can't compare to a string. Convert one side:
+
+```python
+slot_str = slot.strftime('%H:%M')      # time(13, 30) → "13:30"
+b['start'] <= slot_str < b['end']      # string comparison
+```
+
+String compare is safe **only** because zero-padded 24-hour `HH:MM` sorts lexicographically the same as chronologically (`"09:00" < "13:30" < "18:00"`). Rule: model `TimeField`s ↔ compare as `time` objects; JSON breaks ↔ compare as strings. Never mix.
+
+## Half 2 — The validation helper
+
+```python
+def _validate_doctor_available(cleaned_data):
+    doctor = cleaned_data.get('doctor')
+    appt_date = cleaned_data.get('appointment_date')
+    slot = cleaned_data.get('time_slot')
+    if not (doctor and appt_date and slot):
+        return
+
+    availability = doctor.availabilities.filter(
+        recurrence=DoctorAvailability.Recurrence.DATE, date=appt_date
+    ).first()
+    if availability is None:
+        availability = doctor.availabilities.exclude(
+            recurrence=DoctorAvailability.Recurrence.DATE
+        ).first()
+
+    if availability is None:
+        raise forms.ValidationError('This doctor has not set a schedule yet.')
+
+    weekday = appt_date.weekday()  # Mon=0 ... Sun=6
+    rec = availability.recurrence
+    if rec == DoctorAvailability.Recurrence.WEEKDAYS and weekday > 4:
+        raise forms.ValidationError('Doctor is not available on weekends.')
+    if rec == DoctorAvailability.Recurrence.MON_SAT and weekday > 5:
+        raise forms.ValidationError('Doctor is not available on Sundays.')
+
+    if not (availability.start_time <= slot < availability.end_time):
+        raise forms.ValidationError('Doctor is not available at this time.')
+
+    slot_str = slot.strftime('%H:%M')
+    for b in availability.breaks:
+        if b['start'] <= slot_str < b['end']:
+            raise forms.ValidationError('Doctor is on a break at this time.')
+```
+
+The order of checks tells the story:
+- **DATE override wins** — a specific-date row for the chosen date beats the recurring rule. `.first()` returns `None` on empty (no exception) — chain two lookups.
+- **No schedule → block.** Consistent with the login gate: no hours, no bookings.
+- **Weekday** — EVERYDAY passes all; DATE already matched exactly via the filter; only WEEKDAYS/MON_SAT need explicit checks (`weekday() > 4` = weekend, `> 5` = Sunday).
+- **Window** — `start <= slot < end`. Strict `<` on the end: an 18:00 slot when hours end 18:00 is the doctor leaving.
+- **Breaks** — string compare, half-open the same way.
+
+Both booking forms call it in `clean()` right after `_validate_slot_free` — two independent rules, two helpers, one line each. Patient and reception get identical protection.
+
+## Half 3 — Hours on the booking page (cheap transparency)
+
+`book_appointment` passes the doctor's recurring rule; the template prints it:
+
+```django
+{% if availability %}
+    <p><strong>Hours:</strong> {{ availability.get_recurrence_display }},
+       {{ availability.start_time }}–{{ availability.end_time }}
+    {% if availability.breaks %} | Breaks:
+        {% for b in availability.breaks %}{{ b.start }}–{{ b.end }}{% if not forloop.last %}, {% endif %}{% endfor %}
+    {% endif %}</p>
+{% else %}
+    <p><em>This doctor has not set a schedule yet.</em></p>
+{% endif %}
+```
+
+Template dot-lookup (`{{ b.start }}`) reads dict keys — JSON breaks render without any Python. This is the poor-man's availability display until Step 20's green/red calendar.
+
+## Half 4 — Schedule page: view mode + update mode
+
+User-requested upgrade: schedule set → show only a summary block + **Update Schedule** button; clicking it → the form, **prefilled**. No JS state — a `?edit=1` GET param:
+
+```python
+editing = current is None or request.GET.get('edit') == '1'
+# POST also forces editing = True (so a failed submit re-shows the form with errors)
+```
+
+- Form prefill via `DoctorScheduleForm(initial={...})` — recurrence, date, times.
+- **Break rows prefill in the template**: loop `current.breaks`, emit each row with `value="{{ b.start }}"` — the cloneNode "+ Add break" JS keeps working on top.
+- Save now redirects back to `doctor_schedule` (not the today page) so the doctor immediately sees the updated block. "Update = override" was already free — the one-recurring-rule invariant from 15c *is* the update mechanism.
+
+## Gotchas (Day 26)
+
+- **The ValueError trifecta** — one typed view produced three classics at once:
+  1. `elif current:` / `else:` / final `return render` indented **inside** the POST block → GET requests fell off the end → `ValueError: view didn't return an HttpResponse (returned None)`. Bonus damage: the `elif` chained onto `if form.is_valid()`, so a failed POST would have *replaced* the error-carrying bound form with a fresh one. Return/branch indentation strikes again (Day 25's return-outside-if, mirrored).
+  2. `{'start': bs, 'ends': be}` — JSON key `'ends'` vs `'end'`. Breaks saved under the wrong key → `KeyError` at booking validation. JSON keys are stringly-typed: no `check`, no IDE squiggle.
+  3. `forms.erros` in the template error block — third appearance of this exact typo across sessions.
+- **Stale bad data after a key-typo fix**: schedules saved while the `'ends'` bug lived carry wrong-keyed breaks. Re-save once to rewrite clean. A code fix doesn't fix data written by the bug.
+
+## Revise (15d)
+
+1. **Two-lookup availability**: DATE-override `.filter(...).first()` else recurring `.exclude(...).first()`; `None` → block. Checks in order: weekday → window (`start <= slot < end`) → breaks (string `HH:MM` compare — safe because zero-padded).
+2. **One helper, both forms** — `_validate_doctor_available` sits beside `_validate_slot_free`; each form's `clean()` calls both. Booking integrity and availability are independent rules with independent messages.
+3. **`?edit=1` view/update pattern** — summary block by default, prefilled form on demand (`initial=` + template-rendered break rows); save redirects back to the same page. The delete-then-create invariant doubles as "update".
+
+---
+
+**STEP 15 (availability + cancel reason) COMPLETE → PR #6.** Next: lab module (`feature/lab-module`) — LabTest/LabResult, doctor requests, lab queue, PDF reports. Green/red calendar waits at Step 20.

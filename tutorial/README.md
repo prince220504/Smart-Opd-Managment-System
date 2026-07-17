@@ -22,11 +22,13 @@ Step-by-step Django learning notes. Revise any time. Each file covers **what**, 
 | 13 | `appointments` app — models + booking + roles | [13-appointments-app.md](13-appointments-app.md) | ✅ Done (13a–13d) |
 | 13e | Appointment lifecycle + doctor history/upcoming | [13e-appointments-lifecycle.md](13e-appointments-lifecycle.md) | ✅ Done |
 | 14 | DRF layer + booking integrity | [14-drf-api.md](14-drf-api.md) | ✅ Done (14a–14e) |
-| 15 | Doctor availability + cancel reason | [15-availability-and-cancel-reason.md](15-availability-and-cancel-reason.md) | ⏳ In progress (15a + 15b + 15c done) |
-| 15 | `lab`, `prescriptions`, `notifications` apps | _coming_ | |
-| 16 | Celery + Redis | _coming_ | |
-| 17 | Whitenoise — static & media in production | _coming_ | |
-| 18 | Render deploy | _coming_ | |
+| 15 | Doctor availability + cancel reason | [15-availability-and-cancel-reason.md](15-availability-and-cancel-reason.md) | ✅ Done (15a–15d) |
+| 16 | `lab` module (tests, results, PDF reports) | _coming_ | |
+| 17 | `prescriptions` app | _coming_ | |
+| 18 | `notifications` + background tasks | _coming_ | |
+| 19 | Dashboard + exports + medical history | _coming_ | |
+| 20 | Deploy (Whitenoise + Render) | _coming_ | |
+| 21 | Frontend (Stitch → Django) + README + availability calendar | _coming_ | |
 
 ## How to use
 
