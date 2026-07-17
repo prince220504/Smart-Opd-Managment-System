@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}My Schedule - Smart OPD{% endblock %}
+
+{% block content %}
+<h1>My Schedule</h1>
+
+{% if current %}
+    <div style="border:1px solid #ccc; padding:10px; margin-bottom:15px;">
+        <h3>Current Schedule</h3>
+        <p><strong>{{ current.get_recurrence_display }}</strong>, {{ current.start_time }}-{{ current.end_time }}</p>
+        {% if current.breaks %}
+            <p>Breaks:
+            {% for b in current.breaks %}{{ b.start }}-{{ b.end }}{% if not forloop.last %}, {% endif %}{% endfor %}
+            </p>
+        {% endif %}
+        {% if not editing %}
+            <a href="?edit=1"><button type="button">Update Schedule</button></a>
+        {% endif %}
+    </div> 
+{% endif %}
+
+{% if editing %}
+    {% if form.errors %}
+        <div style="color:red">
+            {% for field, errors in form.errors.items %}
+            <p>{{ field }}: {{ errors|join:", " }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <h3>Breaks</h3>
+        <div id="breaks">
+            {% if current.breaks %}
+                {% for b in current.breaks %}
+                <p class="break-row">
+                    <input type="time" name="break_start" value="{{ b.start }}"> to <input type="time" name="break_end" value="{{ b.end }}">
+                </p>
+                {% endfor %}
+            {% else %}
+                <p class="break-row">
+                    <input type="time" name="break_start"> to <input type="time" name="break_end">
+                </p>
+            {% endif %}
+        </div>
+        <button type="button" onclick="addBreak()">+ Add break</button>
+
+        <p><button type="submit">Save Schedule</button></p>
+    </form>
+
+    <script>
+        function addBreak(){
+            const row = document.querySelector('.break-row');
+            const copy = row.cloneNode(true);
+            copy.querySelectorAll('input').forEach(i => i.value = '');
+            document.getElementById('breaks').appendChild(copy);
+        }
+    </script>
+{% endif %}
+{% endblock %}

@@ -31,6 +31,7 @@ class Appointment(models.Model):
     )
 
     notes = models.TextField(blank=True)
+    cancel_reason = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -46,3 +47,28 @@ class Appointment(models.Model):
     
     def __str__(self):
         return f"{self.patient.username} -> {self.doctor.username} on {self.appointment_date} {self.time_slot}"
+    
+class DoctorAvailability(models.Model):
+    class Recurrence(models.TextChoices):
+        EVERYDAY = 'EVERYDAY', 'Every day'
+        WEEKDAYS = 'WEEKDAYS', 'Weekdays (Mon-Fri)'
+        MON_SAT = 'MON_SAT', 'Mon to Sat'
+        DATE = 'DATE', 'Specific date'
+
+    doctor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='availabilities',
+    )
+    recurrence = models.CharField(
+        max_length=20,
+        choices=Recurrence.choices,
+        default=Recurrence.EVERYDAY,
+    )
+    date = models.DateField(null=True, blank=True)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    breaks = models.JSONField(default=list, blank=True)
+
+    def __str__(self):
+        return f"{self.doctor.username} - {self.recurrence} ({self.start_time}-{self.end_time})"

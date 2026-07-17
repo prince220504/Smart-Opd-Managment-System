@@ -2,8 +2,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
-from .forms import BookAppointmentForm, ReceptionBookingForm
-from .models import Appointment
+from .forms import BookAppointmentForm, ReceptionBookingForm, DoctorScheduleForm
+from .models import Appointment, DoctorAvailability
 from datetime import date
 from django.db.models import Q
 from django.http import Http404
@@ -36,7 +36,11 @@ def book_appointment(request, doctor_id):
     else:
         form = BookAppointmentForm(initial={'doctor': doctor})
 
-    return render(request, 'appointments/book.html', {'form':form, 'doctor': doctor})
+    availability = doctor.availabilities.exclude(
+        recurrence=DoctorAvailability.Recurrence.DATE
+    ).first()
+
+    return render(request, 'appointments/book.html', {'form':form, 'doctor': doctor, 'availability': availability})
 
 @login_required
 def my_appointments(request):
@@ -83,6 +87,51 @@ def doctor_upcoming(request):
     )
     return render(request, 'appointments/doctor_upcoming.html', {
         'appointments': appointments,
+    })
+
+@login_required
+def doctor_schedule(request):
+    if request.user.role != 'DOCTOR':
+        raise Http404()
+    
+    current = request.user.availabilities.exclude(
+        recurrence=DoctorAvailability.Recurrence.DATE 
+    ).first()
+    editing = current is None or request.GET.get('edit') == '1'
+
+    if request.method == 'POST':
+        editing = True
+        form = DoctorScheduleForm(request.POST)
+        if form.is_valid():
+            availability = form.save(commit=False)
+            availability.doctor = request.user
+            break_starts = request.POST.getlist('break_start')
+            break_ends = request.POST.getlist('break_end')
+            breaks = []
+            for bs, be in zip(break_starts, break_ends):
+                if bs and be:
+                    breaks.append({'start': bs, 'end': be})
+            availability.breaks = breaks
+            if availability.recurrence != DoctorAvailability.Recurrence.DATE:
+                DoctorAvailability.objects.filter(doctor=request.user).exclude(
+                    recurrence=DoctorAvailability.Recurrence.DATE
+                ).delete()
+            availability.save()
+            return redirect('appointments:doctor_schedule')
+    elif current:
+        form = DoctorScheduleForm(initial={
+            'recurrence': current.recurrence,
+            'date': current.date,
+            'start_time': current.start_time,
+            'end_time': current.end_time,
+        })
+    else:
+        form = DoctorScheduleForm()
+
+    return render(request, 'appointments/doctor_schedule.html', {
+        'form': form,
+        'current': current,
+        'editing': editing,
     })
 
 @login_required
@@ -151,6 +200,7 @@ def cancel_appointment(request, appointment_id):
     
     if appointment.status != Appointment.Status.CANCELLED:
         appointment.status = Appointment.Status.CANCELLED
+        appointment.cancel_reason = request.POST.get('cancel_reason', '')
         appointment.save()
     
     return _redirect_after_action(request)
