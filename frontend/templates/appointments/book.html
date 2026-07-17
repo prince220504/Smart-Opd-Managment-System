@@ -6,6 +6,14 @@
 <h1>Book Appointment</h1>
 <p>Doctor: <strong>Dr. {{ doctor.username }}</strong></p>
 
+{% if availability %}
+    <p><storng>Hours:</storng> {{ availability.get_recurrence_display }}, {{ availability.start_time }}-{{ availability.end_time }}
+    {% if availability.break %} | Breaks: {% for b in availability.breaks %}{{ b.start }}-{{ b.end }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %} 
+    </p>
+{% else %}
+    <p><em>This doctor has not set a schedule yet.</em></p>
+{% endif %}
+
 {% if form.errors %}
     <div style="color:red">
         {% for field, errors in form.errors.items %}
