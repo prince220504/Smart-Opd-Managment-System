@@ -23,7 +23,7 @@ Step-by-step Django learning notes. Revise any time. Each file covers **what**, 
 | 13e | Appointment lifecycle + doctor history/upcoming | [13e-appointments-lifecycle.md](13e-appointments-lifecycle.md) | ✅ Done |
 | 14 | DRF layer + booking integrity | [14-drf-api.md](14-drf-api.md) | ✅ Done (14a–14e) |
 | 15 | Doctor availability + cancel reason | [15-availability-and-cancel-reason.md](15-availability-and-cancel-reason.md) | ✅ Done (15a–15d) |
-| 16 | `lab` module (tests, results, PDF reports) | [16-lab-module.md](16-lab-module.md) | ⏳ In progress (16a done) |
+| 16 | `lab` module (tests, results, PDF reports) | [16-lab-module.md](16-lab-module.md) | ⏳ In progress (16a + 16b done) |
 | 17 | `prescriptions` app | _coming_ | |
 | 18 | `notifications` + background tasks | _coming_ | |
 | 19 | Dashboard + exports + medical history | _coming_ | |

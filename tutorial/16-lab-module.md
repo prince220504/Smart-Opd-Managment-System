@@ -97,3 +97,88 @@ class LabTest(models.Model):
 ---
 
 **Next (16b):** doctor requests a test from a CONFIRMED appointment (button on doctor pages) + the lab technician's pending queue (oldest first) + LAB role login redirect + nav.
+
+---
+
+# Step 16b — Doctor Request-Test + Lab Queue
+
+## What we did here
+
+1. `request_test` view — doctor requests a test on their own CONFIRMED appointment.
+2. `lab_queue` view — the lab technician's pending list (REQUESTED + IN_PROGRESS, oldest first).
+3. Routes, request-test buttons on doctor pages, LAB login redirect + nav.
+
+## Half 1 — `status__in` (SQL `IN`)
+
+The queue needs two statuses, not one:
+
+```python
+LabTest.objects.filter(status__in=['REQUESTED', 'IN_PROGRESS'])
+# WHERE status IN ('REQUESTED', 'IN_PROGRESS')
+```
+
+`__in` is the `IN` lookup — same `__` family as `__lte`/`__gt`. Done tests fall off the queue for free.
+
+Why `__in`, not `exclude(status='DONE')`: both give the same rows *today* (3 statuses, so "not DONE" = the two we want). But `__in` names exactly what belongs in the queue — add a 4th status later and `exclude(DONE)` silently lets it in. Explicit beats subtractive.
+
+## Half 2 — Deep `select_related` (FK chain)
+
+The queue prints the patient's name, but `LabTest` has no patient FK — the path is `LabTest → appointment → patient`. Two JOINs in one string:
+
+```python
+.select_related('appointment__patient', 'requested_by')
+```
+
+`appointment__patient` = follow `appointment`, then its `patient`. Same `__` traversal as admin `search_fields`. A 10-row queue: **1 query** with it, **21** without (1 tests + 10 appointments + 10 patients). Row count doesn't matter — select_related always collapses to one query.
+
+## Half 3 — The views
+
+```python
+@login_required
+@require_POST
+def request_test(request, appointment_id):
+    appointment = get_object_or_404(
+        Appointment, id=appointment_id, doctor=request.user,
+        status=Appointment.Status.CONFIRMED,
+    )
+    test_name = request.POST.get('test_name', '').strip()
+    if test_name:
+        LabTest.objects.create(appointment=appointment, requested_by=request.user, test_name=test_name)
+    return redirect('appointments:doctor_today')
+
+
+@login_required
+def lab_queue(request):
+    if request.user.role != 'LAB':
+        raise Http404()
+    tests = (
+        LabTest.objects
+        .filter(status__in=['REQUESTED', 'IN_PROGRESS'])
+        .select_related('appointment__patient', 'requested_by')
+    )
+    return render(request, 'lab/lab_queue.html', {'tests': tests})
+```
+
+- `request_test` — the **scoped lookup IS the authorization**: `doctor=request.user, status=CONFIRMED` means a doctor can only request on their own confirmed appointments; anything else 404s. No separate role gate needed.
+- One field (`test_name`) → read straight from POST, no ModelForm (ponytail — a form class for one CharField is overkill).
+- `lab_queue` — LAB role gate (`raise Http404` hides it from everyone else), the two lookups above. Oldest-first is free from `Meta.ordering=['requested_at']`.
+
+## Half 4 — Wiring
+
+- `lab/urls.py` (NEW, `app_name='lab'`): `queue/` + `request-test/<int:appointment_id>/`; mounted `path('lab/', include('apps.lab.urls'))`.
+- Request-test form on CONFIRMED rows (doctor_today + doctor_history) — inline `test_name` input + button (a testing stub; the real dedicated request-test page comes with the Step 21 frontend — the backend view doesn't care where the POST originates).
+- `base.html`: LAB nav branch → Lab Queue. `login_view`: LAB → `lab:queue`.
+
+## Gotchas (Day 28)
+
+- `redirect('appointment:doctor_today')` — singular namespace again → `NoReverseMatch`. The reverse-string family; grep every `redirect()`/`{% url %}` for `appointment:` vs `appointments:`.
+
+## Revise (16b)
+
+1. **`status__in`** = SQL `IN` for multi-value filters; explicit beats `exclude` for future-proofing.
+2. **`select_related('appointment__patient')`** collapses an FK chain's N+1 to one query regardless of row count.
+3. **Scoped lookup as authorization** — `doctor=request.user, status=CONFIRMED` in `get_object_or_404` gates the action with no separate role check; `lab_queue` uses an explicit `raise Http404` LAB gate.
+
+---
+
+**Next (16c):** lab uploads the result file (`request.FILES`, `enctype="multipart/form-data"`) + status flow REQUESTED → IN_PROGRESS → DONE.

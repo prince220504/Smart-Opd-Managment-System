@@ -67,7 +67,7 @@ Steps 1–12 (foundation → auth): ✅ venv, Django, startproject, runserver, s
 - [x] **Step 15** — availability + cancel reason ✅ (15a–15d, PR #6 `57f4f71`). Optional `cancel_reason` shown to all roles. `DoctorAvailability` (recurrence EVERYDAY/WEEKDAYS/MON_SAT/DATE + hours + JSON breaks) = **validation layer, NOT slots** (patient booking UX unchanged; `_validate_doctor_available` in both booking forms). Schedule setup w/ unlimited breaks (getlist+cloneNode) + first-login gate + view/update (`?edit=1`).
 - [ ] **Step 16 — lab module** — branch `feature/lab-module` → PR #7.
   - [x] **16a** ✅ (Day 27) — `lab` app + `LabTest` (appointment/requested_by FK PROTECT, status REQUESTED/IN_PROGRESS/DONE, `ordering=['requested_at']`) + `LabResult` (**first OneToOneField** test→result CASCADE; **first FileField** `upload_to='lab_results/'`, no Pillow) + admin + dev media serving (`static(MEDIA_URL,...)`, self-disables when DEBUG=False). Migration `lab.0001`. Commits `acd3f69`, `f552368`.
-  - [ ] **16b** — doctor request-test (CONFIRMED appts) + lab queue (`status__in`, oldest-first) + LAB login redirect/nav.
+  - [x] **16b** ✅ (Day 28) — `request_test` (doctor-only, scoped `doctor=me,status=CONFIRMED` lookup = auth, one-field POST no ModelForm) + `lab_queue` (LAB-gated, `status__in=['REQUESTED','IN_PROGRESS']` + `select_related('appointment__patient','requested_by')`, oldest-first). Routes `lab:queue`+`lab:request_test`, request-test buttons on doctor CONFIRMED rows (stub — real page Step 21), LAB nav + login redirect. Typo: `appointment:` singular. Commits `ca1227f`, `a1dd151`.
   - [ ] **16c** — upload result + status flow (`request.FILES`, `enctype="multipart/form-data"`).
   - [ ] **16d** — ReportLab branded PDF + FileResponse download.
 - [ ] **Step 17 — prescriptions** — Prescription (OneToOne Appointment, medicines JSONField, only on COMPLETED), doctor write (dynamic rows = getlist pattern), patient view, PDF.
@@ -78,18 +78,18 @@ Steps 1–12 (foundation → auth): ✅ venv, Django, startproject, runserver, s
 
 ## Last 2 days
 
-**Day 26 (2026-07-17) — Step 15d, Step 15 COMPLETE → PR #6.** `_validate_doctor_available` (DATE-override-first, weekday, window, break HH:MM string compare) in both booking forms; hours text on book page; schedule view/update `?edit=1` prefilled. Typos: return-indent inside POST block, `{'ends'}` JSON key (stale rows need re-save), `forms.erros`. Commits `447496b`, `3da9012`.
-
 **Day 27 (2026-07-18) — Step 16a shipped.** lab app + LabTest/LabResult (first OneToOne + first FileField) + admin + dev media serving. Verified upload→disk→URL + duplicate-result block. Typos: `class status` lowercase (NameError), `ForeingKey`. Commits `acd3f69`, `f552368`.
 
-## Day 28 resume point — Step 16b (doctor request-test + lab queue)
+**Day 28 (2026-07-19) — Step 16b shipped + CLAUDE.md restructure.** `request_test` (scoped lookup = auth) + `lab_queue` (LAB-gated, `status__in` + deep `select_related`). Request-test buttons on doctor CONFIRMED rows (stub; real page Step 21), LAB nav + login redirect. Also: split day-log into `PROJECT_LOG.md`, compressed CLAUDE.md 655→~120 lines (token efficiency rules). Typo: `appointment:` singular. Commits `ca1227f`, `a1dd151`, `c51dbe2`.
+
+## Day 29 resume point — Step 16c (upload result + status flow)
 
 1. On `feature/lab-module`, clean, synced.
-2. **16b (~1–1:15)**: doctor requests test from CONFIRMED appointment + lab queue + LAB wiring.
-   - `lab/views.py`: `request_test` (doctor-only POST, appointment CONFIRMED + doctor=me → LabTest w/ requested_by=me) + `lab_queue` (LAB-gated, `LabTest.objects.filter(status__in=['REQUESTED','IN_PROGRESS']).select_related('appointment__patient')`, oldest-first free via Meta.ordering).
-   - `lab/urls.py` NEW (`app_name='lab'`) + mount in config. Request button on doctor CONFIRMED rows (doctor_today + history). LAB login redirect → `lab:queue` + nav branch.
-   - Concepts: `status__in` lookup, deep `select_related('appointment__patient')`.
-3. Then 16c upload+status, 16d ReportLab PDF → PR #7.
+2. **16c (~1–1:15)**: lab technician uploads a result file + status transitions.
+   - `lab/views.py`: `upload_result` (LAB-gated; form with `result_file` + `notes` + `is_normal`; creates `LabResult`, sets `uploaded_by=me`, flips test status → DONE) + status transition (REQUESTED → IN_PROGRESS when lab starts, → DONE on upload).
+   - **New concept**: file upload — form needs `enctype="multipart/form-data"`, view reads `request.FILES` (not `request.POST`), a `ModelForm` with a `FileField` handles it (`LabResultForm(request.POST, request.FILES)`).
+   - Upload link/button on lab_queue rows; status buttons (Start → IN_PROGRESS).
+3. Then 16d ReportLab PDF + FileResponse download → PR #7.
 
 ## Running grep-list (silent typos — pass `check`, crash at request)
 
