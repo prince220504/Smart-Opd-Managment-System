@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}Lab Queue - Smart OPD{% endblock %}
+
+{% block content %}
+<h1>Pending Lab Tests</h1>
+
+{% if tests %}
+    <table border="1" cellpadding="6">
+        <thead>
+            <tr>
+                <th>Patient</th>
+                <th>Test</th>
+                <th>Requested by</th>
+                <th>Status</th>
+                <th>Requested at</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for test in tests %}
+                <tr>
+                    <td>{{ test.appointment.patient.username }}</td>
+                    <td>{{ test.test_name }}</td>
+                    <td>{{ test.requested_by.username }}</td>
+                    <td>{{ test.get_status_display }}</td>
+                    <td>{{ test.requested_at }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>No pending lab tests.</p>
+{% endif %}
+{% endblock %}

@@ -50,6 +50,11 @@
                                 <input type="text" name="cancel_reason" placeholder="Reason (optional)" style="width:130px">
                                 <button type="submit" onclick="return confirm('Cancel this appointment?');">Cancel</button>
                             </form>
+                            <form method="post" action="{% url 'lab:request_test' appt.id %}" style="display:inline">
+                                {% csrf_token %}
+                                <input type="text" name="test_name" placeholder="Test name" style="width:110px">
+                                <button type="submit">Request Test</button>
+                            </form>
                         {% else %}
                             -
                         {% endif %}
