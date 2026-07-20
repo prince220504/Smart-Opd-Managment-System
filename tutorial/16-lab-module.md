@@ -182,3 +182,101 @@ def lab_queue(request):
 ---
 
 **Next (16c):** lab uploads the result file (`request.FILES`, `enctype="multipart/form-data"`) + status flow REQUESTED → IN_PROGRESS → DONE.
+
+---
+
+# Step 16c — Upload Result + Status Flow
+
+## What we did here
+
+1. `LabResultForm` (ModelForm over `LabResult`).
+2. `start_test` view (REQUESTED → IN_PROGRESS) + `upload_result` view (creates/updates the result, flips test → DONE).
+3. Upload page + queue action buttons.
+
+## Half 1 — File upload needs three things
+
+Every form until now: `<form method="post">` + `request.POST`. Files add a third piece.
+
+**1. `enctype="multipart/form-data"` on the form tag.**
+
+```html
+<form method="post" enctype="multipart/form-data">
+```
+
+Default encoding sends `key=value&key=value` — a string. That can't carry binary. `multipart/form-data` splits the request into chunks, one per field, files as raw bytes. **Without it the file is silently dropped** — the form submits, the file field arrives empty, validation fails for a reason that looks unrelated. This is the #1 file-upload gotcha.
+
+**2. `request.FILES` — a separate dict.** Text fields land in `request.POST`; uploaded files land in `request.FILES`. A ModelForm with a `FileField` needs **both**:
+
+```python
+form = LabResultForm(request.POST, request.FILES)
+```
+
+Pass only `request.POST` and the file never reaches the form.
+
+**3. The ModelForm handles the rest.** Same auto-binding as always — Django pulls the file out of `request.FILES`, validates it, and `save()` writes bytes to `MEDIA_ROOT/upload_to/` while storing the path in the DB column (the 16a two-part storage model).
+
+```python
+class LabResultForm(forms.ModelForm):
+    class Meta:
+        model = LabResult
+        fields = ['result_file', 'notes', 'is_normal']
+```
+
+`test` and `uploaded_by` stay out of the form — server-set in the view, same defense-in-depth as `appointment.patient`.
+
+## Half 2 — Status transitions
+
+```python
+@login_required
+@require_POST
+def start_test(request, test_id):
+    if request.user.role != 'LAB':
+        raise Http404()
+    test = get_object_or_404(LabTest, id=test_id, status=LabTest.Status.REQUESTED)
+    test.status = LabTest.Status.IN_PROGRESS
+    test.save()
+    return redirect('lab:queue')
+```
+
+Same guarded-transition shape as the appointment lifecycle: `@require_POST`, role gate, from-state enforced **in the lookup** (`status=REQUESTED` → a non-requested test 404s instead of needing an `if`).
+
+`upload_result` flips to DONE as a side effect of saving the result — no separate "mark done" endpoint. One action, one user intent.
+
+## Half 3 — `instance=` handles create AND update (the OneToOne trap)
+
+First upload attempt on a test that already had a result (created in admin during 16a) gave:
+
+```
+IntegrityError: UNIQUE constraint failed: lab_labresult.test_id
+```
+
+That's the OneToOne working exactly as designed — one result per test. But a 500 page is the wrong way to express it. Fix:
+
+```python
+existing = getattr(test, 'result', None)
+...
+form = LabResultForm(request.POST, request.FILES, instance=existing)   # POST
+form = LabResultForm(instance=existing)                                # GET
+```
+
+**`instance=`** tells the ModelForm to *update that row* instead of inserting a new one. `None` → normal create. One argument covers both paths — no branching, no try/except, and re-uploading a corrected result now works.
+
+**`getattr(test, 'result', None)`** — the reverse OneToOne accessor raises `RelatedObjectDoesNotExist` when empty, and Django deliberately makes that class subclass **`AttributeError`** so `getattr` with a default catches it. No try/except needed.
+
+Bonus: GET now pre-fills notes/is_normal from the existing result.
+
+## Gotchas (Day 29)
+
+- **`IN_PORGRESS`** — transposed enum member; `AttributeError` when Start is clicked. The `ForeingKey`/`roel` family.
+- **`{url ... %}`** — missing `%` in the *opening* tag, so the template rendered the tag as literal text into the `href`. Symptom: a 404 whose URL contains `%7Burl%20'lab:upload_result'...`. If a URL-encoded template tag shows up in a request path, a `{%` is malformed.
+- **Stale browser page** — the 404 persisted after the fix until a hard refresh.
+
+## Revise (16c)
+
+1. **Three pieces or the file vanishes**: `enctype="multipart/form-data"` + `request.FILES` passed to the form + a `FileField` on the ModelForm.
+2. **From-state in the lookup** (`status=REQUESTED` in `get_object_or_404`) enforces the transition without an `if`; saving the result flips the test to DONE as a side effect.
+3. **`instance=existing`** makes one view do create-or-update, which is how a OneToOne should be edited; `getattr(obj, 'one_to_one', None)` works because `RelatedObjectDoesNotExist` subclasses `AttributeError`.
+
+---
+
+**Next (16d):** ReportLab branded PDF report + `FileResponse` download for patient and doctor. Closes Step 16 → PR #7.

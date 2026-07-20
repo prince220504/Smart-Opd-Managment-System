@@ -68,7 +68,7 @@ Steps 1–12 (foundation → auth): ✅ venv, Django, startproject, runserver, s
 - [ ] **Step 16 — lab module** — branch `feature/lab-module` → PR #7.
   - [x] **16a** ✅ (Day 27) — `lab` app + `LabTest` (appointment/requested_by FK PROTECT, status REQUESTED/IN_PROGRESS/DONE, `ordering=['requested_at']`) + `LabResult` (**first OneToOneField** test→result CASCADE; **first FileField** `upload_to='lab_results/'`, no Pillow) + admin + dev media serving (`static(MEDIA_URL,...)`, self-disables when DEBUG=False). Migration `lab.0001`. Commits `acd3f69`, `f552368`.
   - [x] **16b** ✅ (Day 28) — `request_test` (doctor-only, scoped `doctor=me,status=CONFIRMED` lookup = auth, one-field POST no ModelForm) + `lab_queue` (LAB-gated, `status__in=['REQUESTED','IN_PROGRESS']` + `select_related('appointment__patient','requested_by')`, oldest-first). Routes `lab:queue`+`lab:request_test`, request-test buttons on doctor CONFIRMED rows (stub — real page Step 21), LAB nav + login redirect. Typo: `appointment:` singular. Commits `ca1227f`, `a1dd151`.
-  - [ ] **16c** — upload result + status flow (`request.FILES`, `enctype="multipart/form-data"`).
+  - [x] **16c** ✅ (Day 29) — `LabResultForm` (ModelForm: result_file/notes/is_normal; test+uploaded_by server-set). `start_test` (LAB-gated, `@require_POST`, from-state in lookup `status=REQUESTED` → IN_PROGRESS) + `upload_result` (GET form/POST save, `LabResultForm(request.POST, request.FILES, instance=existing)` → create-or-update, flips test → DONE). `enctype="multipart/form-data"` + `request.FILES` = the 2 pieces that make files arrive. **OneToOne trap**: 2nd result → `IntegrityError UNIQUE test_id`; fixed with `instance=getattr(test,'result',None)` (RelatedObjectDoesNotExist subclasses AttributeError → getattr default works). Upload page + queue Start/Upload buttons. Typos: `IN_PORGRESS`, `{url` missing `%` (rendered literal into href → 404 with `%7Burl...`). Commits `9af644e`, `56da13b`.
   - [ ] **16d** — ReportLab branded PDF + FileResponse download.
 - [ ] **Step 17 — prescriptions** — Prescription (OneToOne Appointment, medicines JSONField, only on COMPLETED), doctor write (dynamic rows = getlist pattern), patient view, PDF.
 - [ ] **Step 18 — notifications + background tasks** — Notification model + 8 triggers (matrix) + bell + email. **DECIDE: Celery+Redis vs Django 6 built-in Tasks** (lean built-in) for 24-hr reminder + auto-expire stale PENDING → CANCELLED. NOTE: never auto-complete CONFIRMED (confirmed ≠ visited).
@@ -78,18 +78,20 @@ Steps 1–12 (foundation → auth): ✅ venv, Django, startproject, runserver, s
 
 ## Last 2 days
 
-**Day 27 (2026-07-18) — Step 16a shipped.** lab app + LabTest/LabResult (first OneToOne + first FileField) + admin + dev media serving. Verified upload→disk→URL + duplicate-result block. Typos: `class status` lowercase (NameError), `ForeingKey`. Commits `acd3f69`, `f552368`.
-
 **Day 28 (2026-07-19) — Step 16b shipped + CLAUDE.md restructure.** `request_test` (scoped lookup = auth) + `lab_queue` (LAB-gated, `status__in` + deep `select_related`). Request-test buttons on doctor CONFIRMED rows (stub; real page Step 21), LAB nav + login redirect. Also: split day-log into `PROJECT_LOG.md`, compressed CLAUDE.md 655→~120 lines (token efficiency rules). Typo: `appointment:` singular. Commits `ca1227f`, `a1dd151`, `c51dbe2`.
 
-## Day 29 resume point — Step 16c (upload result + status flow)
+**Day 29 (2026-07-20) — Step 16c shipped.** `LabResultForm` + `start_test` (from-state in lookup) + `upload_result` (`request.FILES` + `enctype`, `instance=existing` → create-or-update). OneToOne trap hit + fixed (2nd result IntegrityError → `instance=getattr(test,'result',None)`). Upload page + queue Start/Upload buttons. Typos: `IN_PORGRESS`, `{url` missing `%` (literal tag in href → weird 404). Commits `9af644e`, `56da13b`.
 
-1. On `feature/lab-module`, clean, synced.
-2. **16c (~1–1:15)**: lab technician uploads a result file + status transitions.
-   - `lab/views.py`: `upload_result` (LAB-gated; form with `result_file` + `notes` + `is_normal`; creates `LabResult`, sets `uploaded_by=me`, flips test status → DONE) + status transition (REQUESTED → IN_PROGRESS when lab starts, → DONE on upload).
-   - **New concept**: file upload — form needs `enctype="multipart/form-data"`, view reads `request.FILES` (not `request.POST`), a `ModelForm` with a `FileField` handles it (`LabResultForm(request.POST, request.FILES)`).
-   - Upload link/button on lab_queue rows; status buttons (Start → IN_PROGRESS).
-3. Then 16d ReportLab PDF + FileResponse download → PR #7.
+## Day 30 resume point — Step 16d (ReportLab PDF) → PR #7
+
+1. On `feature/lab-module`, clean, synced. **16d is the last sub-step of Step 16.**
+2. **16d (~1–1:15)**: branded PDF lab report + download.
+   - `pip install reportlab` + freeze requirements.txt.
+   - `lab/views.py`: `download_report(request, test_id)` — build PDF in memory (`io.BytesIO` + `reportlab.pdfgen.canvas`), draw hospital header + patient name + test name + result/notes + normal/abnormal flag + technician + date; return `FileResponse(buffer, as_attachment=True, filename=...)`.
+   - **Access scoping**: patient (own appointment), doctor (requested_by/appointment doctor), lab, reception — use a `Q(...) | Q(...)` ownership lookup like `cancel_appointment`; only when `test.status == DONE`.
+   - Download button on: patient my_appointments (or a results page), doctor pages, lab queue history.
+   - **New concepts**: `io.BytesIO` (in-memory file), ReportLab canvas drawing, `FileResponse(as_attachment=True)`.
+3. Then docs + **PR #7** closes Step 16. Next: Step 17 prescriptions (same PDF pattern reused).
 
 ## Running grep-list (silent typos — pass `check`, crash at request)
 
@@ -117,6 +119,9 @@ Session budget = **1–1:30 hr**. BIG step (4+ files OR 5+ concepts OR 2+ hrs OR
 5. Typo-sweep user-typed code (grep-list above) before "no issues".
 6. Caveman voice OK for summaries/headers when active; **clear prose for teaching**.
 
-## Token efficiency (Day 28)
+## Token efficiency (Day 28, revised Day 29)
 
-Day log → `PROJECT_LOG.md` (not auto-loaded). CLAUDE.md keeps static info + roadmap + last 2 days + resume + rules. When a 3rd day is added, roll the oldest into PROJECT_LOG (compress to 3 lines: `Day N — Step X shipped. Key gotcha: <one>. Commit: <hash>.`). One running grep-list (above), not per-day copies. Reference files, don't repaste. Review `/memory` weekly, delete superseded entries.
+- **`PROJECT_LOG.md` = complete history, appended EVERY working day at wrap** (not only when a day rolls off CLAUDE.md). Never auto-loaded — open only to debug an old step. Entry format: `### Day N (date) — Step X shipped` + one paragraph (what shipped, key gotcha, commits).
+- **CLAUDE.md** keeps static info + roadmap + **last 2 days** (short recap) + resume point + rules. Adding a new day → drop the oldest of the two (it's already in PROJECT_LOG, so nothing to migrate).
+- **Wrap checklist**: tutorial section → tutorial/README → CLAUDE.md (roadmap + 2-day window + next resume) → **PROJECT_LOG.md append** → memory buffers → docs commit.
+- One running grep-list (above), not per-day copies. Reference files, don't repaste. Review `/memory` weekly, delete superseded entries.
