@@ -4,6 +4,7 @@ from django.views.decorators.http import require_POST
 from django.http import Http404
 from apps.appointments.models import Appointment
 from .models import LabTest
+from .forms import LabResultForm
 
 @login_required
 @require_POST
@@ -31,3 +32,35 @@ def lab_queue(request):
         .select_related('appointment__patient', 'requested_by')
     )
     return render(request, 'lab/lab_queue.html', {'tests': tests})
+
+@login_required
+@require_POST
+def start_test(request, test_id):
+    if request.user.role != 'LAB':
+        raise Http404()
+    test = get_object_or_404(LabTest, id=test_id, status=LabTest.Status.REQUESTED)
+    test.status = LabTest.Status.IN_PROGRESS
+    test.save()
+    return redirect('lab:queue')
+
+@login_required
+def upload_result(request, test_id):
+    if request.user.role != 'LAB':
+        raise Http404()
+    test = get_object_or_404(LabTest, id=test_id)
+    existing = getattr(test, 'result', None)
+
+    if request.method == 'POST':
+        form = LabResultForm(request.POST, request.FILES, instance=existing)
+        if form.is_valid():
+            result = form.save(commit=False)
+            result.test = test
+            result.uploaded_by = request.user
+            result.save()
+            test.status = LabTest.Status.DONE
+            test.save()
+            return redirect('lab:queue')
+    else:
+        form = LabResultForm(instance=existing)
+
+    return render(request, 'lab/upload_result.html', {'form':form, 'test':test})
