@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Result - Smart OPD{% endblock %}
+
+{% block content %}
+<h1>Upload Result</h1>
+<p><strong>Test:</strong> {{ test.test_name }} - {{ test.appointment.patient.username }}</p>
+
+{% if form.errors %}
+    <div style="color:red">
+        {% for field, errors in form.errors.items %}
+        <p>{{ field }}: {{ errors|join:", " }}</p>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Upload Result</button>
+</form>
+
+<p><a href="{% url 'lab:queue' %}"><- Back to queue</a></p>
+{% endblock %}

@@ -14,6 +14,7 @@
                 <th>Requested by</th>
                 <th>Status</th>
                 <th>Requested at</th>
+                <th>Action</th>
             </tr>
         </thead>
         <tbody>
@@ -24,6 +25,15 @@
                     <td>{{ test.requested_by.username }}</td>
                     <td>{{ test.get_status_display }}</td>
                     <td>{{ test.requested_at }}</td>
+                    <td>
+                        {% if test.status == 'REQUESTED' %}
+                            <form method="post" action="{% url 'lab:start_test' test.id %}" style="display:inline">
+                                {% csrf_token %}
+                                <button type="submit">Start</button>
+                            </form>
+                        {% endif %}
+                        <a href="{% url 'lab:upload_result' test.id %}"><button type="button">Upload Result</button></a>
+                    </td>
                 </tr>
             {% endfor %}
         </tbody>
