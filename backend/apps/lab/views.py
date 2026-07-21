@@ -64,3 +64,12 @@ def upload_result(request, test_id):
         form = LabResultForm(instance=existing)
 
     return render(request, 'lab/upload_result.html', {'form':form, 'test':test})
+
+@login_required
+def my_tests(request):
+    tests = (
+        LabTest.objects
+        .filter(appointment__patient=request.user)
+        .select_related('appointment', 'result')
+    )
+    return render(request, 'lab/my_tests.html', {'tests':tests})
