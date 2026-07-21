@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}My Tests - Smart OPD{% endblock %}
+
+{% block content %}
+<h1>My Tests</h1>
+
+{% if tests %}
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Test</th>
+                <th>Requested</th>
+                <th>Status</th>
+                <th>Note</th>
+                <th>Result</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for test in tests %}
+                <tr>
+                    <td>{{ test.test_name }}</td>
+                    <td>{{ test.requested_at }}</td>
+                    <td>{{ test.get_status_display }}</td>
+                    <td>{{ test.result.notes | default:"-" }}</td>
+                    <td>
+                        {% if test.status == 'DONE' %}
+                            <a href="{{ test.result.result_file.url }}">Download Result</a>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>No tests yet.</p>
+{% endif %}
+{% endblock %}
