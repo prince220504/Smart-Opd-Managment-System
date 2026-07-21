@@ -279,4 +279,47 @@ Bonus: GET now pre-fills notes/is_normal from the existing result.
 
 ---
 
+## 16d — patient "My Tests" page (Day 30)
+
+Patient-facing page: every `LabTest` they own, across all their appointments, one place — status, lab tech's note, and the result once it's DONE.
+
+```python
+@login_required
+def my_tests(request):
+    tests = (
+        LabTest.objects
+        .filter(appointment__patient=request.user)
+        .select_related('appointment', 'result')
+    )
+    return render(request, 'lab/my_tests.html', {'tests': tests})
+```
+
+`appointment__patient=request.user` — same FK-chain filter as `lab_queue`'s `select_related('appointment__patient')`, filtering instead of joining. `select_related('result')` pulls the OneToOne row in the same query — free once a test is DONE, harmless join otherwise.
+
+Template shows `test.result.notes|default:"-"` (safe on REQUESTED/IN_PROGRESS — Django templates treat a missing OneToOne reverse accessor as an empty string, since `RelatedObjectDoesNotExist` is marked `silent_variable_failure`) and a result link once `status == 'DONE'`.
+
+**Design turn — dropped the generated PDF.** Original 16d plan was a ReportLab-built branded summary PDF (`io.BytesIO` + `canvas.drawString` + `FileResponse`). Built it, then realized: the lab tech's actual upload (scan, photo, machine printout) can carry real diagnostic content — graphs, images — that a text-only generated PDF can't replicate, and showing the patient *two* downloads (raw file + generated summary) for one test is just confusing. Killed `download_report` entirely — view, url, `reportlab` dependency, `io`/`Q`/`FileResponse`/`canvas` imports — all removed. Result link now points straight at `result.result_file.url` (dev media serving from 16a already handles serving it):
+
+```html
+{% if test.status == 'DONE' %}
+    <a href="{{ test.result.result_file.url }}">Download Result</a>
+{% else %}
+    -
+{% endif %}
+```
+
+Lesson: a "nice branding" layer built ahead of the real access-control/UX question turned out unnecessary — cheaper to build the direct link first and add polish only if a real gap shows up.
+
+## Doctor-side page rename (Day 30)
+
+`doctor_history` → `doctor_records`, `doctor_history.html` → `doctor_records.html`, nav "History" → "Appointment Records" (after trying "Last Appointments" first). Mechanical rename — view function, url name, template file + heading, nav link, all four kept in sync. Doctor-side column rework (reusing the Request Test column slot to show live status + link to a result-detail page) still pending — Step 16e.
+
+## Revise (16d)
+
+1. Reused the `lab_queue` filter pattern (`appointment__patient=` instead of `appointment__patient__`) for a patient-scoped test list — no new query concept needed.
+2. Missing OneToOne in a template (`test.result.notes`) is safe by design — `RelatedObjectDoesNotExist` is `silent_variable_failure`, renders as empty string.
+3. Built a generated-PDF feature, then cut it once a simpler direct-file-link covered the real need without the two-downloads confusion — delete over addition, even after code is written and working.
+
+---
+
 **Next (16d):** ReportLab branded PDF report + `FileResponse` download for patient and doctor. Closes Step 16 → PR #7.

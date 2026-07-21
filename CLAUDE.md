@@ -24,7 +24,7 @@ Hospital **OPD** system, 4 roles:
 
 ## Tech stack
 
-- **Backend**: Django 6.0.6 · DRF · SimpleJWT · drf-spectacular · ReportLab (PDFs) · Pillow (images, when needed) · python-decouple · psycopg2-binary · Whitenoise · Gunicorn. django-filter/Celery: not installed — decide per step (django-filter skipped 14d; Celery-vs-Django6-Tasks decided at Step 18).
+- **Backend**: Django 6.0.6 · DRF · SimpleJWT · drf-spectacular · Pillow (images, when needed) · python-decouple · psycopg2-binary · Whitenoise · Gunicorn. django-filter/Celery/ReportLab: not installed — decide per step (django-filter skipped 14d; ReportLab built then removed at 16d — direct file download beat a generated PDF; Celery-vs-Django6-Tasks decided at Step 18).
 - **Frontend**: Django templates + static via Whitenoise; HTML drafted in Stitch, polished in Antigravity.
 - **DB**: SQLite dev / PostgreSQL prod (Render). Python 3.14.2, venv in `.venv/`.
 - **Deploy**: Render (no Docker). `requirements.txt` at repo root; `Procfile` in `backend/` (`web: gunicorn config.wsgi --chdir backend`). Auto-deploy on push to `main`.
@@ -69,7 +69,8 @@ Steps 1–12 (foundation → auth): ✅ venv, Django, startproject, runserver, s
   - [x] **16a** ✅ (Day 27) — `lab` app + `LabTest` (appointment/requested_by FK PROTECT, status REQUESTED/IN_PROGRESS/DONE, `ordering=['requested_at']`) + `LabResult` (**first OneToOneField** test→result CASCADE; **first FileField** `upload_to='lab_results/'`, no Pillow) + admin + dev media serving (`static(MEDIA_URL,...)`, self-disables when DEBUG=False). Migration `lab.0001`. Commits `acd3f69`, `f552368`.
   - [x] **16b** ✅ (Day 28) — `request_test` (doctor-only, scoped `doctor=me,status=CONFIRMED` lookup = auth, one-field POST no ModelForm) + `lab_queue` (LAB-gated, `status__in=['REQUESTED','IN_PROGRESS']` + `select_related('appointment__patient','requested_by')`, oldest-first). Routes `lab:queue`+`lab:request_test`, request-test buttons on doctor CONFIRMED rows (stub — real page Step 21), LAB nav + login redirect. Typo: `appointment:` singular. Commits `ca1227f`, `a1dd151`.
   - [x] **16c** ✅ (Day 29) — `LabResultForm` (ModelForm: result_file/notes/is_normal; test+uploaded_by server-set). `start_test` (LAB-gated, `@require_POST`, from-state in lookup `status=REQUESTED` → IN_PROGRESS) + `upload_result` (GET form/POST save, `LabResultForm(request.POST, request.FILES, instance=existing)` → create-or-update, flips test → DONE). `enctype="multipart/form-data"` + `request.FILES` = the 2 pieces that make files arrive. **OneToOne trap**: 2nd result → `IntegrityError UNIQUE test_id`; fixed with `instance=getattr(test,'result',None)` (RelatedObjectDoesNotExist subclasses AttributeError → getattr default works). Upload page + queue Start/Upload buttons. Typos: `IN_PORGRESS`, `{url` missing `%` (rendered literal into href → 404 with `%7Burl...`). Commits `9af644e`, `56da13b`.
-  - [ ] **16d** — ReportLab branded PDF + FileResponse download.
+  - [x] **16d** ✅ (Day 30) — patient **My Tests** page (`my_tests` view: `appointment__patient=` filter + `select_related('appointment','result')`) showing test name/status/lab-tech note/result link. Design turn: built ReportLab branded-PDF download first, then **cut it** — tech's raw upload can carry real diagnostic content a text summary can't, and two downloads per test confused the UX; result link now points straight at `result.result_file.url`, `download_report` view/url/reportlab dependency removed entirely.
+  - [ ] **16e** — doctor-side: reuse Request Test column for live status + result-detail page + download. `doctor_history`→**`doctor_records`** rename shipped (view/url/template/nav) as a first slice.
 - [ ] **Step 17 — prescriptions** — Prescription (OneToOne Appointment, medicines JSONField, only on COMPLETED), doctor write (dynamic rows = getlist pattern), patient view, PDF.
 - [ ] **Step 18 — notifications + background tasks** — Notification model + 8 triggers (matrix) + bell + email. **DECIDE: Celery+Redis vs Django 6 built-in Tasks** (lean built-in) for 24-hr reminder + auto-expire stale PENDING → CANCELLED. NOTE: never auto-complete CONFIRMED (confirmed ≠ visited).
 - [ ] **Step 19 — dashboard + exports + history** — reception stats (annotate/Count → Chart.js), patient history (prefetch_related), CSV/Excel.
@@ -78,20 +79,19 @@ Steps 1–12 (foundation → auth): ✅ venv, Django, startproject, runserver, s
 
 ## Last 2 days
 
-**Day 28 (2026-07-19) — Step 16b shipped + CLAUDE.md restructure.** `request_test` (scoped lookup = auth) + `lab_queue` (LAB-gated, `status__in` + deep `select_related`). Request-test buttons on doctor CONFIRMED rows (stub; real page Step 21), LAB nav + login redirect. Also: split day-log into `PROJECT_LOG.md`, compressed CLAUDE.md 655→~120 lines (token efficiency rules). Typo: `appointment:` singular. Commits `ca1227f`, `a1dd151`, `c51dbe2`.
-
 **Day 29 (2026-07-20) — Step 16c shipped.** `LabResultForm` + `start_test` (from-state in lookup) + `upload_result` (`request.FILES` + `enctype`, `instance=existing` → create-or-update). OneToOne trap hit + fixed (2nd result IntegrityError → `instance=getattr(test,'result',None)`). Upload page + queue Start/Upload buttons. Typos: `IN_PORGRESS`, `{url` missing `%` (literal tag in href → weird 404). Commits `9af644e`, `56da13b`.
 
-## Day 30 resume point — Step 16d (ReportLab PDF) → PR #7
+**Day 30 (2026-07-21) — Step 16d shipped + doctor-page rename.** Patient **My Tests** page (`my_tests` view + template, nav link) — test name/status/note/result. Built ReportLab branded-PDF download first, then cut it (raw upload can carry real diagnostic content a text summary can't; two downloads per test = confusing UX) — result link now goes straight to `result.result_file.url`; `download_report` view/url + `reportlab` dependency removed. `doctor_history`→`doctor_records` rename (view/url/template/nav) as first slice of 16e. Docs commit pending.
 
-1. On `feature/lab-module`, clean, synced. **16d is the last sub-step of Step 16.**
-2. **16d (~1–1:15)**: branded PDF lab report + download.
-   - `pip install reportlab` + freeze requirements.txt.
-   - `lab/views.py`: `download_report(request, test_id)` — build PDF in memory (`io.BytesIO` + `reportlab.pdfgen.canvas`), draw hospital header + patient name + test name + result/notes + normal/abnormal flag + technician + date; return `FileResponse(buffer, as_attachment=True, filename=...)`.
-   - **Access scoping**: patient (own appointment), doctor (requested_by/appointment doctor), lab, reception — use a `Q(...) | Q(...)` ownership lookup like `cancel_appointment`; only when `test.status == DONE`.
-   - Download button on: patient my_appointments (or a results page), doctor pages, lab queue history.
-   - **New concepts**: `io.BytesIO` (in-memory file), ReportLab canvas drawing, `FileResponse(as_attachment=True)`.
-3. Then docs + **PR #7** closes Step 16. Next: Step 17 prescriptions (same PDF pattern reused).
+## Day 31 resume point — Step 16e (doctor-side) → PR #7
+
+1. **New session** — `/clear` or new window, point Claude at this file's resume point + `PROJECT_LOG.md` Day 30 entry only. Don't continue this thread into 16e (context-budget rule below).
+2. On `feature/lab-module`, clean, synced. **16e is the last sub-step of Step 16.**
+3. **16e (~1–1:30)**: doctor-side test visibility.
+   - Reuse the existing Request Test column slot on `doctor_today.html` + `doctor_records.html` (no new column) — once a test exists on the appointment, show its live status (Requested/In Progress/Completed) instead of (or alongside) the request form.
+   - Completed → clickable, opens a doctor-facing test-detail page (new view + template) with full result details (test name, notes, normal/abnormal, technician, date) + a download link to `result.result_file.url` (same pattern as patient My Tests).
+   - An appointment can have multiple `LabTest` rows — decide loop-per-test display in that column, not single-test assumption.
+4. Then docs + **PR #7** closes Step 16. Next: Step 17 prescriptions.
 
 ## Running grep-list (silent typos — pass `check`, crash at request)
 
@@ -119,9 +119,10 @@ Session budget = **1–1:30 hr**. BIG step (4+ files OR 5+ concepts OR 2+ hrs OR
 5. Typo-sweep user-typed code (grep-list above) before "no issues".
 6. Caveman voice OK for summaries/headers when active; **clear prose for teaching**.
 
-## Token efficiency (Day 28, revised Day 29)
+## Token efficiency (Day 28, revised Day 29, Day 30)
 
 - **`PROJECT_LOG.md` = complete history, appended EVERY working day at wrap** (not only when a day rolls off CLAUDE.md). Never auto-loaded — open only to debug an old step. Entry format: `### Day N (date) — Step X shipped` + one paragraph (what shipped, key gotcha, commits).
 - **CLAUDE.md** keeps static info + roadmap + **last 2 days** (short recap) + resume point + rules. Adding a new day → drop the oldest of the two (it's already in PROJECT_LOG, so nothing to migrate).
 - **Wrap checklist**: tutorial section → tutorial/README → CLAUDE.md (roadmap + 2-day window + next resume) → **PROJECT_LOG.md append** → memory buffers → docs commit.
 - One running grep-list (above), not per-day copies. Reference files, don't repaste. Review `/memory` weekly, delete superseded entries.
+- **New session per parent step (Day 30)**: don't keep extending one long-running Claude Code session across unrelated sub-steps — each carried-forward turn re-sends the full conversation history (token tax scales with session length, not with the work left to do). Start a **new session** (`/clear` or new window) when beginning a new sub-step; point Claude only at this file's resume point (+ `PROJECT_LOG.md` if older detail is needed) instead of continuing an old thread.
