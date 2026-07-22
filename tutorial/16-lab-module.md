@@ -322,4 +322,93 @@ Lesson: a "nice branding" layer built ahead of the real access-control/UX questi
 
 ---
 
-**Next (16d):** ReportLab branded PDF report + `FileResponse` download for patient and doctor. Closes Step 16 → PR #7.
+## 16e — Doctor-side test visibility (Day 31)
+
+Last slice. Doctor requests a test in 16b, but until now had no way to *see* its status or open the result. 16e closes that loop: live status in the doctor's appointment tables + a doctor-facing result-detail page.
+
+### 1. Prefetch the tests (avoid N+1)
+
+`doctor_today` and `doctor_records` now render each appointment's tests in a loop. Naively that's one extra DB query per appointment (and another per result) — the **N+1 problem**. Fix with `prefetch_related`:
+
+```python
+appointments = (
+    request.user.doctor_appointments
+    .filter(appointment_date=today)
+    .select_related('patient')
+    .prefetch_related('lab_tests__result')
+)
+```
+
+**`select_related` vs `prefetch_related`** — both kill N+1, different mechanics:
+- `select_related('patient')` — forward FK / OneToOne. One row per appointment → Django does a single SQL **JOIN**, pulls patient in the same query.
+- `prefetch_related('lab_tests__result')` — reverse FK (one appointment → *many* tests). Can't JOIN into one row, so Django runs a **second query** (`WHERE appointment_id IN (...)`) and stitches results in Python. The `__result` chains the OneToOne so each test's result comes along too.
+
+Net: 2 extra queries total instead of ~2 per row.
+
+### 2. Doctor result-detail view — scope IS the auth
+
+```python
+@login_required
+def test_detail(request, test_id):
+    test = get_object_or_404(
+        LabTest.objects.select_related('appointment__patient', 'result__uploaded_by'),
+        id=test_id, appointment__doctor=request.user,
+    )
+    return render(request, 'lab/test_detail.html', {'test': test})
+```
+
+`appointment__doctor=request.user` in the lookup = **IDOR guard baked into the query** (same pattern as `request_test`). A doctor can only open a test that hangs off *his own* appointment; a guessed/other-doctor id → 404, never a leak. `select_related('result__uploaded_by')` grabs the technician (the reverse OneToOne `result` → its `uploaded_by` FK) so the template touches no extra queries.
+
+Template guards on status — result fields only exist once `DONE`:
+
+```html
+{% if test.status == 'DONE' %}
+    <p><strong>Result:</strong> {% if test.result.is_normal %}Normal{% else %}Abnormal{% endif %}</p>
+    <p><strong>Technician:</strong> {{ test.result.uploaded_by.username }}</p>
+    <p><a href="{{ test.result.result_file.url }}">Download Result</a></p>
+{% else %}
+    <p>Result not ready yet.</p>
+{% endif %}
+```
+
+### 3. Wire the appointment tables — loop OUTSIDE the status branch
+
+First attempt put the test loop *inside* `{% elif appt.status == 'CONFIRMED' %}`. Bug: tests are requested on CONFIRMED appointments, but the doctor then marks the visit **Complete** → status flips to `COMPLETED` → the row falls to `{% else %}` and the test list **vanishes** exactly where the doctor looks back for results. Tests must show regardless of status:
+
+```html
+                        {% if appt.status == 'PENDING' %}
+                            ...action forms...
+                        {% elif appt.status == 'CONFIRMED' %}
+                            ...action forms + Request Test...
+                        {% endif %}
+                        {% for test in appt.lab_tests.all %}
+                            <div>
+                                {% if test.status == 'DONE' %}
+                                    <a href="{% url 'lab:test_detail' test.id %}">{{ test.test_name }}</a>: {{ test.get_status_display }}
+                                {% else %}
+                                    {{ test.test_name }}: {{ test.get_status_display }}
+                                {% endif %}
+                            </div>
+                        {% empty %}
+                            -
+                        {% endfor %}
+```
+
+Two moves: (a) loop lives **after** the status `{% endif %}` so every row runs it; (b) `{% empty %}` — the for-loop's built-in else — renders `-` when an appointment has zero tests, replacing the old `{% else %} - {% endif %}` dash. An appointment can hold **multiple** LabTest rows → looping (not `appt.lab_tests.first`) was the design requirement.
+
+### Typos caught this session (grep-sweep)
+
+- `prefetech_related` → `prefetch_related` (both views) — `AttributeError` at request.
+- `test_details.html` in `render()` vs file `test_detail.html` — `TemplateDoesNotExist`.
+- `{% url 'appointment:doctor_today'}` — **two** bugs: singular namespace (`appointments` is plural → `NoReverseMatch`) + missing `%` (`'}` → `' %}`, else `TemplateSyntaxError` unclosed tag).
+- `test.request_at` / `test.result.upload_by` — silent empties (renders blank, no crash), should be `requested_at` / `uploaded_by`.
+
+### Revise (16e)
+
+1. Reverse FK (one→many) needs `prefetch_related`, not `select_related` — the latter only JOINs single-row (forward FK / OneToOne).
+2. Scope the lookup (`appointment__doctor=request.user`), don't fetch-then-check — the 404 IS the authorization.
+3. Status-independent data (the test list) belongs *outside* the status if/elif — gating it behind CONFIRMED hid it on the COMPLETED rows that matter most.
+
+---
+
+**Step 16 complete → PR #7.** Auth-extras (forgot-password, profile-photo) that shared this step's old title moved to **Step 21** (forgot-pw needs Step 18's SMTP; both are frontend-shaped). Next: Step 17 prescriptions.
