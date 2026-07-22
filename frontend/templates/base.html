@@ -14,14 +14,17 @@
                     {% if user.role == 'PATIENT' %}
                         <a href="{% url 'appointments:doctor_list' %}">Find a Doctor</a>
                         <a href="{% url 'appointments:my_appointments' %}">My Appointments</a>
+                        <a href="{% url 'lab:my_tests' %}">My Tests</a>
                     {% elif user.role == 'DOCTOR' %}
                         <a href="{% url 'appointments:doctor_today' %}">Today's Appointments</a>
-                        <a href="{% url 'appointments:doctor_history' %}">History</a>
+                        <a href="{% url 'appointments:doctor_records' %}">Appointment Records</a>
                         <a href="{% url 'appointments:doctor_upcoming' %}">Upcoming</a>
                         <a href="{% url 'appointments:doctor_schedule' %}">My Schedule</a>
                     {% elif user.role == 'RECEPTION' %}
                         <a href="{% url 'appointments:reception_book' %}">Book for Patient</a>
                         <a href="{% url 'appointments:appointment_list' %}">All Appointments</a>
+                    {% elif user.role == 'LAB' %}
+                        <a href="{% url 'lab:queue' %}">Lab Queue</a>
                     {% endif %}
                     <a href="{% url 'accounts:profile' %}">Profile</a>
                     <form method="post" action="{% url 'accounts:logout' %}" style="display:inline">

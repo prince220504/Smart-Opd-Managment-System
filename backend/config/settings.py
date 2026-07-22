@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     # Local apps
     'apps.accounts',
     'apps.appointments',
+    'apps.lab',
     'rest_framework',
     'apps.api',
     'drf_spectacular',

@@ -48,9 +48,23 @@
                                 <input type="text" name="cancel_reason" placeholder="Reason (optional)" style="width:130px">
                                 <button type="submit" onclick="return confirm('Cancel this appointment?');">Cancel</button>
                             </form>
-                        {% else %}
-                            -
+                            <form method="post" action="{% url 'lab:request_test' appt.id %}" style="display:inline">
+                                {% csrf_token %}
+                                <input type="text" name="test_name" placeholder="Test name" style="width:110px">
+                                <button type="submit">Request Test</button>
+                            </form>
                         {% endif %}
+                        {% for test in appt.lab_tests.all %}
+                            <div>
+                                {% if test.status == 'DONE' %}
+                                    <a href="{% url 'lab:test_detail' test.id %}">{{ test.test_name }}</a>: {{ test.get_status_display }}
+                                {% else %}
+                                    {{ test.test_name }}: {{ test.get_status_display}}
+                                {% endif %}
+                            </div>
+                        {% empty %}
+                            -
+                        {% endfor %}
                     </td>
                 </tr>
                 {% endfor %}
