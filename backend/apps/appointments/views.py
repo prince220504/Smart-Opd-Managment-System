@@ -56,6 +56,7 @@ def doctor_today(request):
         request.user.doctor_appointments
         .filter(appointment_date=today)
         .select_related('patient')
+        .prefetch_related('lab_tests__result')
     )
     return render(request,
         'appointments/doctor_today.html', {
@@ -71,6 +72,7 @@ def doctor_records(request):
         request.user.doctor_appointments
         .filter(appointment_date__lte=today)
         .select_related('patient')
+        .prefetch_related('lab_tests__result')
     )
     return render(request, 'appointments/doctor_records.html', {
         'appointments': appointments,

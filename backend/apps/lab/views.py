@@ -73,3 +73,11 @@ def my_tests(request):
         .select_related('appointment', 'result')
     )
     return render(request, 'lab/my_tests.html', {'tests':tests})
+
+@login_required
+def test_detail(request, test_id):
+    test = get_object_or_404(
+        LabTest.objects.select_related('appointment__patient', 'result__uploaded_by'),
+        id = test_id, appointment__doctor=request.user,
+    )
+    return render(request, 'lab/test_detail.html', {'test':test})
