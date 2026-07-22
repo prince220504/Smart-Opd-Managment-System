@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ test.test_name }} - Smart OPD{% endblock %}
+
+{% block content %}
+<h1>{{ test.test_name }}</h1>
+
+<p><strong>Patient:</strong> {{ test.appointment.patient.username }}</p>
+<p><strong>Status:</strong> {{ test.get_status_display }}</p>
+<p><strong>Requested:</strong> {{ test.requested_at }}</p>
+
+{% if test.status == 'DONE' %}
+    <p><strong>Result:</strong> {% if test.result.is_normal %}Normal{% else %}Abnormal{% endif %}</p>
+    <p><strong>Technician:</strong> {{ test.result.uploaded_by.username }}</p>
+    <p><strong>Result date:</strong> {{ test.result.result_date }}</p>
+    <p><strong>Notes:</strong>{{ test.result.notes|default:"-" }}</p>
+    <p><a href="{{ test.result.result_file.url }}">Download Result</a></p>
+{% else %}
+    <p>Result not ready yet.</p>
+{% endif %}
+
+<p><a href="{% url 'appointments:doctor_today' %}">&larr; Back</a></p>
+{% endblock %}

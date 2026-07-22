@@ -55,9 +55,18 @@
                                 <input type="text" name="test_name" placeholder="Test name" style="width:110px">
                                 <button type="submit">Request Test</button>
                             </form>
-                        {% else %}
-                            -
                         {% endif %}
+                        {% for test in appt.lab_tests.all %}
+                            <div>
+                                {% if test.status == 'DONE' %}
+                                    <a href="{% url 'lab:test_detail' test.id %}">{{ test.test_name }}</a>: {{ test.get_status_display }}
+                                {% else %}
+                                    {{ test.test_name }}: {{ test.get_status_display}}
+                                {% endif %}
+                            </div>
+                        {% empty %}
+                            -
+                        {% endfor %}
                     </td>
                 </tr>
                 {% endfor %}
