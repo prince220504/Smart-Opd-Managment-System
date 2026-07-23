@@ -24,7 +24,7 @@ Step-by-step Django learning notes. Revise any time. Each file covers **what**, 
 | 14 | DRF layer + booking integrity | [14-drf-api.md](14-drf-api.md) | ✅ Done (14a–14e) |
 | 15 | Doctor availability + cancel reason | [15-availability-and-cancel-reason.md](15-availability-and-cancel-reason.md) | ✅ Done (15a–15d) |
 | 16 | `lab` module (tests, results, downloads) | [16-lab-module.md](16-lab-module.md) | ✅ Done (16a–16e) |
-| 17 | `prescriptions` app | _coming_ | |
+| 17 | `prescriptions` app | [17-prescriptions.md](17-prescriptions.md) | ⏳ (17a done) |
 | 18 | `notifications` + background tasks | _coming_ | |
 | 19 | Dashboard + exports + medical history | _coming_ | |
 | 20 | Deploy (Whitenoise + Render) | _coming_ | |
