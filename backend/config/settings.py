@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'apps.accounts',
     'apps.appointments',
     'apps.lab',
+    'apps.prescriptions',
     'rest_framework',
     'apps.api',
     'drf_spectacular',
