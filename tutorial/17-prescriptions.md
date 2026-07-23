@@ -100,3 +100,100 @@ python manage.py migrate
 - `Prescription` = OneToOne child of `Appointment` (CASCADE), reached as `appointment.prescription`.
 - `medicines = JSONField(default=list)` stores the medicine lines as a list-of-dicts in one column — no child table.
 - COMPLETED-only is a view rule (17b), not a model constraint.
+
+---
+
+## 17b — the doctor write page
+
+### What
+Doctor opens a COMPLETED appointment, fills diagnosis + advice + a dynamic list of medicine rows,
+saves → one `Prescription`. Same page edits an existing one.
+
+### Why
+Prescriptions is its own app (like `lab`), so the write view/form/urls live in `apps/prescriptions/`.
+The "only on COMPLETED" rule from 17a gets enforced here, in the view — not the model.
+
+### How
+
+**Form** — `apps/prescriptions/forms.py` (only the flat text fields):
+```python
+from django import forms
+from .models import Prescription
+
+class PrescriptionForm(forms.ModelForm):
+    class Meta:
+        model = Prescription
+        fields = ['diagnosis', 'advice']
+```
+`appointment` is set from the URL; `medicines` is built from repeated inputs, so neither is a form field.
+
+**View** — `apps/prescriptions/views.py`:
+```python
+@login_required
+def write_prescription(request, appointment_id):
+    appointment = get_object_or_404(
+        Appointment,
+        id=appointment_id,
+        doctor=request.user,
+        status=Appointment.Status.COMPLETED,
+    )
+    existing = getattr(appointment, 'prescription', None)
+
+    if request.method == 'POST':
+        form = PrescriptionForm(request.POST, instance=existing)
+        if form.is_valid():
+            prescription = form.save(commit=False)
+            prescription.appointment = appointment
+            names = request.POST.getlist('med_name')
+            dosages = request.POST.getlist('med_dosage')
+            frequencies = request.POST.getlist('med_frequency')
+            durations = request.POST.getlist('med_duration')
+            medicines = []
+            for name, dosage, frequency, duration in zip(names, dosages, frequencies, durations):
+                if name:
+                    medicines.append({'name': name, 'dosage': dosage,
+                                      'frequency': frequency, 'duration': duration})
+            prescription.medicines = medicines
+            prescription.save()
+            return redirect('appointments:doctor_records')
+    else:
+        form = PrescriptionForm(instance=existing)
+    ...
+```
+
+**URLs** — `apps/prescriptions/urls.py` (`app_name = 'prescriptions'`, route `write/<int:appointment_id>/`
+name `write`) + `config/urls.py`: `path('prescriptions/', include('apps.prescriptions.urls'))`.
+
+**Button** — on `doctor_records.html`, a new `{% elif appt.status == 'COMPLETED' %}` branch links to
+`prescriptions:write`; label flips on `{% if appt.prescription %}` (Write vs View/Edit).
+
+**Template** — `frontend/templates/prescriptions/write.html` = the form + a `#medicines` box of `.med-row`s
+(four `<input>`s each: name/dosage/frequency/duration) + a `+ Add medicine` button running the same
+cloneNode JS as schedule breaks.
+
+### The ideas worth keeping
+
+- **The scoped lookup IS the gate.** `doctor=request.user, status=COMPLETED` in `get_object_or_404`:
+  another doctor's appointment → 404, a not-yet-COMPLETED one → 404. This is *why* the model carries no
+  COMPLETED constraint — the write path enforces it. Same "lookup = authorization" trick as `request_test`.
+
+- **`instance=getattr(appointment, 'prescription', None)` = create-or-update.** The OneToOne trap from 16c:
+  `appointment.prescription` raises `RelatedObjectDoesNotExist` when none exists, but that subclasses
+  `AttributeError`, so `getattr(..., None)` returns `None` → the form creates; if one exists → it edits.
+  No second-write `IntegrityError`.
+
+- **`getlist` + `zip` + skip-empty** — four parallel lists (name/dosage/frequency/duration), zipped
+  row-by-row, `if name:` drops blank rows → `medicines` JSON. Identical shape to the schedule-breaks
+  `getlist` from 15c. The template's `cloneNode` "+ Add medicine" is the client half of the same pattern.
+
+### Gotchas
+- **`document.getElementById` — lowercase `d`.** Typed `getElementByID` → JS is case-sensitive →
+  `TypeError: ... is not a function`; the clone is built but never appended, so "+ Add medicine" silently
+  does nothing. (Caught on Prince's test — the row was cloned in memory but the append line threw.)
+- `{% if appt.prescription %}` in a template safely reads empty when no prescription exists (Django swallows
+  the reverse-OneToOne miss, same as lab notes in 16d).
+
+### Revise (3-line recall)
+- Write view lives in the prescriptions app; `get_object_or_404(..., doctor=me, status=COMPLETED)` = auth + COMPLETED-gate in one query.
+- `instance=getattr(appointment, 'prescription', None)` makes one view both create and edit (OneToOne, no IntegrityError).
+- Medicine rows: `getlist` four parallel lists + `zip` + `if name:` → JSON; `cloneNode` adds rows client-side.
