@@ -197,3 +197,68 @@ cloneNode JS as schedule breaks.
 - Write view lives in the prescriptions app; `get_object_or_404(..., doctor=me, status=COMPLETED)` = auth + COMPLETED-gate in one query.
 - `instance=getattr(appointment, 'prescription', None)` makes one view both create and edit (OneToOne, no IntegrityError).
 - Medicine rows: `getlist` four parallel lists + `zip` + `if name:` → JSON; `cloneNode` adds rows client-side.
+
+---
+
+## 17c — patient view page + doctor read-back + column split (Day 33)
+
+**Goal:** the patient can finally *read* a prescription; the doctor's records page stops being a
+one-column pile of unrelated buttons.
+
+### What we built
+
+**View** — `apps/prescriptions/views.py`, `view_prescription`. The IDOR guard is the lookup again — but
+this time the scope spans the FK:
+```python
+prescription = get_object_or_404(
+    Prescription,
+    appointment__id=appointment_id,
+    appointment__patient=request.user,
+)
+```
+`appointment__patient` = a **field lookup that crosses the FK** ("the patient of the appointment this
+prescription belongs to"). Someone else's `appointment_id` → filter matches nothing → 404. Fetch + auth in
+one query, no separate `if` check.
+
+**Route** — `view/<int:appointment_id>/` name `view`.
+
+**Template** — `frontend/templates/prescriptions/view.html`: read-only. Loops `prescription.medicines`
+(the **JSONField** — a plain list of dicts, no join) into a table; diagnosis + advice as text.
+
+**Link** — on `my_appointments.html`, a `{% elif appt.status == 'COMPLETED' and appt.prescription %}`
+branch links to `prescriptions:view`.
+
+**Doctor read-back — nothing to build.** The 17b doctor_records button already links to `prescriptions:write`,
+which loads the existing prescription into the form. Read = the same page. No separate doctor view page.
+
+### Column split (Prince's UX call)
+
+Both doctor pages had one **Action** cell holding lifecycle buttons + Request Test + the test list + the
+prescription button — messy. Split by concern into three columns on `doctor_records.html` **and**
+`doctor_today.html`:
+- **Action** = lifecycle only (Accept / Complete / No-show / Cancel).
+- **Tests** = Request form (CONFIRMED only) + the existing-tests list.
+- **Prescription** = the Write / View-Edit button (COMPLETED only).
+
+`doctor_today` gained a Prescription column it never had (a today appointment can be COMPLETED).
+
+### The idea worth keeping — kill the reverse-OneToOne N+1
+
+`{% if appt.prescription %}` reads a **reverse OneToOne** → one extra query per row. Django *can* join it,
+so add it to `select_related`:
+```python
+.select_related('doctor', 'prescription')   # my_appointments
+.select_related('patient', 'prescription')  # doctor_today
+```
+One JOIN instead of one-query-per-row. (Reverse OneToOne = select_related; reverse FK one→many = prefetch,
+like `lab_tests`.)
+
+### Design decisions
+- **Request Test stays on CONFIRMED, not COMPLETED.** The doctor orders tests *live during the consult*
+  (CONFIRMED), then marks COMPLETED. Moving it to COMPLETED would force finish-then-reopen. It's optional —
+  available, never forced.
+
+### Revise (3-line recall)
+- Patient view: `get_object_or_404(Prescription, appointment__id=..., appointment__patient=request.user)` — cross-FK lookup = IDOR guard.
+- Doctor read-back reuses the write page (loads existing); no separate view.
+- Reverse OneToOne (`appt.prescription`) → `select_related` to kill the per-row N+1; reverse FK stays `prefetch_related`.
