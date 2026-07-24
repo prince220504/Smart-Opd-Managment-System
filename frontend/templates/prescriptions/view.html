@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Prescription - Smart OPD{% endblock %}
+
+{% block content %}
+<h1>Prescription</h1>
+<p>Dr. {{ prescription.appointment.doctor.username }}
+   &middot; {{ prescription.appointment.appointment_date }}
+   at {{ prescription.appointment.time_slot }}</p>
+
+<h3>Diagnosis</h3>
+<p>{{ prescription.diagnosis }}</p>
+
+<h3>Medicines</h3>
+{% if prescription.medicines %}
+    <table border="1" cellpadding="6">
+        <thead>
+            <tr><th>Name</th>
+                <th>Dosage</th>    
+                <th>Frequency</th>    
+                <th>Duration</th>    
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in prescription.medicines %}
+            <tr>
+                <td>{{ m.name }}</td>
+                <td>{{ m.dosage }}</td>
+                <td>{{ m.frequency }}</td>
+                <td>{{ m.duration }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>No medicines listed.</p>
+{% endif %}
+
+<p><a href="{% url 'appointments:my_appointments' %}">Back to My Appointments</a></p>
+{% endblock %}
