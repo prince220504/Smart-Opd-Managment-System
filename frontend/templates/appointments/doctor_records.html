@@ -15,6 +15,8 @@
                 <td>Status</td>
                 <td>Notes</td>
                 <td>Action</td>
+                <td>Tests</td>
+                <td>Prescription</td>
             </tr>
         </thead>
         <tbody>
@@ -50,15 +52,17 @@
                                 <input type="text" name="cancel_reason" placeholder="Reason (optional)" style="width:130px">
                                 <button type="submit" onclick="return confirm('Cancel this appointment?');">Cancel</button>
                             </form>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if appt.status == 'CONFIRMED' %} 
                             <form method="post" action="{% url 'lab:request_test' appt.id %}" style="display:inline">
                                 {% csrf_token %}
                                 <input type="text" name="test_name" placeholder="Test name" style="width:110px">
                                 <button type="submit">Request Test</button>
                             </form>
-                        {% elif appt.status == 'COMPLETED' %}
-                            <a href="{% url 'prescriptions:write' appt.id %}">
-                                <button type="button">{% if appt.prescription %}View / Edit Prescription{% else %}Write Prescription{% endif %}</button>
-                            </a>
                         {% endif %}
                         {% for test in appt.lab_tests.all %}
                             <div>
@@ -69,8 +73,17 @@
                                 {% endif %}
                             </div>
                         {% empty %}
-                            -
+                            {% if appt.status != 'CONFIRMED' %}-{% endif %}
                         {% endfor %}
+                    </td>
+                    <td>
+                        {% if appt.status == 'COMPLETED' %}
+                            <a href="{% url 'prescriptions:write' appt.id %}">
+                                <button type="button">{% if appt.prescription %}View / Edit Prescription{% else %}Write Prescription{% endif %}</button>
+                            </a>
+                        {% else %}
+                            -
+                        {% endif %}                       
                     </td>
                 </tr>
                 {% endfor %}

@@ -14,6 +14,8 @@
                 <th>Status</th>
                 <th>Notes</th>
                 <th>Action</th>
+                <th>Tests</th>
+                <th>Prescription</th>
             </tr>
         </thead>
         <tbody>
@@ -48,6 +50,12 @@
                                 <input type="text" name="cancel_reason" placeholder="Reason (optional)" style="width:130px">
                                 <button type="submit" onclick="return confirm('Cancel this appointment?');">Cancel</button>
                             </form>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if appt.status == 'CONFIRMED' %}
                             <form method="post" action="{% url 'lab:request_test' appt.id %}" style="display:inline">
                                 {% csrf_token %}
                                 <input type="text" name="test_name" placeholder="Test name" style="width:110px">
@@ -63,8 +71,17 @@
                                 {% endif %}
                             </div>
                         {% empty %}
-                            -
+                            {% if appt.status != 'CONFIRMED' %}-{% endif %}
                         {% endfor %}
+                    </td>
+                    <td>
+                        {% if appt.status == 'COMPLETED' %}
+                            <a href="{% url 'prescription:write' appt.id %}">
+                                <button type="button">{% if appt.prescription %}View / Edit{% else %}Write{% endif %}</button>
+                            </a>
+                        {% else %}
+                            -
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
