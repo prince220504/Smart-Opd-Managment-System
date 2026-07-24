@@ -45,7 +45,7 @@ def book_appointment(request, doctor_id):
 @login_required
 def my_appointments(request):
     appointments = (
-        request.user.patient_appointments.select_related('doctor').all()
+        request.user.patient_appointments.select_related('doctor', 'prescription').all()
     )
     return render(request, 'appointments/my_appointments.html', {'appointments': appointments})
 
@@ -55,7 +55,7 @@ def doctor_today(request):
     appointments = (
         request.user.doctor_appointments
         .filter(appointment_date=today)
-        .select_related('patient')
+        .select_related('patient', 'prescription')
         .prefetch_related('lab_tests__result')
     )
     return render(request,

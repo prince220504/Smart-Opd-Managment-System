@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from apps.appointments.models import Appointment
 from .forms import PrescriptionForm
+from .models import Prescription
 
 @login_required
 def write_prescription(request, appointment_id):
@@ -43,3 +44,11 @@ def write_prescription(request, appointment_id):
         'existing': existing,
     })
             
+@login_required
+def view_prescription(request, appointment_id):
+    prescription = get_object_or_404(
+        Prescription,
+        appointment__id=appointment_id,
+        appointment__patient=request.user,
+    )
+    return render(request, 'prescriptions/view.html', {'prescription':prescription,})
