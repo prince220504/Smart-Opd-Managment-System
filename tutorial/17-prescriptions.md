@@ -262,3 +262,60 @@ like `lab_tests`.)
 - Patient view: `get_object_or_404(Prescription, appointment__id=..., appointment__patient=request.user)` — cross-FK lookup = IDOR guard.
 - Doctor read-back reuses the write page (loads existing); no separate view.
 - Reverse OneToOne (`appt.prescription`) → `select_related` to kill the per-row N+1; reverse FK stays `prefetch_related`.
+
+---
+
+## 17d — prescription PDF (Day 34)
+
+**Decision: no ReportLab.** Unlike lab 16d (which *cut* its PDF because the tech's raw upload
+carried the real content), a prescription's content **is** generated here — but the HTML we already
+render *is* the document. So skip the library, the view, the route, the hand-drawn layout.
+
+**`window.print()`** — 1 line. The browser's own print dialog has "Save as PDF" as a destination,
+so the patient gets a real PDF with **zero server code**.
+
+**`@media print { … }`** — CSS that applies only when printing. The screen page has a nav bar, footer,
+a Back link, the print button itself — none belong on a printed prescription. Mark them `.no-print`
+(plus `header, footer`) and hide them in the print block.
+
+```django
+<style>
+    @media print { header, footer, .no-print { display: none; } }
+</style>
+...
+<button type="button" onclick="window.print()">Print / Save as PDF</button>
+```
+
+**What physically happens:** click → `window.print()` fires → browser re-renders applying `@media print`
+(nav/footer/button gone) → patient picks "Save as PDF" → file in Downloads. No round-trip to Django.
+
+### Default PDF filename = the page `<title>`
+
+The browser suggests the save filename from `document.title`. Make it useful per-prescription:
+```django
+{% block title %}Prescription -{{ prescription.appointment.patient.username }}-{{ prescription.appointment.appointment_date|date:"Y-m-d" }}{% endblock %}
+```
+→ suggests `Prescription -rahul-2026-07-24.pdf`. `|date:"Y-m-d"` keeps it clean (no spaces/slashes).
+Browser only *suggests* — user can still rename. That's a browser limit, not fixable.
+
+### Also fixed the 17c advice gap
+The patient view never rendered `advice` (model had it, form saved it, template skipped it). Added:
+```django
+{% if prescription.advice %}
+    <h3>Advice</h3>
+    <p>{{ prescription.advice }}</p>
+{% endif %}
+```
+
+### Bugs (silent typos, all template)
+- `{{ prescrition.advice }}` — missing the `p` in `prescription`. Undefined var → empty string, no error.
+  The `{% if %}` above it was spelled right, so the heading showed but the text was blank.
+- `prescription.appointment_date` in the title — dropped the `.appointment` hop (date lives on the
+  appointment, not the prescription). Undefined → `|date` had nothing → empty filename segment.
+
+### Revise (3-line recall)
+- Generated content → `window.print()` + `@media print`, not ReportLab. One template, no server code.
+- Default PDF filename comes from `<title>` — set it per-record; browser only suggests.
+- Missing-hop / misspelled var in a template = silent empty render, no error. Sweep them.
+
+**Step 17 closed.**
