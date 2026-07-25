@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Write Prescription - Smart OPD{% endblock %}
+
+{% block content %}
+<h1>Prescription for {{ appointment.patient.username }}</h1>
+<p>{{ appointment.appointment_date }} at {{ appointment.time_slot }}</p>
+
+{% if form.errors %}
+    <div style="color:red">
+        {% for field, errors in form.errors.items %}
+            <p>{{ field }}: {{ errors|join:", "}}</p>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <h3>Medicines</h3>
+    <div id="medicines">
+        {% if existing.medicines %}
+            {% for m in existing.medicines %}
+                <p class="med-row">
+                    <input type="text" name="med_name" placeholder="Name" value="{{ m.name }}">
+                    <input type="text" name="med_dosage" placeholder="Dosage" value="{{ m.dosage }}">
+                    <input type="text" name="med_frequency" placeholder="Frequency" value="{{ m.frequency }}">
+                    <input type="text" name="med_duration" placeholder="Duration" value="{{ m.duration }}"> 
+                </p>
+            {% endfor %}
+        {% else %}
+            <p class="med-row">
+                <input type="text" name="med_name" placeholder="Name">
+                <input type="text" name="med_dosage" placeholder="Dosage">
+                <input type="text" name="med_frequency" placeholder="Frequency">
+                <input type="text" name="med_duration" placeholder="Duration"> 
+            </p>
+        {% endif %}
+    </div>
+    <button type="button" onclick="addMedicine()">+ Add medicine</button>
+
+    <p><button type="submit">Save Prescription</button></p>
+</form>
+
+<script>
+    function addMedicine(){
+        const row = document.querySelector('.med-row');
+        const copy = row.cloneNode(true);
+        copy.querySelectorAll('input').forEach(i => i.value = '');
+        document.getElementById('medicines').appendChild(copy);
+    }
+</script>
+{% endblock %}

@@ -26,10 +26,12 @@
                 <td>{{ appt.get_status_display }}{% if appt.status == 'CANCELLED' and appt.cancel_reason %}<br><small>{{ appt.cancel_reason }}</small>{% endif %}</td>
                 <td>{{ appt.notes|default:"-"}}</td>
                 <td>{% if appt.status == 'PENDING' or appt.status == 'CONFIRMED' %}
-                    <form method="post" action="{% url 'appointments:cancel' appt.id %}" style="display: inline;">
-                        {% csrf_token %}
-                        <button type="submit" onclick="return confirm('Cancel this appointment?');">Cancel</button>
-                    </form>
+                        <form method="post" action="{% url 'appointments:cancel' appt.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" onclick="return confirm('Cancel this appointment?');">Cancel</button>
+                        </form>
+                    {% elif appt.status == 'COMPLETED' and appt.prescription %}
+                        <a href="{% url 'prescriptions:view' appt.id %}">View Prescription</a>
                     {% else %}
                     -
                     {% endif %}

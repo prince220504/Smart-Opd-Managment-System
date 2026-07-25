@@ -27,6 +27,7 @@ urlpatterns = [
     path('', RedirectView.as_view(url='/accounts/login/')),
     path('api/', include('apps.api.urls')),
     path('lab/', include('apps.lab.urls')),
+    path('prescriptions/', include('apps.prescriptions.urls')),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) 
