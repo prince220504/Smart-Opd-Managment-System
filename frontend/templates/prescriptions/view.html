@@ -1,8 +1,14 @@
 {% extends 'base.html' %}
 
-{% block title %}Prescription - Smart OPD{% endblock %}
+{% block title %}Prescription -{{ prescription.appointment.patient.username }}-{{ prescription.appointment.appointment_date|date:"Y-m-d" }}{% endblock %}
 
 {% block content %}
+<style>
+    @media print{
+        header, footer, .no-print{ display: none;}
+    }
+</style>
+
 <h1>Prescription</h1>
 <p>Dr. {{ prescription.appointment.doctor.username }}
    &middot; {{ prescription.appointment.appointment_date }}
@@ -36,5 +42,14 @@
     <p>No medicines listed.</p>
 {% endif %}
 
-<p><a href="{% url 'appointments:my_appointments' %}">Back to My Appointments</a></p>
+{% if prescription.advice %}
+    <h3>Advice</h3>
+    <p>{{ prescription.advice }}</p>
+{% endif %}
+
+<p class="no-print">
+    <button type="button" onclick="window.print()">Print / Save as PDF</button>
+</p>
+
+<p class="no-print"><a href="{% url 'appointments:my_appointments' %}">Back to My Appointments</a></p>
 {% endblock %}
