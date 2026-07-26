@@ -25,7 +25,7 @@ Step-by-step Django learning notes. Revise any time. Each file covers **what**, 
 | 15 | Doctor availability + cancel reason | [15-availability-and-cancel-reason.md](15-availability-and-cancel-reason.md) | ✅ Done (15a–15d) |
 | 16 | `lab` module (tests, results, downloads) | [16-lab-module.md](16-lab-module.md) | ✅ Done (16a–16e) |
 | 17 | `prescriptions` app | [17-prescriptions.md](17-prescriptions.md) | ✅ (17a–17d) |
-| 18 | `notifications` + background tasks | _coming_ | |
+| 18 | `notifications` + background tasks | [18-notifications.md](18-notifications.md) | 🚧 In progress (18a) |
 | 19 | Dashboard + exports + medical history | _coming_ | |
 | 20 | Deploy (Whitenoise + Render) | _coming_ | |
 | 21 | Frontend (Stitch → Django) + README + availability calendar | _coming_ | |
