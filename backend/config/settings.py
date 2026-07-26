@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'apps.appointments',
     'apps.lab',
     'apps.prescriptions',
+    'apps.notifications',
     'rest_framework',
     'apps.api',
     'drf_spectacular',
