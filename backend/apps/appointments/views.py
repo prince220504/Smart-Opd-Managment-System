@@ -7,6 +7,9 @@ from .models import Appointment, DoctorAvailability
 from datetime import date
 from django.db.models import Q
 from django.http import Http404
+from django.urls import reverse
+from apps.notifications.services import notify
+from apps.notifications.models import Notification
 
 User = get_user_model()
 
@@ -32,6 +35,12 @@ def book_appointment(request, doctor_id):
             appointment = form.save(commit=False)
             appointment.patient = request.user
             appointment.save()
+            notify(
+                recipient=appointment.patient,
+                message=f'Appointment booked with Dr. {doctor.username} on {appointment.appointment_date}.',
+                notification_type=Notification.Type.BOOKING,
+                link=reverse('appointments:my_appointments'),
+            )
             return redirect('appointments:my_appointments')
     else:
         form = BookAppointmentForm(initial={'doctor': doctor})
@@ -143,7 +152,13 @@ def reception_book(request):
     if request.method == 'POST':
         form = ReceptionBookingForm(request.POST)
         if form.is_valid():
-            form.save()
+            appointment = form.save()
+            notify(
+                recipient=appointment.patient,
+                message=f'Appointment booked with Dr. {appointment.doctor.username} on {appointment.appointment_date}.',
+                notification_type=Notification.Type.BOOKING,
+                link=reverse('appointments:my_appointments'),
+            )
             return redirect('appointments:appointment_list')
     else:
         form = ReceptionBookingForm()
@@ -161,6 +176,12 @@ def confirm_appointment(request, appointment_id):
     if appointment.status == Appointment.Status.PENDING:
         appointment.status = Appointment.Status.CONFIRMED
         appointment.save()
+        notify(
+            recipient=appointment.patient,
+            message=f'Your appointment on {appointment.appointment_date} is confirmed.',
+            notification_type=Notification.Type.STATUS,
+            link=reverse('appointments:my_appointments'),
+        )
     
     return _redirect_after_action(request)
 
@@ -204,6 +225,16 @@ def cancel_appointment(request, appointment_id):
         appointment.status = Appointment.Status.CANCELLED
         appointment.cancel_reason = request.POST.get('cancel_reason', '')
         appointment.save()
+
+        recipients = [appointment.patient, appointment.doctor]
+        for user in recipients:
+            if user != request.user:
+                notify(
+                    recipient=user,
+                    message=f'Appointment on {appointment.appointment_date} was cancelled.',
+                    notification_type=Notification.Type.STATUS,
+                    link=reverse('appointments:my_appointments'),
+                )
     
     return _redirect_after_action(request)
 

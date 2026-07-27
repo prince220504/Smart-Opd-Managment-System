@@ -3,6 +3,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from apps.appointments.models import Appointment
 from .forms import PrescriptionForm
 from .models import Prescription
+from django.urls import reverse
+from apps.notifications.services import notify
+from apps.notifications.models import Notification
 
 @login_required
 def write_prescription(request, appointment_id):
@@ -34,6 +37,12 @@ def write_prescription(request, appointment_id):
                     })
             prescription.medicines = medicines
             prescription.save()
+            notify(
+                recipient=appointment.patient,
+                message=f'Prescription added for your appointment on {appointment.appointment_date}.',
+                notification_type=Notification.Type.PRESCRIPTION,
+                link=reverse('prescriptions:view', args=[appointment.id]),
+            )
             return redirect('appointments:doctor_records')
     else:
         form = PrescriptionForm(instance=existing)
