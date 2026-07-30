@@ -229,11 +229,12 @@ def cancel_appointment(request, appointment_id):
         recipients = [appointment.patient, appointment.doctor]
         for user in recipients:
             if user != request.user:
+                target = 'appointments:my_appointments' if user == appointment.patient else 'appointments:doctor_records'
                 notify(
                     recipient=user,
                     message=f'Appointment on {appointment.appointment_date} was cancelled.',
                     notification_type=Notification.Type.STATUS,
-                    link=reverse('appointments:my_appointments'),
+                    link=reverse(target),
                 )
     
     return _redirect_after_action(request)
