@@ -76,7 +76,7 @@
                     </td>
                     <td>
                         {% if appt.status == 'COMPLETED' %}
-                            <a href="{% url 'prescription:write' appt.id %}">
+                            <a href="{% url 'prescriptions:write' appt.id %}">
                                 <button type="button">{% if appt.prescription %}View / Edit{% else %}Write{% endif %}</button>
                             </a>
                         {% else %}
