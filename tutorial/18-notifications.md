@@ -254,3 +254,145 @@ reverse('lab:test_detail', args=[1])
 - `notify()` goes **after `.save()` and inside the state guard** — that guard is what stops duplicates.
 - Same-link recipients → loop; different-link recipients → separate calls.
 - Model instances compare by **primary key**, so `user != request.user` is the whole "other party" rule.
+
+---
+
+## 18c — the bell (in-app delivery)
+
+### What
+Notifications existed in the database since 18b but no user could see one. 18c builds the delivery
+surface: a 🔔 in the nav with an unread count on **every** page, a list page, and a click that marks
+the row read and forwards you to the page the notification is about.
+
+Email is *not* here — it moved to 18d with the Celery work.
+
+### Why
+**Why a context processor.** The bell lives in `base.html`, which every page extends. But context is
+built by views, and there are ~20 of them. Adding `unread_count` to 20 context dicts is 20 chances to
+forget one, and the bell silently disappears on the page you forgot. A **context processor** is a
+function Django runs on *every* template render, whose returned dict is merged into that render's
+context. Write once, appears everywhere. `user` and `csrf_token` reach your templates by exactly this
+mechanism.
+
+**Why a count and not a dropdown.** A dropdown of recent notifications needs those rows fetched on
+every single request, for a panel that's mostly never opened. `.count()` is one `SELECT COUNT(*)`
+returning one integer. The bell links to a full page instead — the rows are fetched only when someone
+actually wants them.
+
+**Why marking-read and navigating are one view.** The only reason to click a notification is to go
+look at the thing it announces. So there is no separate "mark as read" button: `open_notification`
+flips the flag and redirects. One route, no UI clutter, and the flag can never drift out of sync with
+what the user actually looked at.
+
+### How
+
+**1. The views** (`apps/notifications/views.py`):
+```python
+@login_required
+def notification_list(request):
+    notifications = request.user.notifications.all()
+    return render(request, 'notifications/list.html', {'notifications': notifications})
+
+
+@login_required
+def open_notification(request, notification_id):
+    notification = get_object_or_404(
+        Notification,
+        id=notification_id,
+        recipient=request.user,
+    )
+    notification.is_read = True
+    notification.save()
+    return redirect(notification.link or 'notifications:list')
+```
+
+`request.user.notifications.all()` is the `related_name` from 18a paying off — Django compiles it to
+`WHERE recipient_id = <you> ORDER BY created_at DESC`, the ordering coming free from `Meta.ordering`.
+The reverse accessor *is* the filter; no `filter(recipient=...)` needed.
+
+`recipient=request.user` inside `get_object_or_404` is the same IDOR pattern as `doctor=me` (16b) and
+`appointment__patient=me` (17c): **authorisation lives in the lookup, not in a separate `if`.** Someone
+typing another user's notification id gets a 404.
+
+`redirect()` accepts two kinds of string: a path (`/appointments/mine/`) goes straight into the
+`Location` header, a URL *name* (`'notifications:list'`) is run through `reverse()` first. Since `link`
+is `blank=True` it can be `''`, and `redirect('')` goes nowhere — the `or` supplies the fallback in one
+operator instead of an `if`.
+
+**2. The routes** (`apps/notifications/urls.py` + one `include` in `config/urls.py`):
+```python
+app_name = 'notifications'
+
+urlpatterns = [
+    path('', views.notification_list, name='list'),
+    path('open/<int:notification_id>/', views.open_notification, name='open'),
+]
+```
+The converter name (`notification_id`) must match the view's parameter name exactly, or Django raises
+`TypeError: got an unexpected keyword argument`.
+
+**3. The context processor** (`apps/notifications/context_processors.py`):
+```python
+def unread_count(request):
+    if not request.user.is_authenticated:
+        return {}
+    return {'unread_count': request.user.notifications.filter(is_read=False).count()}
+```
+Registered by dotted path in `settings.TEMPLATES[0]['OPTIONS']['context_processors']`.
+
+**4. The bell** (`base.html`, outside the role `if/elif` chain, inside `if user.is_authenticated`):
+```html
+<a href="{% url 'notifications:list' %}">
+    🔔{% if unread_count %} ({{ unread_count }}){% endif %}
+</a>
+```
+
+**5. The list page** uses `get_notification_type_display` — Django auto-generates `get_FOO_display()`
+for any field with `choices`, returning the human label (`'Prescription'`) for the stored value
+(`'PRESCRIPTION'`). Called **without parentheses** in a template; the template language calls callables
+for you.
+
+### Gotchas
+- **A context processor must never raise.** It runs on *every* render, including the login page, where
+  `request.user` is `AnonymousUser` and has no `notifications` accessor. Without the
+  `is_authenticated` guard, logging in becomes impossible. Returning `{}` is enough — a missing
+  template variable is simply empty, so `{% if unread_count %}` is just false.
+- `.count()` not `len(queryset)`. `.count()` asks the database for one integer; `len()` drags every
+  unread row into Python objects to measure the list.
+- `{% if unread_count %}` hides `(0)` — a bell showing zero reads as broken.
+- **`link` is a frozen string, not a live lookup.** `reverse()` runs at write time and the result is
+  stored. Fixing a wrong link in a view does *not* repair rows already in the database (an FK would
+  re-resolve on read; that was the trade for one column serving many page types).
+- Typos caught this session: `request.user.notification.all()` (singular — `AttributeError` at request
+  time, `check` passes) and `<storng>` (browsers render unknown tags as plain inline elements, so
+  unread rows just quietly stopped looking bold).
+
+### Two bugs the bell exposed
+Making notifications clickable turned two invisible bugs into visible ones — which is the whole point
+of building the delivery surface before adding more triggers.
+
+1. **Cancel sent both parties to `appointments:my_appointments`**, a page that reads
+   `request.user.patient_appointments`. A doctor clicking their own cancellation notice landed on an
+   empty table — no error, no crash, just a dead end. Fixed with a ternary inside the loop that
+   already existed:
+   ```python
+   target = 'appointments:my_appointments' if user == appointment.patient else 'appointments:doctor_records'
+   ```
+   Same PK-comparison trick as the `user != request.user` guard one line above.
+2. **`{% url 'prescription:write' %}`** (singular) in `doctor_today.html` — dating from 17c. It only
+   fired the first time a row on today's page became COMPLETED, because `{% url %}` resolves at render
+   time and that link lives inside the COMPLETED branch. `manage.py check` never sees it.
+
+### The duplicate, decided
+`write_prescription` re-notifies on edit (18b's parked question). **Left as-is.** An edited
+prescription genuinely is news to the patient, and suppressing it would mean threading a `created`
+flag through the create-or-update path. Zero code, defensible behaviour.
+
+### Revise
+- **Context processor** = a function whose dict is merged into *every* template render. The only way
+  to put something in `base.html` without touching every view.
+- Authorisation belongs in the lookup (`recipient=request.user`), not in a following `if`.
+- `redirect()` takes a path *or* a URL name — `or 'ns:name'` is a one-operator fallback for an empty
+  stored link.
+- Ask the DB for the number (`.count()`), never for the rows you're going to throw away.
+- A stored URL string never re-resolves. Fix the view, and old rows stay wrong.
