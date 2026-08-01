@@ -40,6 +40,7 @@ def book_appointment(request, doctor_id):
                 message=f'Appointment booked with Dr. {doctor.username} on {appointment.appointment_date}.',
                 notification_type=Notification.Type.BOOKING,
                 link=reverse('appointments:my_appointments'),
+                email=True,
             )
             return redirect('appointments:my_appointments')
     else:
@@ -158,6 +159,7 @@ def reception_book(request):
                 message=f'Appointment booked with Dr. {appointment.doctor.username} on {appointment.appointment_date}.',
                 notification_type=Notification.Type.BOOKING,
                 link=reverse('appointments:my_appointments'),
+                email=True,
             )
             return redirect('appointments:appointment_list')
     else:

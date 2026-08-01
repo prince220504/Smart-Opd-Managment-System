@@ -78,6 +78,7 @@ def upload_result(request, test_id):
                 message=f'Result uploaded for {test.test_name}.',
                 notification_type=Notification.Type.RESULT,
                 link=reverse('lab:my_tests'),
+                email=True,
             )
             notify(
                 recipient=appointment.doctor,
