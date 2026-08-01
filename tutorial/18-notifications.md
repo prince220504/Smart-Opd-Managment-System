@@ -396,3 +396,194 @@ flag through the create-or-update path. Zero code, defensible behaviour.
   stored link.
 - Ask the DB for the number (`.count()`), never for the rows you're going to throw away.
 - A stored URL string never re-resolves. Fix the view, and old rows stay wrong.
+
+---
+
+## 18d — email (SMTP) + secrets in `.env`
+
+### What
+Three of the eight notification events now also leave the app as real email: a patient gets mail when a
+booking is created (either entry point) and when a lab result is uploaded. The credential that makes
+that possible lives in a gitignored `.env` file, read by **python-decouple** — the first secret this
+project has kept out of source control.
+
+### Why
+The bell only works for someone already looking at the app. A patient logs in maybe twice a month, so
+an in-app row about a lab result can sit unread for weeks. Email is the channel that reaches *outside*
+the app, and that is the only reason to use it.
+
+That framing decides who gets mail, and it is the design call of this sub-step:
+
+> **Email is for people who aren't in the app. In-app is for people who live in it.**
+
+A doctor runs thirty consults a day with the OPD tab open — the bell is already in their eyeline.
+Mailing them thirty result notices adds no information and produces **alert fatigue**: the inbox fills
+with things they already saw, so they start ignoring the sender wholesale, and then the one message
+that mattered gets ignored too. An email channel is only worth having while people still read it. The
+matrix in `CLAUDE.md` originally said result-uploaded mails patient *and* doctor; it was amended here.
+
+| Event | Patient | Doctor |
+|---|---|---|
+| Booking created (self-booked or by reception) | in-app + **email** | — |
+| Result uploaded | in-app + **email** | in-app only |
+| Confirmed · cancelled · test requested · prescription written | in-app | in-app |
+
+### How
+
+**1 — python-decouple.** A Gmail app password is a live credential. Hardcode it in `settings.py` and it
+goes to GitHub permanently; deleting it later doesn't help, because the old commit still holds it.
+
+```powershell
+pip install python-decouple
+pip freeze > requirements.txt
+```
+
+`backend/.env` — real values, gitignored:
+
+```
+SECRET_KEY=django-insecure-...
+DEBUG=True
+EMAIL_HOST_USER=projectaccount@gmail.com
+EMAIL_HOST_PASSWORD=abcdefghijklmnop
+```
+
+`backend/.env.example` — same keys, no values, **committed**. It is the map that tells a teammate (or
+you on a new machine) what to fill in.
+
+decouple's `AutoConfig` searches from the directory of the file that called `config()` and walks *up*:
+`backend/config/` → `backend/` → repo root. So `backend/.env` sits one hop from `settings.py` and next
+to `manage.py`, the thing you actually run.
+
+**2 — `settings.py`.**
+
+```python
+from decouple import config
+
+SECRET_KEY = config('SECRET_KEY')
+DEBUG = config('DEBUG', cast=bool)
+```
+
+`config('SECRET_KEY')` with **no default** means required — a missing key raises `UndefinedValueError`
+and Django refuses to boot. That is correct behaviour for a secret: crash loudly, never fall back to a
+silent insecure default.
+
+`cast=bool` is not optional. Everything in a `.env` file is text, so `DEBUG=False` gives you the
+*string* `'False'` — and every non-empty string is truthy in Python, so `bool('False')` is `True`.
+Without the cast you would ship production running in debug mode, serving full stack traces (with
+settings in them) to every visitor. `cast=bool` routes the value through decouple's own parser, which
+maps `'True'/'true'/'1'/'yes'/'on'` to `True` and `'False'/'false'/'0'/'no'/'off'` to `False`.
+
+Email block at the bottom:
+
+```python
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'   # smtp.EmailBackend when live
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+```
+
+`EMAIL_BACKEND` is the swappable *how*. `console` prints the fully composed message to the `runserver`
+terminal and sends nothing — every other `EMAIL_*` line is ignored while it is active. Build and debug
+against console, flip one string to `smtp.EmailBackend` when the logic is proven.
+
+`DEFAULT_FROM_EMAIL` points at `EMAIL_HOST_USER` because Gmail rejects a `From:` that isn't the account
+you authenticated as.
+
+**3 — the flag on `notify()`.** One helper feeds all eight triggers, so it needs a way to say "this one
+also mails" without touching the five that don't.
+
+```python
+from django.core.mail import send_mail
+
+from .models import Notification
+
+def notify(recipient, message, notification_type, link='', email=False):
+    notification = Notification.objects.create(
+        recipient=recipient,
+        message=message,
+        notification_type=notification_type,
+        link=link,
+    )
+    if email and recipient.email:
+        send_mail(
+            subject=f'OPD - {Notification.Type(notification_type).label}',
+            message=message,
+            from_email=None,
+            recipient_list=[recipient.email],
+            fail_silently=True,
+        )
+    return notification
+```
+
+- **`email=False` is a keyword argument with a default**, appended to the end of the signature. All
+  seven existing call sites keep working untouched — Python fills in `False`. That is how a shared
+  helper survives a new feature. Had it been a required parameter, all seven would have broken at once
+  with `TypeError`.
+- **`Notification.Type(notification_type).label`** — the raw string `'BOOKING'` arrives; wrapping it in
+  the enum class gives the member, and `.label` gives the human half you defined in the model:
+  `'Booking'`. Subject reads `OPD - Booking`, not `OPD - BOOKING`. Same mechanic as
+  `get_notification_type_display` in 18c, called from Python instead of a template.
+- **`from_email=None`** means "use `settings.DEFAULT_FROM_EMAIL`" — one less import, one less place the
+  address can drift.
+- **`and recipient.email`** — `CustomUser.email` can be blank (the LAB user here is). Without the guard,
+  `recipient_list=['']` hands an empty address to the SMTP server and errors mid-booking. Blank email
+  means no mail; the in-app notification still lands.
+
+**4 — three call sites get `email=True,`:** `book_appointment`, `reception_book`, and the *patient* call
+in `upload_result`. Two booking entry points, not one: a patient booked by reception needs the mail
+*more*, not less — they weren't at the screen when it happened.
+
+**5 — going live.** A Google App Password (Security → 2-Step Verification on → App passwords) is a
+separate 16-character credential scoped to one app, revocable on its own. Google blocks plain-password
+logins from apps outright. Strip the spaces, put it in `.env` only — never in a commit, screenshot, or
+`.env.example`. If it leaks, revoke it on that page and generate a new one; that is the entire reason
+for not using the account password.
+
+Flip `EMAIL_BACKEND` to `django.core.mail.backends.smtp.EmailBackend` and test **from the shell first**:
+
+```python
+from django.core.mail import send_mail
+send_mail('OPD test', 'It works.', None, ['you@gmail.com'])   # returns 1
+```
+
+Shell first because it bypasses `fail_silently=True`. Inside `notify()` a broken config is swallowed and
+you chase a phantom; a direct `send_mail` shows the real exception. `SMTPAuthenticationError` = app
+password wrong. Timeout / `SMTPServerDisconnected` = port or TLS wrong.
+
+### `fail_silently=True` — the trade, stated out loud
+`notify()` runs *inside* the booking view, after `appointment.save()`. Gmail being slow or down would
+raise inside the request and hand the patient a 500 for a booking that already saved.
+`fail_silently=True` swallows the SMTP exception: appointment saved, notification saved, mail quietly
+lost.
+
+Right call today — losing a courtesy email beats breaking a booking. But "quietly lost" is genuinely
+bad, and the real fix is 18e: hand the send to Celery, where a failure is *retried* instead of dropped.
+The parameter is a placeholder for a background queue, not a solution.
+
+### Gotchas
+- **`EMAIL_PORT` omitted** → Django's default is `25`. Invisible under the console backend, then a bare
+  timeout the moment you switch to SMTP, because Gmail doesn't serve TLS submission on port 25.
+- **`return Notification`** (capital N) returns the model *class*, not the created row. No error, no
+  warning, `check` passes — invisible until the first caller does `n = notify(...)` and reads a field
+  descriptor instead of a value.
+- **A blank `recipient.email` fails silently by design.** When testing, confirm the user actually has an
+  address before concluding the code is broken.
+- **`.gitignore` pattern `*.env` matches files *ending* in `.env`** — so `backend/.env` is ignored and
+  `backend/.env.example` is not. Verify rather than assume:
+  `git check-ignore -v backend/.env.example` should print nothing.
+- **Test the negative case.** Confirm or cancel an appointment and check that *no* mail block appears.
+  That is the `email=False` default proving the other five triggers stayed quiet — and the reason
+  `request_test`, which loops over every LAB user, doesn't blast an email per tech on every click.
+
+### Revise
+- A shared helper takes new behaviour as a **keyword argument defaulting to the old behaviour** — every
+  existing caller keeps working, untouched.
+- Everything in `.env` is a **string**; `cast=bool` exists because `bool('False')` is `True`.
+- `config('KEY')` with no default = required = boots or crashes, never a silent insecure fallback.
+- `EMAIL_BACKEND` swaps the transport without touching a line of application code — console to debug,
+  SMTP to ship.
+- Email reaches people who aren't in the app. Everyone else gets the bell; mailing them both is how you
+  train users to ignore you.
