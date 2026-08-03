@@ -5,6 +5,12 @@ from django.http import Http404
 from apps.appointments.models import Appointment
 from .models import LabTest
 from .forms import LabResultForm
+from django.contrib.auth import get_user_model
+from django.urls import reverse
+from apps.notifications.services import notify
+from apps.notifications.models import Notification
+
+User = get_user_model()
 
 @login_required
 @require_POST
@@ -20,6 +26,13 @@ def request_test(request, appointment_id):
             requested_by=request.user,
             test_name=test_name,
         )
+        for tech in User.objects.filter(role='LAB'):
+            notify(
+                recipient=tech,
+                message=f'New test requested: {test_name} for {appointment.patient.username}.',
+                notification_type=Notification.Type.TEST,
+                link=reverse('lab:queue'),
+            )
     return redirect('appointments:doctor_today')
 
 @login_required
@@ -59,6 +72,20 @@ def upload_result(request, test_id):
             result.save()
             test.status = LabTest.Status.DONE
             test.save()
+            appointment = test.appointment
+            notify(
+                recipient=appointment.patient,
+                message=f'Result uploaded for {test.test_name}.',
+                notification_type=Notification.Type.RESULT,
+                link=reverse('lab:my_tests'),
+                email=True,
+            )
+            notify(
+                recipient=appointment.doctor,
+                message=f'Result uploaded for {test.test_name} ({appointment.patient.username}).',
+                notification_type=Notification.Type.RESULT,
+                link=reverse('lab:test_detail', args=[test.id]),
+            )
             return redirect('lab:queue')
     else:
         form = LabResultForm(instance=existing)

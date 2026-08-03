@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<h2>Notifications</h2>
+
+<table>
+    <tr>
+        <th>Message</th>
+        <th>Type</th>
+        <th>When</th>
+    </tr>
+    {% for notification in notifications %}
+    <tr>
+        <td>
+            <a href="{% url 'notifications:open' notification.id %}">
+                {% if not notification.is_read %}<strong>{% endif %}
+                {{ notification.message }}
+                {% if not notification.is_read %}</strong>{% endif %}
+            </a>
+        </td>
+        <td>{{ notification.get_notification_type_display }}</td>
+        <td>{{ notification.created_at|date:"d M Y, g:i a" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="3">No notification yet.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

@@ -33,6 +33,7 @@ class Appointment(models.Model):
     notes = models.TextField(blank=True)
     cancel_reason = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    reminder_sent = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['-appointment_date', '-time_slot']
