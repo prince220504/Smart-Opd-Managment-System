@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 from decouple import config
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -164,3 +165,15 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 CELERY_BROKER_URL = config('CELERY_BROKER_URL')
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULE = {
+    'send-appointment-reminders': {
+        'task': 'apps.notifications.tasks.send_appointment_reminders',
+        'schedule': crontab(hour=8, minute=0),
+        # 'schedule': crontab(minute='*'),
+    },
+    'expire-stale-appointments': {
+        'task': 'apps.notifications.tasks.expire_stale_appointments',
+        'schedule': crontab(hour=0, minute=30),
+        # 'schedule': crontab(minute='*'),
+    },
+}
