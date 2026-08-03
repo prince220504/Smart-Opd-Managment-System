@@ -1,5 +1,9 @@
-from django.core.mail import send_mail
 from .models import Notification
+from .tasks import send_notification_email
+import logging
+from kombu.exceptions import OperationalError
+
+logger = logging.getLogger(__name__)
 
 def notify(recipient, message, notification_type, link='', email=False):
     """Create one in-app notification. Single write path for all triggers.
@@ -12,12 +16,9 @@ def notify(recipient, message, notification_type, link='', email=False):
         notification_type=notification_type,
         link=link
     )
-    if email and recipient.email:
-        send_mail(
-            subject=f'OPD - {Notification.Type(notification_type).label}',
-            message=message,
-            from_email=None,
-            recipient_list=[recipient.email],
-            fail_silently=True,  # mail failure must not kill the booking; retries land in 18e
-        )
+    if email:
+        try:
+            send_notification_email.delay(notification.id)
+        except OperationalError:
+            logger.exception('Could not queue email for notification %s', notification.id)
     return notification
