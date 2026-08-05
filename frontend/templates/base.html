@@ -21,6 +21,7 @@
                         <a href="{% url 'appointments:doctor_upcoming' %}">Upcoming</a>
                         <a href="{% url 'appointments:doctor_schedule' %}">My Schedule</a>
                     {% elif user.role == 'RECEPTION' %}
+                        <a href="{% url 'appointments:dashboard' %}">Dashboard</a>
                         <a href="{% url 'appointments:reception_book' %}">Book for Patient</a>
                         <a href="{% url 'appointments:appointment_list' %}">All Appointments</a>
                     {% elif user.role == 'LAB' %}
