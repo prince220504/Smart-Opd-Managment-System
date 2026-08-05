@@ -290,7 +290,7 @@ def reception_dashboard(request):
         today=Count('id', filter=Q(appointment_date=today)),
     )
 
-    per_doctor = (
+    per_doctor = list(
         Appointment.objects
         .values('doctor__username')
         .annotate(total=Count('id'))
