@@ -5,11 +5,12 @@ from django.views.decorators.http import require_POST
 from .forms import BookAppointmentForm, ReceptionBookingForm, DoctorScheduleForm
 from .models import Appointment, DoctorAvailability
 from datetime import date
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.http import Http404
 from django.urls import reverse
 from apps.notifications.services import notify
 from apps.notifications.models import Notification
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -270,4 +271,34 @@ def appointment_list(request):
         'appointments':appointments,
         'doctors': doctors,
         'statuses': Appointment.Status.choices,
+    })
+
+@login_required
+def reception_dashboard(request):
+    if request.user.role != 'RECEPTION':
+        raise Http404()
+
+    today = timezone.localdate()
+
+    stats = Appointment.objects.aggregate(
+        total=Count('id'),
+        pending=Count('id', filter=Q(status=Appointment.Status.PENDING)),
+        confirmed=Count('id', filter=Q(status=Appointment.Status.CONFIRMED)),
+        completed=Count('id', filter=Q(status=Appointment.Status.COMPLETED)),
+        cancelled=Count('id', filter=Q(status=Appointment.Status.CANCELLED)),
+        no_show=Count('id', filter=Q(status=Appointment.Status.NO_SHOW)),
+        today=Count('id', filter=Q(appointment_date=today)),
+    )
+
+    per_doctor = (
+        Appointment.objects
+        .values('doctor__username')
+        .annotate(total=Count('id'))
+        .order_by('-total')
+    )
+
+    return render(request, 'appointments/dashboard.html', {
+        'stats': stats,
+        'per_doctor': per_doctor,
+        'today': today,
     })
