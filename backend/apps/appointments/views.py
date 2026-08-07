@@ -302,3 +302,25 @@ def reception_dashboard(request):
         'per_doctor': per_doctor,
         'today': today,
     })
+
+@login_required
+def medical_history(request, patient_id=None):
+    if patient_id is None:
+        patient = request.user
+    elif request.user.role in ('DOCTOR', 'RECEPTION'):
+        patient = get_object_or_404(User, id=patient_id, role='PATIENT')
+    else:
+        raise Http404()
+
+    appointments = (
+        Appointment.objects
+        .filter(patient=patient)
+        .select_related('doctor', 'prescription')
+        .prefetch_related('lab_tests__result')
+    )
+
+    return render(request, 'appointments/medical_history.html', {
+        'patient': patient,
+        'appointments': appointments,
+    })
+
