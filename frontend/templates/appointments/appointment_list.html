@@ -25,6 +25,7 @@
     <label>Date: <input type="date" name="date" value="{{ request.GET.date }}"></label>
     <button type="submit">Filter</button>
     <a href="{% url 'appointments:appointment_list' %}">Clear</a>
+    <a href="{% url 'appointments:export_csv' %}?{{ request.GET.urlencode }}">Download CSV</a>
 </form>
 
 {% if appointments %}
