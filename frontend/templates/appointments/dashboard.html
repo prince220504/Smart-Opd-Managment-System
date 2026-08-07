@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+  .stat-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+  .stat-card { border: 1px solid #ccc; border-radius: 6px; padding: 12px 20px; min-width: 120px; }
+  .stat-card h3 { margin: 0; font-size: 28px; }
+  .stat-card p { margin: 4px 0 0; color: #666; font-size: 13px; }
+</style>
+
+<h2>Reception Dashboard</h2>
+<p>Today: {{ today }}</p>
+
+<div class="stat-grid">
+    <div class="stat-card"><h3>{{ stats.total }}</h3><p>Total appointments</p></div>
+    <div class="stat-card"><h3>{{ stats.today }}</h3><p>Today</p></div>
+    <div class="stat-card"><h3>{{ stats.pending }}</h3><p>Pending</p></div>
+    <div class="stat-card"><h3>{{ stats.confirmed }}</h3><p>Confirmed</p></div>
+    <div class="stat-card"><h3>{{ stats.completed }}</h3><p>Completed</p></div>
+    <div class="stat-card"><h3>{{ stats.cancelled }}</h3><p>Cancelled</p></div>
+    <div class="stat-card"><h3>{{ stats.no_show }}</h3><p>No show</p></div>
+</div>
+
+<h3>Appointments per doctor</h3>
+<table border="1" cellpadding="6">
+    <tr><th>Doctor</th><th>Appointments</th></tr>
+    {% for row in per_doctor %}
+        <tr>
+            <td>{{ row.doctor__username }}</td>
+            <td>{{ row.total }}</td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="2">No appointments yet.</td></tr>
+    {% endfor %}
+</table>
+{{ per_doctor|json_script:"per-doctor-data" }}
+{{ stats|json_script:"stats-data" }}
+
+<h3>Charts</h3>
+<div style="display:flex; gap:40px; flex-wrap:wrap;">
+    <div style="width:400px;"><canvas id="doctorChart"></canvas></div>
+    <div style="width:320px;"><canvas id="statusChart"></canvas></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const perDoctor = JSON.parse(document.getElementById('per-doctor-data').textContent);
+    const stats = JSON.parse(document.getElementById('stats-data').textContent);
+
+    new Chart(document.getElementById('doctorChart'), {
+        type: 'bar',
+        data: {
+            labels: perDoctor.map(row => row.doctor__username),
+            datasets: [{
+                label: 'Appointments',
+                data: perDoctor.map(row => row.total),
+                backgroundColor: '#4e79a7',
+            }]
+        },
+        options: { scales: {y: {beginAtZero: true } } }
+    });
+
+    new Chart(document.getElementById('statusChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Pending', 'Confirmed', 'Completed', 'Cancelled', 'No show'],
+            datasets: [{
+                data: [stats.pending, stats.confirmed, stats.completed, stats.cancelled, stats.no_show],
+                backgroundColor: ['#f28e2b', '#4e79a7', '#59a14f', '#e15759', '#bab0ac'],
+            }]
+        }
+    });
+</script>
+
+{% endblock %}

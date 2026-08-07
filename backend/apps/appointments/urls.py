@@ -16,5 +16,9 @@ urlpatterns = [
     path('no-show/<int:appointment_id>/', views.no_show_appointment, name='no_show'),
     path('doctor/records/', views.doctor_records, name='doctor_records'),
     path('doctor/upcoming/', views.doctor_upcoming, name='doctor_upcoming'),
-    path('doctor/schedule/', views.doctor_schedule, name='doctor_schedule')
+    path('doctor/schedule/', views.doctor_schedule, name='doctor_schedule'),
+    path('reception/dashboard/', views.reception_dashboard, name='dashboard'),
+    path('history/', views.medical_history, name='medical_history'),
+    path('history/<int:patient_id>/', views.medical_history, name='patient_history'),
+    path('export/csv/', views.export_appointments_csv, name='export_csv'),
 ]
