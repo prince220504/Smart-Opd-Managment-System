@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Medical History - Smart OPD{% endblock %}
+
+{% block content %}
+<style>
+    .visit {border: 1px solid #ccc; padding: 12px; margin-bottom: 14px; }
+    .visit h3 { margin: 0 0 8px 0; }
+    .sub { margin-left: 16px; }
+</style>
+
+<h1>Medical History</h1>
+<p><strong>Patient:</strong> {{ patient.username }}</p>
+
+{% for appt in appointments %}
+    <div class="visit">
+        <h3>{{ appt.appointment_date }} at {{ appt.time_slot }} - Dr. {{ appt.doctor.username }}</h3>
+        <p>Status: {{ appt.get_status_display }}</p>
+
+        {% if appt.prescription %}
+            <div class="sub">
+                <strong>Prescription</strong>
+                <p>Diagnosis: {{ appt.prescription.diagnosis }}</p>
+                <ul>
+                    {% for med in appt.prescription.medicines %}
+                        <li>{{ med.name }} - {{ med.dosage }} - {{ med.frequency }} - {{ med.duration }}</li>
+                    {% endfor %}
+                </ul>
+                {% if appt.prescription.advice %}<p>Advice: {{ appt.prescription.advice }}</p>{% endif %}
+                <a href="{% url 'prescriptions:view' appt.id %}">Open prescription</a>
+            </div>
+        {% endif %}
+
+        {% if appt.lab_tests.all %}
+            <div class="sub">
+                <strong>Lab Tests</strong>
+                <ul>
+                    {% for test in appt.lab_tests.all %}
+                        <li>
+                            {{ test.test_name }} - {{ test.get_status_display }}
+                            {% if test.result %}
+                                - {% if test.result.is_normal %}Normal{% else %}Abnormal{% endif %}
+                                <a href="{{ test.result.result_file.url }}" target="_blank">Download</a>
+                                {% if test.result.notes %}<br><small>{{ test.result.notes }}</small>{% endif %}
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    </div>
+{% empty %}
+    <p>No visits recorded yet.</p>
+{% endfor %}
+{% endblock %}
