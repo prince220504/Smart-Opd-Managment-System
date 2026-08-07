@@ -42,7 +42,7 @@
         <tbody>
             {% for appt in appointments %}
                 <tr>
-                    <td>{{ appt.patient.username }}</td>
+                    <td><a href="{% url 'appointments:patient_history' appt.patient_id %}">{{ appt.patient.username }}</a></td>
                     <td>{{ appt.doctor.username }}</td>
                     <td>{{ appt.appointment_date }}</td>
                     <td>{{ appt.time_slot }}</td>
