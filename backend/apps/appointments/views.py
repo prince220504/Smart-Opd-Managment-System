@@ -6,11 +6,12 @@ from .forms import BookAppointmentForm, ReceptionBookingForm, DoctorScheduleForm
 from .models import Appointment, DoctorAvailability
 from datetime import date
 from django.db.models import Q, Count
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.urls import reverse
 from apps.notifications.services import notify
 from apps.notifications.models import Notification
 from django.utils import timezone
+import csv
 
 User = get_user_model()
 
@@ -242,15 +243,11 @@ def cancel_appointment(request, appointment_id):
     
     return _redirect_after_action(request)
 
-@login_required
-def appointment_list(request):
-    if request.user.role != 'RECEPTION':
-        raise Http404()
-    
+def _filtered_appointments(request):
     appointments = (
         Appointment.objects
         .select_related('patient', 'doctor')
-        .order_by('-appointment_date','-time_slot')
+        .order_by('-appointment_date', '-time_slot')
     )
 
     status = request.GET.get('status')
@@ -264,7 +261,15 @@ def appointment_list(request):
     appt_date = request.GET.get('date')
     if appt_date:
         appointments = appointments.filter(appointment_date=appt_date)
+
+    return appointments
+
+@login_required
+def appointment_list(request):
+    if request.user.role != 'RECEPTION':
+        raise Http404()
     
+    appointments = _filtered_appointments(request)
     doctors = User.objects.filter(role='DOCTOR').order_by('username')
 
     return render(request, 'appointments/appointment_list.html', {
@@ -324,3 +329,35 @@ def medical_history(request, patient_id=None):
         'appointments': appointments,
     })
 
+def _csv_safe(value):
+    text = str(value)
+    if text.startswith(('=', '+', '-', '@')):
+        return "'" + text
+    return text
+
+@login_required
+def export_appointments_csv(request):
+    if request.user.role != 'RECEPTION':
+        raise Http404()
+
+    appointments = _filtered_appointments(request)
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = (
+        f'attachment; filename="appointments-{timezone.localdate()}.csv"'
+    )
+
+    writer = csv.writer(response)
+    writer.writerow(['Patient', 'Doctor', 'Date', 'Time', 'Status', 'Notes'])
+
+    for appt in appointments:
+        writer.writerow([
+            _csv_safe(appt.patient.username),
+            _csv_safe(appt.doctor.username),
+            appt.appointment_date,
+            appt.time_slot,
+            appt.get_status_display(),
+            _csv_safe(appt.notes),
+        ])
+
+    return response

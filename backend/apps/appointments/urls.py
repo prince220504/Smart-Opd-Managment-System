@@ -20,4 +20,5 @@ urlpatterns = [
     path('reception/dashboard/', views.reception_dashboard, name='dashboard'),
     path('history/', views.medical_history, name='medical_history'),
     path('history/<int:patient_id>/', views.medical_history, name='patient_history'),
+    path('export/csv/', views.export_appointments_csv, name='export_csv'),
 ]
