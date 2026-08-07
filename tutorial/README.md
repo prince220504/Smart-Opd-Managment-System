@@ -27,7 +27,7 @@ Step-by-step Django learning notes. Revise any time. Each file covers **what**, 
 | 17 | `prescriptions` app | [17-prescriptions.md](17-prescriptions.md) | ✅ (17a–17d) |
 | 18 | `notifications` + background tasks | [18-notifications.md](18-notifications.md) | ✅ Done (18a–18d) |
 | 18e | Celery + Redis (background tasks, Beat) | [18e-celery-redis.md](18e-celery-redis.md) | ✅ Done |
-| 19 | Reception dashboard (aggregation + Chart.js) | [19-dashboard.md](19-dashboard.md) | 🚧 19a–19b done |
+| 19 | Dashboard (aggregation + Chart.js) · medical history · CSV export | [19-dashboard.md](19-dashboard.md) , [19c-medical-history.md](19c-medical-history.md) | ✅ Done (19a–19d) |
 | 20 | Deploy (Whitenoise + Render) | _coming_ | |
 | 21 | Frontend (Stitch → Django) + README + availability calendar | _coming_ | |
 
