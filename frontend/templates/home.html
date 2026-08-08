@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block title %}Smart OPD{% endblock %}
+
+{% block content %}
+<!-- 1. HERO SECTION -->
+<section class="py-16 md:py-24 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+    <div class="flex flex-col gap-6">
+        <h1 class="text-4xl md:text-5xl font-bold text-on-surface leading-tight tracking-tight">
+            Book your OPD appointment online
+        </h1>
+        <p class="text-[16px] leading-[24px] text-on-surface-variant">
+            Skip the queues. Manage your hospital visits, prescriptions, and lab reports from a single, secure patient dashboard.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 mt-2">
+            <a href="{% url 'accounts:register' %}" class="bg-primary-container hover:bg-primary text-white font-body-strong px-6 py-3 rounded-lg transition-colors text-center shadow-sm">
+                Register as Patient
+            </a>
+            <a href="{% url 'accounts:login' %}" class="border-2 border-primary-container text-primary-container hover:bg-surface-variant font-body-strong px-6 py-3 rounded-lg transition-colors text-center">
+                Log in
+            </a>
+        </div>
+        <p class="text-[13px] text-outline mt-2">
+            Hospital staff: log in with the account given to you.
+        </p>
+    </div>
+    <div class="flex justify-center items-center">
+        <!-- Flat Inline SVG Illustration: Stylized Appointment Calendar -->
+        <svg class="max-w-md" fill="none" height="auto" viewbox="0 0 400 300" width="100%" xmlns="http://www.w3.org/2000/svg">
+            <!-- Background Card -->
+            <rect fill="#FFFFFF" height="220" rx="12" stroke="#E2E8F0" stroke-width="2" width="300" x="50" y="40"></rect>
+            <!-- Calendar Header -->
+            <rect fill="#1666C4" height="48" rx="12" width="300" x="50" y="40"></rect>
+            <rect fill="#1666C4" height="12" width="300" x="50" y="76"></rect>
+            <!-- Calendar Rings -->
+            <rect fill="#0B2545" height="32" rx="6" width="12" x="90" y="24"></rect>
+            <rect fill="#0B2545" height="32" rx="6" width="12" x="298" y="24"></rect>
+            <!-- Grid Lines -->
+            <path d="M50 136H350" stroke="#E2E8F0" stroke-width="2"></path>
+            <path d="M50 184H350" stroke="#E2E8F0" stroke-width="2"></path>
+            <!-- Highlighted Appointment -->
+            <rect fill="#0FA3A3" fill-opacity="0.2" height="24" rx="4" width="100" x="180" y="104"></rect>
+            <rect fill="#0FA3A3" height="16" rx="4" width="40" x="184" y="108"></rect>
+            <!-- Other Events -->
+            <rect fill="#F8FAFC" height="24" rx="4" stroke="#E2E8F0" stroke-width="1" width="80" x="70" y="152"></rect>
+            <rect fill="#CBD5E1" height="16" rx="4" width="30" x="74" y="156"></rect>
+            <rect fill="#F8FAFC" height="24" rx="4" stroke="#E2E8F0" stroke-width="1" width="110" x="220" y="200"></rect>
+            <rect fill="#CBD5E1" height="16" rx="4" width="50" x="224" y="204"></rect>
+            <!-- decorative dots -->
+            <circle cx="90" cy="116" fill="#1666C4" r="4"></circle>
+            <circle cx="110" cy="116" fill="#1666C4" r="4"></circle>
+        </svg>
+    </div>
+</section>
+
+<!-- 2. HOW IT WORKS -->
+<section class="py-16 border-t border-outline-variant">
+    <h2 class="text-2xl font-bold text-on-surface mb-12 text-center">How it works</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Step 1 -->
+        <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col items-start gap-4">
+            <div class="w-10 h-10 rounded-full bg-[#E8F1FC] text-primary-container font-bold flex items-center justify-center text-lg">1</div>
+            <h3 class="text-[16px] font-semibold text-on-surface leading-snug">Create your patient account</h3>
+            <p class="text-[14px] text-on-surface-variant leading-relaxed">
+                Register with your basic details to get access to the secure patient portal.
+            </p>
+        </div>
+        <!-- Step 2 -->
+        <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col items-start gap-4">
+            <div class="w-10 h-10 rounded-full bg-[#E8F1FC] text-primary-container font-bold flex items-center justify-center text-lg">2</div>
+            <h3 class="text-[16px] font-semibold text-on-surface leading-snug">Pick a doctor and an available time slot</h3>
+            <p class="text-[14px] text-on-surface-variant leading-relaxed">
+                Browse our specialists, view their schedules in real-time, and book an open slot.
+            </p>
+        </div>
+        <!-- Step 3 -->
+        <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col items-start gap-4">
+            <div class="w-10 h-10 rounded-full bg-[#E8F1FC] text-primary-container font-bold flex items-center justify-center text-lg">3</div>
+            <h3 class="text-[16px] font-semibold text-on-surface leading-snug">Get a confirmation email, and a reminder</h3>
+            <p class="text-[14px] text-on-surface-variant leading-relaxed">
+                Receive instant booking confirmation and a helpful reminder the day before your visit.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- 3. WHAT YOU CAN DO -->
+<section class="py-16 border-t border-outline-variant">
+    <h2 class="text-2xl font-bold text-on-surface mb-12 text-center">What you can do</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Item 1 -->
+        <div class="flex flex-col items-center text-center gap-3 p-6 bg-surface-container-low rounded-lg">
+            <span class="material-symbols-outlined text-primary text-3xl">edit_calendar</span>
+            <p class="text-[14px] text-on-surface-variant font-medium">Book and cancel appointments</p>
+        </div>
+        <!-- Item 2 -->
+        <div class="flex flex-col items-center text-center gap-3 p-6 bg-surface-container-low rounded-lg">
+            <span class="material-symbols-outlined text-primary text-3xl">prescriptions</span>
+            <p class="text-[14px] text-on-surface-variant font-medium">Read your prescriptions and print them</p>
+        </div>
+        <!-- Item 3 -->
+        <div class="flex flex-col items-center text-center gap-3 p-6 bg-surface-container-low rounded-lg">
+            <span class="material-symbols-outlined text-primary text-3xl">science</span>
+            <p class="text-[14px] text-on-surface-variant font-medium">Download your lab reports</p>
+        </div>
+        <!-- Item 4 -->
+        <div class="flex flex-col items-center text-center gap-3 p-6 bg-surface-container-low rounded-lg">
+            <span class="material-symbols-outlined text-primary text-3xl">history</span>
+            <p class="text-[14px] text-on-surface-variant font-medium">See your full visit history in one place</p>
+        </div>
+    </div>
+</section>
+
+<!-- 4. CLOSING BAR -->
+<section class="bg-[#0B2545] py-12 mt-8 -mx-[32px] px-8">
+    <div class="max-w-[1280px] mx-auto w-full flex flex-col sm:flex-row items-center justify-center gap-6">
+        <h2 class="text-[20px] font-semibold text-white text-center sm:text-left">
+            Ready to see a doctor?
+        </h2>
+        <a href="{% url 'accounts:register' %}" class="bg-primary-container hover:bg-primary text-white font-body-strong px-6 py-3 rounded-lg transition-colors shadow-sm whitespace-nowrap">
+            Register as Patient
+        </a>
+    </div>
+</section>
+{% endblock %}
