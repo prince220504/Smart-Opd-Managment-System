@@ -1,54 +1,258 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>{% block title %}Smart OPD{% endblock %}</title>
-        <link rel="stylesheet" href="{% static 'css/main.css' %}">
-    </head>
-    <body>
-        <header>
-            <nav>
-                {% if user.is_authenticated %}
-                    {% if user.role == 'PATIENT' %}
-                        <a href="{% url 'appointments:doctor_list' %}">Find a Doctor</a>
-                        <a href="{% url 'appointments:my_appointments' %}">My Appointments</a>
-                        <a href="{% url 'lab:my_tests' %}">My Tests</a>
-                        <a href="{% url 'appointments:medical_history' %}">My Health Record</a>
-                    {% elif user.role == 'DOCTOR' %}
-                        <a href="{% url 'appointments:doctor_today' %}">Today's Appointments</a>
-                        <a href="{% url 'appointments:doctor_records' %}">Appointment Records</a>
-                        <a href="{% url 'appointments:doctor_upcoming' %}">Upcoming</a>
-                        <a href="{% url 'appointments:doctor_schedule' %}">My Schedule</a>
-                    {% elif user.role == 'RECEPTION' %}
-                        <a href="{% url 'appointments:dashboard' %}">Dashboard</a>
-                        <a href="{% url 'appointments:reception_book' %}">Book for Patient</a>
-                        <a href="{% url 'appointments:appointment_list' %}">All Appointments</a>
-                    {% elif user.role == 'LAB' %}
-                        <a href="{% url 'lab:queue' %}">Lab Queue</a>
-                    {% endif %}
-                    <a href="{% url 'notifications:list' %}">
-                        🔔{% if unread_count %} ({{ unread_count }}){% endif %}
-                    </a>
-                    <a href="{% url 'accounts:profile' %}">Profile</a>
-                    <form method="post" action="{% url 'accounts:logout' %}" style="display:inline">
-                        {% csrf_token %}
-                        <button type="submit">Log out</button>
-                    </form>
-                {% else %}
-                    <a href="{% url 'accounts:login' %}">Log in</a>
-                    <a href="{% url 'accounts:register' %}">Register</a>
-                {% endif %}
-            </nav>
-        </header>
+<html class="h-full bg-background antialiased" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>{% block title %}Smart OPD{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-surface": "#213145",
+                        "on-tertiary-fixed": "#331200",
+                        "surface": "#f8f9ff",
+                        "on-surface": "#0b1c30",
+                        "on-primary-fixed": "#001b3e",
+                        "on-background": "#0b1c30",
+                        "on-secondary-fixed-variant": "#314769",
+                        "secondary-container": "#bfd5fe",
+                        "primary-fixed-dim": "#aac7ff",
+                        "surface-container": "#e5eeff",
+                        "on-tertiary-fixed-variant": "#763300",
+                        "error-container": "#ffdad6",
+                        "secondary": "#495f82",
+                        "surface-variant": "#d3e4fe",
+                        "outline-variant": "#c2c6d4",
+                        "tertiary-container": "#aa4c00",
+                        "surface-dim": "#cbdbf5",
+                        "on-primary-container": "#dde7ff",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-surface-variant": "#424752",
+                        "on-primary-fixed-variant": "#00458d",
+                        "on-tertiary-container": "#ffe2d3",
+                        "primary-container": "#1666c4",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb68e",
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed-dim": "#b1c7f0",
+                        "tertiary": "#843a00",
+                        "surface-container-high": "#dce9ff",
+                        "background": "#F5F7FA",
+                        "on-primary": "#ffffff",
+                        "inverse-primary": "#aac7ff",
+                        "surface-tint": "#005db9",
+                        "surface-container-low": "#eff4ff",
+                        "on-secondary-container": "#465c7f",
+                        "secondary-fixed": "#d5e3ff",
+                        "on-error": "#ffffff",
+                        "surface-bright": "#f8f9ff",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed": "#ffdbca",
+                        "primary": "#1666C4",
+                        "on-secondary-fixed": "#001c3b",
+                        "primary-fixed": "#d6e3ff",
+                        "outline": "#727784"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "sidebar-width": "240px",
+                        "container-margin": "24px",
+                        "stack-lg": "24px",
+                        "stack-sm": "8px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter", "sans-serif"],
+                        "body-main": ["Inter", "sans-serif"],
+                        "display-page-title": ["Inter", "sans-serif"],
+                        "table-data": ["Inter", "sans-serif"],
+                        "heading-section": ["Inter", "sans-serif"],
+                        "body-strong": ["Inter", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "body-main": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-page-title": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "table-data": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "heading-section": ["18px", { "lineHeight": "26px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-strong": ["14px", { "lineHeight": "20px", "fontWeight": "600" }]
+                    }
+                },
+            },
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface h-full">
+<div class="relative h-screen w-full overflow-hidden bg-background flex">
+    {% if user.is_authenticated %}
+    <!-- Sidebar -->
+    <aside class="fixed left-0 top-0 h-full w-[240px] bg-[#0B2545] flex flex-col py-6 z-20">
+        <div class="px-6 mb-8 flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                <span class="material-symbols-outlined text-white">local_hospital</span>
+            </div>
+            <div>
+                <h1 class="font-display-page-title text-[18px] text-white">Smart OPD</h1>
+                <p class="font-label-sm text-label-sm text-white/50">{{ user.get_role_display }}</p>
+            </div>
+        </div>
+        <nav class="flex-1 px-4 space-y-1">
+            {% if user.role == 'PATIENT' %}
+                <a class="flex items-center space-x-3 px-3 py-2 rounded-lg text-white/70 font-body-main hover:bg-white/5 hover:text-white transition-colors" href="{% url 'appointments:doctor_list' %}">
+                    <span class="material-symbols-outlined">search</span>
+                    <span>Find a Doctor</span>
+                </a>
+                <a class="flex items-center space-x-3 px-3 py-2 rounded-lg text-white/70 font-body-main hover:bg-white/5 hover:text-white transition-colors" href="{% url 'appointments:my_appointments' %}">
+                    <span class="material-symbols-outlined">event</span>
+                    <span>My Appointments</span>
+                </a>
+                <a class="flex items-center space-x-3 px-3 py-2 rounded-lg text-white/70 font-body-main hover:bg-white/5 hover:text-white transition-colors" href="{% url 'lab:my_tests' %}">
+                    <span class="material-symbols-outlined">science</span>
+                    <span>My Tests</span>
+                </a>
+                <a class="flex items-center space-x-3 px-3 py-2 rounded-lg text-white/70 font-body-main hover:bg-white/5 hover:text-white transition-colors" href="{% url 'appointments:medical_history' %}">
+                    <span class="material-symbols-outlined">clinical_notes</span>
+                    <span>My Health Record</span>
+                </a>
+            {% elif user.role == 'DOCTOR' %}
+                <a class="flex items-center space-x-3 px-3 py-2 rounded-lg text-white/70 font-body-main hover:bg-white/5 hover:text-white transition-colors" href="{% url 'appointments:doctor_today' %}">
+                    <span class="material-symbols-outlined">view_day</span>
+                    <span>Today's Queue</span>
+                </a>
+                <a class="flex items-center space-x-3 px-3 py-2 rounded-lg text-white/70 font-body-main hover:bg-white/5 hover:text-white transition-colors" href="{% url 'appointments:doctor_records' %}">
+                    <span class="material-symbols-outlined">folder_shared</span>
+                    <span>Patient Records</span>
+                </a>
+                <a class="flex items-center space-x-3 px-3 py-2 rounded-lg text-white/70 font-body-main hover:bg-white/5 hover:text-white transition-colors" href="{% url 'appointments:doctor_upcoming' %}">
+                    <span class="material-symbols-outlined">calendar_month</span>
+                    <span>Upcoming Schedule</span>
+                </a>
+                <a class="flex items-center space-x-3 px-3 py-2 rounded-lg text-white/70 font-body-main hover:bg-white/5 hover:text-white transition-colors" href="{% url 'appointments:doctor_schedule' %}">
+                    <span class="material-symbols-outlined">schedule</span>
+                    <span>My Availability</span>
+                </a>
+            {% elif user.role == 'RECEPTION' %}
+                <a class="flex items-center space-x-3 px-3 py-2 rounded-lg text-white/70 font-body-main hover:bg-white/5 hover:text-white transition-colors" href="{% url 'appointments:dashboard' %}">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span>OPD Dashboard</span>
+                </a>
+                <a class="flex items-center space-x-3 px-3 py-2 rounded-lg text-white/70 font-body-main hover:bg-white/5 hover:text-white transition-colors" href="{% url 'appointments:reception_book' %}">
+                    <span class="material-symbols-outlined">edit_calendar</span>
+                    <span>Book Appointment</span>
+                </a>
+                <a class="flex items-center space-x-3 px-3 py-2 rounded-lg text-white/70 font-body-main hover:bg-white/5 hover:text-white transition-colors" href="{% url 'appointments:appointment_list' %}">
+                    <span class="material-symbols-outlined">list_alt</span>
+                    <span>All Appointments</span>
+                </a>
+            {% elif user.role == 'LAB' %}
+                <a class="flex items-center space-x-3 px-3 py-2 rounded-lg text-white/70 font-body-main hover:bg-white/5 hover:text-white transition-colors" href="{% url 'lab:queue' %}">
+                    <span class="material-symbols-outlined">biotech</span>
+                    <span>Lab Queue</span>
+                </a>
+            {% endif %}
+        </nav>
+        <div class="px-4 mt-auto">
+            <form method="post" action="{% url 'accounts:logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-white/70 font-body-main hover:bg-white/5 hover:text-white transition-colors text-left">
+                    <span class="material-symbols-outlined">logout</span>
+                    <span>Log out</span>
+                </button>
+            </form>
+        </div>
+    </aside>
+    {% endif %}
 
-        <main>
-            {% block content %}{% endblock %}
+    <!-- Main Content Wrapper -->
+    <div class="flex-1 flex flex-col h-full overflow-hidden {% if user.is_authenticated %}ml-[240px]{% endif %}">
+        {% if user.is_authenticated %}
+        <!-- TopNavBar (Authenticated) -->
+        <header class="h-16 bg-surface border-b border-[#E2E8F0] shadow-sm flex justify-between items-center px-8 z-10 shrink-0">
+            <h2 class="font-heading-section text-heading-section text-on-surface">{% block page_title %}{% endblock %}</h2>
+            <div class="flex items-center space-x-4">
+                <a href="{% url 'notifications:list' %}" class="w-8 h-8 rounded-full text-on-surface-variant hover:bg-surface-variant transition-colors flex items-center justify-center relative">
+                    <span class="material-symbols-outlined">notifications</span>
+                    {% if unread_count %}
+                    <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full"></span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'accounts:profile' %}" class="flex items-center space-x-3 border-l border-[#E2E8F0] pl-4">
+                    <div class="text-right hidden sm:block">
+                        <p class="font-body-strong text-body-strong text-on-surface">{{ user.username }}</p>
+                        <p class="font-label-sm text-label-sm text-on-surface-variant">{{ user.get_role_display }}</p>
+                    </div>
+                    <div class="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-body-strong">
+                        {{ user.username|slice:":2"|upper }}
+                    </div>
+                </a>
+            </div>
+        </header>
+        {% else %}
+        <!-- Slim TopNavBar (Logged Out) -->
+        <header class="h-16 bg-surface border-b border-[#E2E8F0] shadow-sm flex justify-between items-center px-8 z-10 shrink-0">
+            <div class="flex items-center space-x-3">
+                <a href="{% url 'home' %}" class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                        <span class="material-symbols-outlined text-white text-[16px]">local_hospital</span>
+                    </div>
+                    <h1 class="font-display-page-title text-[20px] text-on-surface">Smart OPD</h1>
+                </a>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a class="font-body-strong text-body-strong text-primary hover:text-primary-fixed-dim transition-colors px-4 py-2" href="{% url 'accounts:login' %}">Log in</a>
+                <a class="font-body-strong text-body-strong text-white bg-primary hover:bg-primary-fixed-dim transition-colors px-5 py-2 rounded-lg shadow-sm" href="{% url 'accounts:register' %}">Register</a>
+            </div>
+        </header>
+        {% endif %}
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-auto p-[32px]">
+            <div class="max-w-[1280px] mx-auto space-y-6">
+                {% if messages %}
+                <div class="space-y-3 mb-8">
+                    {% for message in messages %}
+                    <div class="flex items-start p-4 rounded-lg bg-surface border border-[#E2E8F0] shadow-sm border-l-4 {% if 'error' in message.tags or 'danger' in message.tags %}border-l-error{% elif 'warning' in message.tags %}border-l-tertiary{% else %}border-l-[#10B981]{% endif %}">
+                        <span class="material-symbols-outlined {% if 'error' in message.tags or 'danger' in message.tags %}text-error{% elif 'warning' in message.tags %}text-tertiary{% else %}text-[#10B981]{% endif %} mt-0.5 mr-3">
+                            {% if 'error' in message.tags or 'danger' in message.tags %}error{% elif 'warning' in message.tags %}warning{% else %}check_circle{% endif %}
+                        </span>
+                        <div>
+                            <p class="font-body-main text-body-main text-on-surface">{{ message }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% block content %}{% endblock %}
+            </div>
         </main>
 
-        <footer>
-            <p>Smart OPD Management System</p>
+        <!-- Footer -->
+        <footer class="h-14 shrink-0 flex justify-center items-center bg-transparent border-t border-[#E2E8F0]/50">
+            <p class="font-table-data text-[13px] text-on-surface-variant">Smart OPD Management System</p>
         </footer>
-    </body>
+    </div>
+</div>
+</body>
 </html>
