@@ -1,125 +1,195 @@
 {% extends 'base.html' %}
 
-{% block title %}Smart OPD{% endblock %}
+{% block title %}Smart OPD Management System{% endblock %}
 
 {% block content %}
-<!-- 1. HERO SECTION -->
-<section class="py-16 md:py-24 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-    <div class="flex flex-col gap-6">
-        <h1 class="text-4xl md:text-5xl font-bold text-on-surface leading-tight tracking-tight">
-            Book your OPD appointment online
+<!-- ============ 1. HERO ============ -->
+<section class="relative overflow-hidden">
+  <!-- decorative backdrop (contained, subtle) -->
+  <div class="opd-dots pointer-events-none absolute -right-10 top-10 h-64 w-64 opacity-[0.12]" aria-hidden="true"></div>
+  <div class="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-[#E8F1FC] blur-3xl opacity-70" aria-hidden="true"></div>
+  <div class="pointer-events-none absolute right-0 bottom-0 h-72 w-72 rounded-full bg-[#0FA3A3]/10 blur-3xl" aria-hidden="true"></div>
+
+  <div class="relative mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-24">
+    <div class="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr]">
+      <!-- Left -->
+      <div>
+        <span class="inline-flex items-center gap-2 rounded-full border border-[#E2E8F0] bg-white px-3 py-1 text-[13px] text-[#1666C4]" style="font-weight:500;">
+          <span class="h-1.5 w-1.5 rounded-full bg-[#0FA3A3]"></span>
+          Outpatient care, simplified
+        </span>
+        <h1 class="mt-5 text-[34px] leading-[1.08] sm:text-[52px]" style="font-weight:600;letter-spacing:-0.02em;">
+          Book your OPD<br class="hidden sm:block" /> appointment <span class="text-[#1666C4]">online</span>
         </h1>
-        <p class="text-[16px] leading-[24px] text-on-surface-variant">
-            Skip the queues. Manage your hospital visits, prescriptions, and lab reports from a single, secure patient dashboard.
+        <p class="mt-5 max-w-md text-[16px] leading-relaxed text-[#64748B]">
+          Choose a doctor, pick a time that works for you, and manage every visit from one calm, organised place.
         </p>
-        <div class="flex flex-col sm:flex-row gap-4 mt-2">
-            <a href="{% url 'accounts:register' %}" class="bg-primary-container hover:bg-primary text-white font-body-strong px-6 py-3 rounded-lg transition-colors text-center shadow-sm">
-                Register as Patient
-            </a>
-            <a href="{% url 'accounts:login' %}" class="border-2 border-primary-container text-primary-container hover:bg-surface-variant font-body-strong px-6 py-3 rounded-lg transition-colors text-center">
-                Log in
-            </a>
+        <div class="mt-8 flex flex-col sm:flex-row gap-3">
+          <a href="{% url 'accounts:register' %}" class="inline-flex h-12 items-center justify-center rounded-lg bg-[#1666C4] px-6 text-[15px] text-white shadow-sm hover:bg-[#1155A6]" style="font-weight:600;">Register as Patient</a>
+          <a href="{% url 'accounts:login' %}" class="inline-flex h-12 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white px-6 text-[15px] text-[#1A2333] hover:bg-[#F8FAFC]" style="font-weight:500;">Log in</a>
         </div>
-        <p class="text-[13px] text-outline mt-2">
-            Hospital staff: log in with the account given to you.
-        </p>
+        <p class="mt-4 text-[13px] text-[#64748B]">Hospital staff: log in with the account given to you.</p>
+
+        <!-- quiet reassurance row (not stats) -->
+        <div class="mt-9 flex flex-wrap gap-x-6 gap-y-3 border-t border-[#E2E8F0] pt-6">
+          <span class="inline-flex items-center gap-2 text-[13px] text-[#64748B]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0FA3A3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l7 3v5c0 4.2-3 7.3-7 8.5-4-1.2-7-4.3-7-8.5v-5l7-3z"/><path d="M9 11.5l2 2 4-4.5"/></svg>
+            Records kept private
+          </span>
+          <span class="inline-flex items-center gap-2 text-[13px] text-[#64748B]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0FA3A3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+            Reminders before every visit
+          </span>
+          <span class="inline-flex items-center gap-2 text-[13px] text-[#64748B]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0FA3A3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v6.5h16V12M12 3.5v11M8.5 11l3.5 3.5L15.5 11"/></svg>
+            Reports you can download
+          </span>
+        </div>
+      </div>
+
+      <!-- Right: layered illustration composition -->
+      <div class="relative">
+        <!-- main appointment card -->
+        <div class="opd-float relative z-10 rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-[0_30px_60px_-30px_rgba(11,37,69,0.35)]">
+          <div class="flex items-center justify-between">
+            <span class="inline-flex items-center gap-2 text-[13px] text-[#64748B]" style="font-weight:500;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1666C4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>
+              Appointment
+            </span>
+            <span class="inline-flex items-center rounded-full bg-[#E8F1FC] px-2.5 py-1 text-[12px] text-[#1666C4]" style="font-weight:500;">CONFIRMED</span>
+          </div>
+          <div class="mt-4 flex items-center gap-3">
+            <span class="flex h-12 w-12 items-center justify-center rounded-full bg-[#0B2545] text-[15px] text-white" style="font-weight:600;">RI</span>
+            <div>
+              <p class="text-[15px]" style="font-weight:600;">Dr. Rajesh Iyer</p>
+              <p class="text-[13px] text-[#64748B]">Cardiology</p>
+            </div>
+          </div>
+          <div class="mt-4 grid grid-cols-2 gap-3">
+            <div class="rounded-xl bg-[#F5F7FA] p-3">
+              <p class="text-[12px] text-[#64748B]">Date</p>
+              <p class="mt-0.5 text-[14px] tnum" style="font-weight:600;">12 Aug 2026</p>
+            </div>
+            <div class="rounded-xl bg-[#F5F7FA] p-3">
+              <p class="text-[12px] text-[#64748B]">Time</p>
+              <p class="mt-0.5 text-[14px] tnum" style="font-weight:600;">10:30 AM</p>
+            </div>
+          </div>
+          <div class="mt-4 h-px bg-[#E2E8F0]"></div>
+          <div class="mt-4 flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-[#0FA3A3]"></span>
+            <p class="text-[13px] text-[#64748B]">Reminder scheduled for 11 Aug, 6:00 PM</p>
+          </div>
+        </div>
+
+        <!-- floating confirmation toast -->
+        <div class="opd-float-slow absolute -left-3 -bottom-6 z-20 hidden sm:flex items-center gap-3 rounded-xl border border-[#E2E8F0] bg-white p-3 pr-4 shadow-[0_20px_40px_-24px_rgba(11,37,69,0.4)]">
+          <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#DCFCE7] text-[#16A34A]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5 11-12"/></svg>
+          </span>
+          <div>
+            <p class="text-[13px]" style="font-weight:600;">Booking confirmed</p>
+            <p class="text-[12px] text-[#64748B]">Email sent to you</p>
+          </div>
+        </div>
+
+        <!-- floating mini calendar -->
+        <div class="opd-float-slow absolute -right-2 -top-6 z-0 hidden md:block rounded-xl border border-[#E2E8F0] bg-white p-3 shadow-[0_20px_40px_-24px_rgba(11,37,69,0.35)]">
+          <div class="grid grid-cols-4 gap-1.5">
+            <span class="h-6 w-6 rounded-md bg-[#F1F5F9]"></span>
+            <span class="h-6 w-6 rounded-md bg-[#F1F5F9]"></span>
+            <span class="h-6 w-6 rounded-md bg-[#E8F1FC]"></span>
+            <span class="h-6 w-6 rounded-md bg-[#F1F5F9]"></span>
+            <span class="h-6 w-6 rounded-md bg-[#F1F5F9]"></span>
+            <span class="flex h-6 w-6 items-center justify-center rounded-md bg-[#1666C4] text-[11px] text-white tnum" style="font-weight:600;">12</span>
+            <span class="h-6 w-6 rounded-md bg-[#F1F5F9]"></span>
+            <span class="h-6 w-6 rounded-md bg-[#F1F5F9]"></span>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="flex justify-center items-center">
-        <!-- Flat Inline SVG Illustration: Stylized Appointment Calendar -->
-        <svg class="max-w-md" fill="none" height="auto" viewbox="0 0 400 300" width="100%" xmlns="http://www.w3.org/2000/svg">
-            <!-- Background Card -->
-            <rect fill="#FFFFFF" height="220" rx="12" stroke="#E2E8F0" stroke-width="2" width="300" x="50" y="40"></rect>
-            <!-- Calendar Header -->
-            <rect fill="#1666C4" height="48" rx="12" width="300" x="50" y="40"></rect>
-            <rect fill="#1666C4" height="12" width="300" x="50" y="76"></rect>
-            <!-- Calendar Rings -->
-            <rect fill="#0B2545" height="32" rx="6" width="12" x="90" y="24"></rect>
-            <rect fill="#0B2545" height="32" rx="6" width="12" x="298" y="24"></rect>
-            <!-- Grid Lines -->
-            <path d="M50 136H350" stroke="#E2E8F0" stroke-width="2"></path>
-            <path d="M50 184H350" stroke="#E2E8F0" stroke-width="2"></path>
-            <!-- Highlighted Appointment -->
-            <rect fill="#0FA3A3" fill-opacity="0.2" height="24" rx="4" width="100" x="180" y="104"></rect>
-            <rect fill="#0FA3A3" height="16" rx="4" width="40" x="184" y="108"></rect>
-            <!-- Other Events -->
-            <rect fill="#F8FAFC" height="24" rx="4" stroke="#E2E8F0" stroke-width="1" width="80" x="70" y="152"></rect>
-            <rect fill="#CBD5E1" height="16" rx="4" width="30" x="74" y="156"></rect>
-            <rect fill="#F8FAFC" height="24" rx="4" stroke="#E2E8F0" stroke-width="1" width="110" x="220" y="200"></rect>
-            <rect fill="#CBD5E1" height="16" rx="4" width="50" x="224" y="204"></rect>
-            <!-- decorative dots -->
-            <circle cx="90" cy="116" fill="#1666C4" r="4"></circle>
-            <circle cx="110" cy="116" fill="#1666C4" r="4"></circle>
-        </svg>
-    </div>
+  </div>
 </section>
 
-<!-- 2. HOW IT WORKS -->
-<section class="py-16 border-t border-outline-variant">
-    <h2 class="text-2xl font-bold text-on-surface mb-12 text-center">How it works</h2>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <!-- Step 1 -->
-        <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col items-start gap-4">
-            <div class="w-10 h-10 rounded-full bg-[#E8F1FC] text-primary-container font-bold flex items-center justify-center text-lg">1</div>
-            <h3 class="text-[16px] font-semibold text-on-surface leading-snug">Create your patient account</h3>
-            <p class="text-[14px] text-on-surface-variant leading-relaxed">
-                Register with your basic details to get access to the secure patient portal.
-            </p>
-        </div>
-        <!-- Step 2 -->
-        <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col items-start gap-4">
-            <div class="w-10 h-10 rounded-full bg-[#E8F1FC] text-primary-container font-bold flex items-center justify-center text-lg">2</div>
-            <h3 class="text-[16px] font-semibold text-on-surface leading-snug">Pick a doctor and an available time slot</h3>
-            <p class="text-[14px] text-on-surface-variant leading-relaxed">
-                Browse our specialists, view their schedules in real-time, and book an open slot.
-            </p>
-        </div>
-        <!-- Step 3 -->
-        <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col items-start gap-4">
-            <div class="w-10 h-10 rounded-full bg-[#E8F1FC] text-primary-container font-bold flex items-center justify-center text-lg">3</div>
-            <h3 class="text-[16px] font-semibold text-on-surface leading-snug">Get a confirmation email, and a reminder</h3>
-            <p class="text-[14px] text-on-surface-variant leading-relaxed">
-                Receive instant booking confirmation and a helpful reminder the day before your visit.
-            </p>
-        </div>
+<!-- ============ 2. HOW IT WORKS ============ -->
+<section class="mx-auto max-w-6xl px-4 sm:px-6 pb-16 sm:pb-24">
+  <div class="mb-8 flex flex-col items-start gap-2">
+    <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">How it works</span>
+    <h2 class="text-[24px] sm:text-[30px]" style="font-weight:600;letter-spacing:-0.01em;">Three steps to see a doctor</h2>
+  </div>
+  <div class="relative grid gap-5 md:grid-cols-3">
+    <!-- connector line (desktop) -->
+    <div class="pointer-events-none absolute left-[16%] right-[16%] top-[52px] hidden md:block border-t-2 border-dashed border-[#E2E8F0]" aria-hidden="true"></div>
+
+    <div class="relative rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+      <span class="flex h-11 w-11 items-center justify-center rounded-full bg-[#1666C4] text-[16px] text-white tnum shadow-sm" style="font-weight:600;">1</span>
+      <h3 class="mt-4 text-[16px]" style="font-weight:600;">Create your patient account</h3>
+      <p class="mt-2 text-[14px] leading-relaxed text-[#64748B]">Register with a username, your email and your phone number. It takes about a minute.</p>
     </div>
+    <div class="relative rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+      <span class="flex h-11 w-11 items-center justify-center rounded-full bg-[#1666C4] text-[16px] text-white tnum shadow-sm" style="font-weight:600;">2</span>
+      <h3 class="mt-4 text-[16px]" style="font-weight:600;">Pick a doctor and a time slot</h3>
+      <p class="mt-2 text-[14px] leading-relaxed text-[#64748B]">Browse our doctors, see when they are available, and choose a slot that fits your schedule.</p>
+    </div>
+    <div class="relative rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+      <span class="flex h-11 w-11 items-center justify-center rounded-full bg-[#1666C4] text-[16px] text-white tnum shadow-sm" style="font-weight:600;">3</span>
+      <h3 class="mt-4 text-[16px]" style="font-weight:600;">Get a confirmation and reminder</h3>
+      <p class="mt-2 text-[14px] leading-relaxed text-[#64748B]">We confirm your booking right away, and send a reminder the day before your visit.</p>
+    </div>
+  </div>
 </section>
 
-<!-- 3. WHAT YOU CAN DO -->
-<section class="py-16 border-t border-outline-variant">
-    <h2 class="text-2xl font-bold text-on-surface mb-12 text-center">What you can do</h2>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- Item 1 -->
-        <div class="flex flex-col items-center text-center gap-3 p-6 bg-surface-container-low rounded-lg">
-            <span class="material-symbols-outlined text-primary text-3xl">edit_calendar</span>
-            <p class="text-[14px] text-on-surface-variant font-medium">Book and cancel appointments</p>
-        </div>
-        <!-- Item 2 -->
-        <div class="flex flex-col items-center text-center gap-3 p-6 bg-surface-container-low rounded-lg">
-            <span class="material-symbols-outlined text-primary text-3xl">prescriptions</span>
-            <p class="text-[14px] text-on-surface-variant font-medium">Read your prescriptions and print them</p>
-        </div>
-        <!-- Item 3 -->
-        <div class="flex flex-col items-center text-center gap-3 p-6 bg-surface-container-low rounded-lg">
-            <span class="material-symbols-outlined text-primary text-3xl">science</span>
-            <p class="text-[14px] text-on-surface-variant font-medium">Download your lab reports</p>
-        </div>
-        <!-- Item 4 -->
-        <div class="flex flex-col items-center text-center gap-3 p-6 bg-surface-container-low rounded-lg">
-            <span class="material-symbols-outlined text-primary text-3xl">history</span>
-            <p class="text-[14px] text-on-surface-variant font-medium">See your full visit history in one place</p>
-        </div>
+<!-- ============ 3. WHAT YOU CAN DO (bento) ============ -->
+<section class="mx-auto max-w-6xl px-4 sm:px-6 pb-16 sm:pb-24">
+  <div class="mb-8 flex flex-col items-start gap-2">
+    <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">What you can do</span>
+    <h2 class="text-[24px] sm:text-[30px]" style="font-weight:600;letter-spacing:-0.01em;">Everything for your visit, in one place</h2>
+  </div>
+  <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <!-- feature 1 (wide) -->
+    <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm sm:col-span-2">
+      <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E8F1FC] text-[#1666C4]">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3M9.5 14.5l1.75 1.75L15 12.5"/></svg>
+      </span>
+      <h3 class="mt-4 text-[16px]" style="font-weight:600;">Book and cancel appointments</h3>
+      <p class="mt-1.5 max-w-md text-[14px] leading-relaxed text-[#64748B]">Reserve a slot in seconds and manage or cancel bookings anytime from your account.</p>
     </div>
+    <!-- feature 2 -->
+    <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+      <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E8F1FC] text-[#1666C4]">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M14.5 3.5V8h4.5M8.5 12.5h7M8.5 16h7"/></svg>
+      </span>
+      <h3 class="mt-4 text-[16px]" style="font-weight:600;">Read and print prescriptions</h3>
+      <p class="mt-1.5 text-[14px] leading-relaxed text-[#64748B]">View and print prescriptions after each visit.</p>
+    </div>
+    <!-- feature 3 -->
+    <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+      <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E8F1FC] text-[#1666C4]">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v6.5h16V12M12 3.5v11M8.5 11l3.5 3.5L15.5 11"/></svg>
+      </span>
+      <h3 class="mt-4 text-[16px]" style="font-weight:600;">Download your lab reports</h3>
+      <p class="mt-1.5 text-[14px] leading-relaxed text-[#64748B]">Access results as soon as the lab publishes them.</p>
+    </div>
+    <!-- feature 4 (wide) -->
+    <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm sm:col-span-2">
+      <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E8F1FC] text-[#1666C4]">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.5-5.8M4 4.5V8.5H8M12 8v4l2.5 2"/></svg>
+      </span>
+      <h3 class="mt-4 text-[16px]" style="font-weight:600;">See your full visit history in one place</h3>
+      <p class="mt-1.5 max-w-md text-[14px] leading-relaxed text-[#64748B]">Every past appointment, diagnosis, and report kept together and easy to revisit.</p>
+    </div>
+  </div>
 </section>
 
-<!-- 4. CLOSING BAR -->
-<section class="bg-[#0B2545] py-12 mt-8 -mx-[32px] px-8">
-    <div class="max-w-[1280px] mx-auto w-full flex flex-col sm:flex-row items-center justify-center gap-6">
-        <h2 class="text-[20px] font-semibold text-white text-center sm:text-left">
-            Ready to see a doctor?
-        </h2>
-        <a href="{% url 'accounts:register' %}" class="bg-primary-container hover:bg-primary text-white font-body-strong px-6 py-3 rounded-lg transition-colors shadow-sm whitespace-nowrap">
-            Register as Patient
-        </a>
+<!-- ============ 4. CLOSING BAR ============ -->
+<section class="relative overflow-hidden bg-[#0B2545]">
+  <div class="opd-dots pointer-events-none absolute inset-0 opacity-[0.06]" aria-hidden="true"></div>
+  <div class="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[#0FA3A3]/20 blur-3xl" aria-hidden="true"></div>
+  <div class="relative mx-auto max-w-6xl px-4 sm:px-6 py-16">
+    <div class="flex flex-col items-center gap-6 text-center">
+      <p class="text-[24px] sm:text-[28px] text-white" style="font-weight:600;letter-spacing:-0.01em;">Ready to see a doctor?</p>
+      <a href="{% url 'accounts:register' %}" class="inline-flex h-12 items-center justify-center rounded-lg bg-[#1666C4] px-6 text-[15px] text-white shadow-sm hover:bg-[#1155A6]" style="font-weight:600;">Register as Patient</a>
     </div>
+  </div>
 </section>
 {% endblock %}
