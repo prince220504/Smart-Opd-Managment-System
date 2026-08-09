@@ -1,15 +1,58 @@
 {% extends 'base.html' %}
 
-{% block title %}Profile - Smart OPD{% endblock %}
+{% block title %}My Profile · Smart OPD{% endblock %}
+{% block page_title %}My Profile{% endblock %}
 
 {% block content %}
-<h1>Welcome {{user.username}}</h1>
-<p>Role: {{user.role}}</p>
-<p>Email: {{user.email}}</p>
-<p>Phone: {{user.phone}}</p>
+<div class="grid gap-5 lg:grid-cols-3">
 
-<form method="post" action="{% url 'accounts:logout' %}">
-    {% csrf_token %}
-    <button type="submit">Log out</button>
-</form>
+  <!-- identity card -->
+  <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+    <div class="flex items-center gap-4">
+      <span class="flex h-14 w-14 items-center justify-center rounded-full bg-[#E8F1FC] text-[20px] text-[#1666C4]" style="font-weight:600;">
+        {{ user.username|slice:":2"|upper }}
+      </span>
+      <div class="min-w-0">
+        <p class="truncate text-[16px]" style="font-weight:600;">{{ user.username }}</p>
+        <span class="mt-1 inline-flex items-center rounded-full bg-[#F1F5F9] px-2.5 py-1 text-[12px] text-[#64748B]" style="font-weight:500;">
+          {{ user.get_role_display }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- account details -->
+  <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm lg:col-span-2">
+    <h2 class="text-[18px]" style="font-weight:600;">Account details</h2>
+    <dl class="mt-4 grid gap-4 sm:grid-cols-2">
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Username</dt>
+        <dd class="mt-1 text-[14px]">{{ user.username }}</dd>
+      </div>
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Role</dt>
+        <dd class="mt-1 text-[14px]">{{ user.get_role_display }}</dd>
+      </div>
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Email</dt>
+        <dd class="mt-1 text-[14px]">{{ user.email|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Phone</dt>
+        <dd class="mt-1 text-[14px]">{{ user.phone|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Joined</dt>
+        <dd class="mt-1 text-[14px]">{{ user.date_joined|date:"d M Y" }}</dd>
+      </div>
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Last login</dt>
+        <dd class="mt-1 text-[14px]">{{ user.last_login|date:"d M Y, H:i"|default:"—" }}</dd>
+      </div>
+    </dl>
+    <p class="mt-6 border-t border-[#E2E8F0] pt-4 text-[13px] text-[#64748B]">
+      Editing your details and uploading a profile photo are not available yet.
+    </p>
+  </div>
+</div>
 {% endblock %}
