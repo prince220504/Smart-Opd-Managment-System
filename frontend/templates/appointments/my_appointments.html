@@ -1,46 +1,69 @@
 {% extends 'base.html' %}
 
-{% block title %}My Appointments - Smart OPD{% endblock %}
+{% block title %}My Appointments · Smart OPD{% endblock %}
+{% block page_title %}My Appointments{% endblock %}
 
 {% block content %}
-<h1>My Appointments</h1>
+<div class="rounded-xl border border-[#E2E8F0] bg-white shadow-sm">
 
-{% if appointments %}
-    <table border="1" cellpadding="6">
-        <thead>
-            <tr>
-                <th>Doctor</th>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Status</th>
-                <th>Notes</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for appt in appointments %}
-            <tr>
-                <td>Dr. {{ appt.doctor.username }}</td>
-                <td>{{ appt.appointment_date }}</td>
-                <td>{{ appt.time_slot }}</td>
-                <td>{{ appt.get_status_display }}{% if appt.status == 'CANCELLED' and appt.cancel_reason %}<br><small>{{ appt.cancel_reason }}</small>{% endif %}</td>
-                <td>{{ appt.notes|default:"-"}}</td>
-                <td>{% if appt.status == 'PENDING' or appt.status == 'CONFIRMED' %}
-                        <form method="post" action="{% url 'appointments:cancel' appt.id %}" style="display: inline;">
-                            {% csrf_token %}
-                            <button type="submit" onclick="return confirm('Cancel this appointment?');">Cancel</button>
-                        </form>
-                    {% elif appt.status == 'COMPLETED' and appt.prescription %}
-                        <a href="{% url 'prescriptions:view' appt.id %}">View Prescription</a>
-                    {% else %}
-                    -
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
+  <div class="flex items-center justify-between gap-3 border-b border-[#E2E8F0] p-4">
+    <p class="text-[13px] text-[#64748B]">
+      <span class="tnum">{{ appointments|length }}</span> appointment{{ appointments|length|pluralize }}
+    </p>
+    <a href="{% url 'appointments:doctor_list' %}" class="inline-flex h-10 items-center justify-center rounded-lg bg-[#1666C4] px-4 text-[14px] text-white hover:bg-[#1155A6]" style="font-weight:600;">Book appointment</a>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[720px] text-[14px]">
+      <thead>
+        <tr class="border-b border-[#E2E8F0] bg-white text-left text-[13px] uppercase text-[#64748B]" style="letter-spacing:.04em;">
+          <th class="px-4 py-3" style="font-weight:600;">Doctor</th>
+          <th class="px-4 py-3" style="font-weight:600;">Date</th>
+          <th class="px-4 py-3" style="font-weight:600;">Time</th>
+          <th class="px-4 py-3" style="font-weight:600;">Status</th>
+          <th class="px-4 py-3" style="font-weight:600;">Notes</th>
+          <th class="px-4 py-3 text-right" style="font-weight:600;">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-[#E2E8F0]">
+        {% for appt in appointments %}
+        <tr class="hover:bg-[#F8FAFC]">
+          <td class="px-4 py-3">Dr. {{ appt.doctor.username }}</td>
+          <td class="px-4 py-3 tnum">{{ appt.appointment_date|date:"d M Y" }}</td>
+          <td class="px-4 py-3 tnum">{{ appt.time_slot|time:"H:i" }}</td>
+          <td class="px-4 py-3">
+            {% include "_status_badge.html" with status=appt.status label=appt.get_status_display %}
+            {% if appt.status == 'CANCELLED' and appt.cancel_reason %}
+            <p class="mt-1 text-[13px] text-[#64748B]">{{ appt.cancel_reason }}</p>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-[#64748B]">{{ appt.notes|default:"—" }}</td>
+          <td class="px-4 py-3 text-right">
+            {% if appt.status == 'PENDING' or appt.status == 'CONFIRMED' %}
+              <form method="post" action="{% url 'appointments:cancel' appt.id %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" onclick="return confirm('Cancel this appointment?');" class="text-[#DC2626] hover:underline" style="font-weight:500;">Cancel</button>
+              </form>
+            {% elif appt.status == 'COMPLETED' and appt.prescription %}
+              <a href="{% url 'prescriptions:view' appt.id %}" class="text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">View prescription</a>
+            {% else %}
+              <span class="text-[#64748B]">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="flex flex-col items-center gap-3 py-12 text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>
+              <p class="text-[14px] text-[#64748B]">You have no appointments yet.</p>
+              <a href="{% url 'appointments:doctor_list' %}" class="inline-flex h-10 items-center justify-center rounded-lg bg-[#1666C4] px-4 text-[14px] text-white hover:bg-[#1155A6]" style="font-weight:600;">Find a doctor</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
-{% else %}
-    <p>You have no appointments yet. <a href="{% url 'appointments:doctor_list' %}">Find a doctor</a>.</p>
-{% endif %}
+  </div>
+</div>
 {% endblock %}

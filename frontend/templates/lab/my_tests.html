@@ -1,40 +1,70 @@
 {% extends 'base.html' %}
 
-{% block title %}My Tests - Smart OPD{% endblock %}
+{% block title %}My Tests · Smart OPD{% endblock %}
+{% block page_title %}My Tests{% endblock %}
 
 {% block content %}
-<h1>My Tests</h1>
+<div class="rounded-xl border border-[#E2E8F0] bg-white shadow-sm">
 
-{% if tests %}
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Test</th>
-                <th>Requested</th>
-                <th>Status</th>
-                <th>Note</th>
-                <th>Result</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for test in tests %}
-                <tr>
-                    <td>{{ test.test_name }}</td>
-                    <td>{{ test.requested_at }}</td>
-                    <td>{{ test.get_status_display }}</td>
-                    <td>{{ test.result.notes | default:"-" }}</td>
-                    <td>
-                        {% if test.status == 'DONE' %}
-                            <a href="{{ test.result.result_file.url }}">Download Result</a>
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
+  <div class="border-b border-[#E2E8F0] p-4">
+    <p class="text-[13px] text-[#64748B]">
+      <span class="tnum">{{ tests|length }}</span> test{{ tests|length|pluralize }}
+    </p>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[720px] text-[14px]">
+      <thead>
+        <tr class="border-b border-[#E2E8F0] bg-white text-left text-[13px] uppercase text-[#64748B]" style="letter-spacing:.04em;">
+          <th class="px-4 py-3" style="font-weight:600;">Test</th>
+          <th class="px-4 py-3" style="font-weight:600;">Requested</th>
+          <th class="px-4 py-3" style="font-weight:600;">Status</th>
+          <th class="px-4 py-3" style="font-weight:600;">Lab note</th>
+          <th class="px-4 py-3 text-right" style="font-weight:600;">Result</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-[#E2E8F0]">
+        {% for test in tests %}
+        <tr class="hover:bg-[#F8FAFC]">
+          <td class="px-4 py-3">{{ test.test_name }}</td>
+          <td class="px-4 py-3 tnum">{{ test.requested_at|date:"d M Y, H:i" }}</td>
+          <td class="px-4 py-3">
+            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[12px]
+              {% if test.status == 'DONE' %}bg-[#DCFCE7] text-[#16A34A]
+              {% elif test.status == 'IN_PROGRESS' %}bg-[#E8F1FC] text-[#1666C4]
+              {% else %}bg-[#FEF3C7] text-[#D97706]{% endif %}" style="font-weight:500;">{{ test.get_status_display }}</span>
+            {% if test.status == 'DONE' and test.result %}
+              {% if test.result.is_normal %}
+              <span class="ml-1 inline-flex items-center rounded-full bg-[#DCFCE7] px-2.5 py-1 text-[12px] text-[#16A34A]" style="font-weight:500;">Normal</span>
+              {% else %}
+              <span class="ml-1 inline-flex items-center rounded-full bg-[#FEE2E2] px-2.5 py-1 text-[12px] text-[#DC2626]" style="font-weight:500;">Review</span>
+              {% endif %}
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-[#64748B]">{{ test.result.notes|default:"—" }}</td>
+          <td class="px-4 py-3 text-right">
+            {% if test.status == 'DONE' and test.result %}
+              <a href="{{ test.result.result_file.url }}" class="inline-flex items-center gap-1.5 text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 11l4.5 4.5 4.5-4.5M5 19.5h14"/></svg>
+                Download
+              </a>
+            {% else %}
+              <span class="text-[#64748B]">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5">
+            <div class="flex flex-col items-center gap-3 py-12 text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v9M12 20.5a4 4 0 0 0 4-4H8a4 4 0 0 0 4 4zM8.5 8.5h7"/></svg>
+              <p class="text-[14px] text-[#64748B]">No tests have been requested for you yet.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
-{% else %}
-    <p>No tests yet.</p>
-{% endif %}
+  </div>
+</div>
 {% endblock %}

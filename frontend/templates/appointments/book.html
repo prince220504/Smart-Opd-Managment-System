@@ -1,33 +1,94 @@
 {% extends 'base.html' %}
 
-{% block title %}Book with Dr. {{ doctor.username }} - Smart OPD {% endblock %}
+{% block title %}Book with Dr. {{ doctor.username }} · Smart OPD{% endblock %}
+{% block page_title %}Book Appointment{% endblock %}
 
 {% block content %}
-<h1>Book Appointment</h1>
-<p>Doctor: <strong>Dr. {{ doctor.username }}</strong></p>
+<div class="grid gap-5 lg:grid-cols-3">
 
-{% if availability %}
-    <p><storng>Hours:</storng> {{ availability.get_recurrence_display }}, {{ availability.start_time }}-{{ availability.end_time }}
-    {% if availability.break %} | Breaks: {% for b in availability.breaks %}{{ b.start }}-{{ b.end }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %} 
-    </p>
-{% else %}
-    <p><em>This doctor has not set a schedule yet.</em></p>
-{% endif %}
-
-{% if form.errors %}
-    <div style="color:red">
-        {% for field, errors in form.errors.items %}
-        <p>{{ field }}: {{ errors|join:", "}}</p>
-        {% endfor %}
+  <!-- doctor + availability -->
+  <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+    <div class="flex items-center gap-3">
+      <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#E8F1FC] text-[15px] text-[#1666C4]" style="font-weight:600;">
+        {{ doctor.username|slice:":2"|upper }}
+      </span>
+      <div class="min-w-0">
+        <p class="truncate text-[16px]" style="font-weight:600;">Dr. {{ doctor.username }}</p>
+        <p class="truncate text-[13px] text-[#64748B]">{{ doctor.email|default:"—" }}</p>
+      </div>
     </div>
-{% endif %}
 
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Confirm Booking</button>
-</form>
+    <div class="mt-5 border-t border-[#E2E8F0] pt-4">
+      <p class="text-[13px] text-[#64748B]">Availability</p>
+      {% if availability %}
+        <p class="mt-1 text-[14px]">{{ availability.get_recurrence_display }}</p>
+        <p class="mt-1 text-[14px] tnum">{{ availability.start_time|time:"H:i" }} – {{ availability.end_time|time:"H:i" }}</p>
+        {% if availability.breaks %}
+        <p class="mt-3 text-[13px] text-[#64748B]">Breaks</p>
+        <ul class="mt-1 space-y-1">
+          {% for b in availability.breaks %}
+          <li class="text-[14px] tnum">{{ b.start }} – {{ b.end }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      {% else %}
+        <p class="mt-1 text-[14px] text-[#64748B]">This doctor has not set a schedule yet.</p>
+      {% endif %}
+    </div>
 
-<p><a href="{% url 'appointments:doctor_list' %}">Back to doctors</a></p>
+    <a href="{% url 'appointments:doctor_list' %}" class="mt-5 inline-flex h-10 w-full items-center justify-center rounded-lg border border-[#E2E8F0] bg-white px-4 text-[14px] text-[#1A2333] hover:bg-[#F8FAFC]" style="font-weight:500;">
+      Back to doctors
+    </a>
+  </div>
 
-{% endblock %} 
+  <!-- booking form -->
+  <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm lg:col-span-2">
+    <h2 class="text-[18px]" style="font-weight:600;">Appointment details</h2>
+
+    {% if form.non_field_errors %}
+    <div class="mt-4 rounded-lg border-l-[3px] border-[#DC2626] bg-[#FEF2F2] px-4 py-3">
+      {% for e in form.non_field_errors %}
+      <p class="text-[14px] text-[#1A2333]">{{ e }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" class="mt-6 space-y-4">
+      {% csrf_token %}
+      {# the doctor is fixed by the URL, so it travels as a hidden field #}
+      <input type="hidden" name="doctor" value="{{ doctor.id }}">
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label for="id_appointment_date" class="block text-[13px] text-[#1A2333]" style="font-weight:500;">Date <span class="text-[#DC2626]">*</span></label>
+          <input id="id_appointment_date" name="appointment_date" type="date" required
+                 value="{{ form.appointment_date.value|default:'' }}"
+                 class="mt-1.5 h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px]">
+          {% for e in form.appointment_date.errors %}<p class="mt-1 text-[13px] text-[#DC2626]">{{ e }}</p>{% endfor %}
+        </div>
+        <div>
+          <label for="id_time_slot" class="block text-[13px] text-[#1A2333]" style="font-weight:500;">Time <span class="text-[#DC2626]">*</span></label>
+          <input id="id_time_slot" name="time_slot" type="time" required
+                 value="{{ form.time_slot.value|default:'' }}"
+                 class="mt-1.5 h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px]">
+          {% for e in form.time_slot.errors %}<p class="mt-1 text-[13px] text-[#DC2626]">{{ e }}</p>{% endfor %}
+        </div>
+      </div>
+
+      <div>
+        <label for="id_notes" class="block text-[13px] text-[#1A2333]" style="font-weight:500;">Notes</label>
+        <textarea id="id_notes" name="notes" rows="4"
+                  class="mt-1.5 w-full rounded-lg border border-[#E2E8F0] px-3 py-2 text-[14px]"
+                  placeholder="Anything the doctor should know before the visit">{{ form.notes.value|default:'' }}</textarea>
+        {% for e in form.notes.errors %}<p class="mt-1 text-[13px] text-[#DC2626]">{{ e }}</p>{% endfor %}
+      </div>
+
+      {% for e in form.doctor.errors %}<p class="text-[13px] text-[#DC2626]">{{ e }}</p>{% endfor %}
+
+      <button type="submit" class="inline-flex h-10 w-full items-center justify-center rounded-lg bg-[#1666C4] px-4 text-[14px] text-white hover:bg-[#1155A6] sm:w-auto" style="font-weight:600;">
+        Confirm booking
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
