@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}Prescriptions · Smart OPD{% endblock %}
+{% block page_title %}Prescriptions{% endblock %}
+
+{% block content %}
+<div class="rounded-xl border border-[#E2E8F0] bg-white shadow-sm">
+  <div class="border-b border-[#E2E8F0] p-4">
+    <h2 class="text-[18px]" style="font-weight:600;">Your prescriptions</h2>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[680px] text-[14px]">
+      <thead>
+        <tr class="border-b border-[#E2E8F0] bg-white text-left text-[13px] uppercase text-[#64748B]" style="letter-spacing:.04em;">
+          <th class="px-4 py-3" style="font-weight:600;">Date</th>
+          <th class="px-4 py-3" style="font-weight:600;">Doctor</th>
+          <th class="px-4 py-3" style="font-weight:600;">Diagnosis</th>
+          <th class="px-4 py-3" style="font-weight:600;">Medicines</th>
+          <th class="px-4 py-3 text-right" style="font-weight:600;">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-[#E2E8F0]">
+        {% for prescription in prescriptions %}
+        <tr class="hover:bg-[#F8FAFC]">
+          <td class="px-4 py-3 tnum">{{ prescription.appointment.appointment_date|date:"d M Y" }}</td>
+          <td class="px-4 py-3">Dr. {{ prescription.appointment.doctor.username }}</td>
+          <td class="px-4 py-3">{{ prescription.diagnosis|default:"—" }}</td>
+          <td class="px-4 py-3 tnum text-[#64748B]">{{ prescription.medicines|length }}</td>
+          <td class="px-4 py-3 text-right">
+            <a href="{% url 'prescriptions:view' prescription.appointment.id %}" class="text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">View</a>
+            <span class="text-[#E2E8F0]">·</span>
+            {# JS prints this in a hidden frame; the href is the no-JS fallback #}
+            <a href="{% url 'prescriptions:view' prescription.appointment.id %}?print=1"
+               data-print="{% url 'prescriptions:view' prescription.appointment.id %}"
+               class="text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">Print</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5">
+            <div class="flex flex-col items-center gap-3 py-12 text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M14.5 3.5V8h4.5M8.5 12.5h7M8.5 16h7"/></svg>
+              <p class="text-[14px] text-[#64748B]">No prescriptions yet.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  /* Print a prescription without leaving this page.
+     It is loaded into an off-screen iframe and that frame is printed.
+     Chrome will not print a zero-sized or display:none frame, so the frame
+     gets a real page-sized box and is pushed off-screen instead of hidden. */
+  document.querySelectorAll('a[data-print]').forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (link.dataset.busy) return;              // ignore double clicks
+      link.dataset.busy = '1';
+
+      var frame = document.createElement('iframe');
+      frame.setAttribute('aria-hidden', 'true');
+      frame.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;height:1123px;border:0;';
+
+      frame.addEventListener('load', function () {
+        // one beat so webfonts and Tailwind have painted inside the frame
+        setTimeout(function () {
+          try {
+            frame.contentWindow.focus();          // Safari prints the parent without this
+            frame.contentWindow.print();
+          } catch (err) {
+            window.location.href = link.href;     // blocked: fall back to navigating
+            return;
+          }
+          setTimeout(function () {
+            frame.remove();
+            delete link.dataset.busy;
+          }, 1000);
+        }, 250);
+      });
+
+      document.body.appendChild(frame);
+      frame.src = link.dataset.print;             // set src after it is in the DOM
+    });
+  });
+</script>
+{% endblock %}
