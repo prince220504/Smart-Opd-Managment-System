@@ -10,6 +10,8 @@ from django.http import Http404, HttpResponse
 from django.urls import reverse
 from apps.notifications.services import notify
 from apps.notifications.models import Notification
+from apps.lab.models import LabTest
+from apps.prescriptions.models import Prescription
 from django.utils import timezone
 import csv
 
@@ -53,6 +55,38 @@ def book_appointment(request, doctor_id):
     ).first()
 
     return render(request, 'appointments/book.html', {'form':form, 'doctor': doctor, 'availability': availability})
+
+@login_required
+def patient_dashboard(request):
+    """Landing page for a patient: three counts, the next visit, recent activity.
+
+    Every number here is read straight off the real tables — nothing is stored.
+    """
+    if request.user.role != 'PATIENT':
+        raise Http404()
+
+    today = timezone.localdate()
+    live = [Appointment.Status.PENDING, Appointment.Status.CONFIRMED]
+
+    upcoming = (
+        request.user.patient_appointments
+        .filter(appointment_date__gte=today, status__in=live)
+        .select_related('doctor')
+        .order_by('appointment_date', 'time_slot')
+    )
+
+    return render(request, 'appointments/patient_dashboard.html', {
+        'upcoming_count': upcoming.count(),
+        'pending_reports': LabTest.objects.filter(
+            appointment__patient=request.user
+        ).exclude(status=LabTest.Status.DONE).count(),
+        'prescription_count': Prescription.objects.filter(
+            appointment__patient=request.user
+        ).count(),
+        # .first() on an already-ordered queryset = the soonest visit
+        'next_appointment': upcoming.first(),
+        'recent': request.user.notifications.all()[:5],
+    })
 
 @login_required
 def my_appointments(request):
