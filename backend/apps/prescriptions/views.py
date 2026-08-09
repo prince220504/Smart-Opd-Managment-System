@@ -1,5 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from apps.appointments.models import Appointment
 from .forms import PrescriptionForm
 from .models import Prescription
@@ -54,6 +55,27 @@ def write_prescription(request, appointment_id):
     })
             
 @login_required
+def my_prescriptions(request):
+    """Every prescription written for the logged-in patient, newest visit first.
+
+    select_related walks Prescription -> Appointment -> Doctor in one JOIN,
+    so the table below costs 1 query no matter how many rows it prints.
+    """
+    prescriptions = (
+        Prescription.objects
+        .filter(appointment__patient=request.user)
+        .select_related('appointment', 'appointment__doctor')
+        .order_by('-appointment__appointment_date', '-appointment__time_slot')
+    )
+    return render(request, 'prescriptions/my_prescriptions.html', {
+        'prescriptions': prescriptions,
+    })
+
+@login_required
+# the list page prints a prescription by loading it into a hidden iframe.
+# Django sends X-Frame-Options: DENY by default, which blocks that even for
+# our own pages, so this one view opts down to same-origin framing.
+@xframe_options_sameorigin
 def view_prescription(request, appointment_id):
     prescription = get_object_or_404(
         Prescription,
