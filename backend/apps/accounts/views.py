@@ -21,7 +21,7 @@ def login_view(request):
                 return redirect('appointments:appointment_list')
             if user.role == 'LAB':
                 return redirect('lab:queue')
-            return redirect('accounts:profile')
+            return redirect('appointments:patient_dashboard')
         else:
             return render(request, 'accounts/login.html', {'error': 'Invalid username or password',})
         
@@ -43,7 +43,7 @@ def register_view(request):
 @require_POST
 def logout_view(request):
     logout(request)
-    return redirect('accounts:login')
+    return redirect('home')
 
 @login_required
 def profile_view(request):
