@@ -3,6 +3,19 @@
 {% block title %}Notifications · Smart OPD{% endblock %}
 {% block page_title %}Notifications{% endblock %}
 
+{% block page_intro %}
+<div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Notifications</span>
+    <p class="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">Everything the hospital has told you, newest first.</p>
+  </div>
+  <span class="inline-flex items-center gap-2 self-start rounded-full border border-[#E2E8F0] bg-white px-3 py-1.5 text-[13px] text-[#64748B] sm:self-auto" style="font-weight:500;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1666C4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>
+    <span class="tnum">{% now "d M Y" %}</span>
+  </span>
+</div>
+{% endblock %}
+
 {% block content %}
 <div class="rounded-xl border border-[#E2E8F0] bg-white shadow-sm">
 

@@ -4,6 +4,28 @@
 {% block page_title %}Dashboard{% endblock %}
 
 {% block content %}
+{% comment %}
+Welcome bar. The second sentence is read off next_appointment, so it tells the
+truth instead of always claiming a visit is coming. Same id as the messages
+bar, so it inherits the #flash slide-down in main.css.
+{% endcomment %}
+<div id="flash" class="mb-6 flex items-start justify-between gap-3 rounded-lg border-l-[3px] border-[#1666C4] bg-[#E8F1FC] px-4 py-3">
+  <p class="text-[14px] text-[#1A2333]">
+    Welcome back, {{ user.username }}.
+    {% if next_appointment %}
+      Your next visit is with Dr. {{ next_appointment.doctor.username }} on
+      <span class="tnum">{{ next_appointment.appointment_date|date:"d M Y" }}</span>
+      at <span class="tnum">{{ next_appointment.time_slot|time:"H:i" }}</span>
+      ({{ next_appointment.get_status_display|lower }}).
+    {% else %}
+      You have no upcoming appointments.
+    {% endif %}
+  </p>
+  <button type="button" onclick="this.parentElement.remove()" class="shrink-0 text-[#64748B] hover:text-[#1A2333]" aria-label="Dismiss">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
+</div>
+
 <!-- Summary cards -->
 <div class="grid gap-5 sm:grid-cols-3">
   <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
@@ -25,7 +47,12 @@
   <div class="flex items-center justify-between gap-3">
     <h2 class="text-[18px]" style="font-weight:600;">Next appointment</h2>
     {% if next_appointment %}
-      {% include "_status_badge.html" with status=next_appointment.status label=next_appointment.get_status_display %}
+      <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[12px]
+        {% if next_appointment.status == 'CONFIRMED' %}bg-[#E8F1FC] text-[#1666C4]
+        {% elif next_appointment.status == 'PENDING' %}bg-[#FEF3C7] text-[#D97706]
+        {% elif next_appointment.status == 'COMPLETED' %}bg-[#DCFCE7] text-[#16A34A]
+        {% elif next_appointment.status == 'NO_SHOW' %}bg-[#FEE2E2] text-[#DC2626]
+        {% else %}bg-[#F1F5F9] text-[#64748B]{% endif %}" style="font-weight:500;">{{ next_appointment.get_status_display }}</span>
     {% endif %}
   </div>
 
@@ -36,8 +63,8 @@
       <p class="text-[14px]" style="font-weight:500;">Dr. {{ next_appointment.doctor.username }}</p>
     </div>
     <div>
-      <p class="text-[13px] text-[#64748B]">Booked</p>
-      <p class="text-[14px] tnum" style="font-weight:500;">{{ next_appointment.created_at|date:"d M Y" }}</p>
+      <p class="text-[13px] text-[#64748B]">Department</p>
+      <p class="text-[14px]" style="font-weight:500;">{{ next_appointment.doctor.get_department_display|default:"—" }}</p>
     </div>
     <div>
       <p class="text-[13px] text-[#64748B]">Date</p>
@@ -57,7 +84,7 @@
   {% endif %}
 
   <div class="mt-5 flex flex-wrap gap-3">
-    <a href="{% url 'appointments:my_appointments' %}" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white px-4 text-[14px] text-[#1A2333] hover:bg-[#F8FAFC]" style="font-weight:500;">All appointments</a>
+    <a href="{% url 'appointments:reschedule' next_appointment.id %}" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white px-4 text-[14px] text-[#1A2333] hover:bg-[#F8FAFC]" style="font-weight:500;">Reschedule</a>
     <form method="post" action="{% url 'appointments:cancel' next_appointment.id %}">
       {% csrf_token %}
       <button type="submit" onclick="return confirm('Cancel this appointment?');" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white px-4 text-[14px] text-[#DC2626] hover:bg-[#FEF2F2]" style="font-weight:500;">Cancel</button>

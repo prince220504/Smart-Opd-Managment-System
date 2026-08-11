@@ -3,14 +3,47 @@
 {% block title %}My Appointments · Smart OPD{% endblock %}
 {% block page_title %}My Appointments{% endblock %}
 
+{% block page_intro %}
+<div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Your visits</span>
+    <p class="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">Track or cancel every appointment in one place.</p>
+  </div>
+  <span class="inline-flex items-center gap-2 self-start rounded-full border border-[#E2E8F0] bg-white px-3 py-1.5 text-[13px] text-[#64748B] sm:self-auto" style="font-weight:500;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1666C4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>
+    <span class="tnum">{% now "d M Y" %}</span>
+  </span>
+</div>
+{% endblock %}
+
 {% block content %}
 <div class="rounded-xl border border-[#E2E8F0] bg-white shadow-sm">
 
-  <div class="flex items-center justify-between gap-3 border-b border-[#E2E8F0] p-4">
+  <!-- Filter bar — plain GET form, so the filters survive a refresh and a share -->
+  <form method="get" class="flex flex-col gap-3 border-b border-[#E2E8F0] p-4 sm:flex-row sm:items-end">
+    <div class="sm:w-48">
+      <label for="status" class="block text-[13px] text-[#1A2333]" style="font-weight:500;">Status</label>
+      <select id="status" name="status" class="mt-1.5 h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px]">
+        <option value="">All statuses</option>
+        {% for value, label in statuses %}
+        <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="flex-1">
+      <label for="q" class="block text-[13px] text-[#1A2333]" style="font-weight:500;">Search</label>
+      <input id="q" name="q" type="text" value="{{ q }}"
+             class="mt-1.5 h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px]"
+             placeholder="Search by doctor">
+    </div>
+    <button type="submit" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white px-4 text-[14px] text-[#1A2333] hover:bg-[#F8FAFC]" style="font-weight:500;">Filter</button>
+    <a href="{% url 'appointments:doctor_list' %}" class="inline-flex h-10 items-center justify-center rounded-lg bg-[#1666C4] px-4 text-[14px] text-white hover:bg-[#1155A6]" style="font-weight:600;">Book appointment</a>
+  </form>
+
+  <div class="border-b border-[#E2E8F0] px-4 py-2">
     <p class="text-[13px] text-[#64748B]">
       <span class="tnum">{{ appointments|length }}</span> appointment{{ appointments|length|pluralize }}
     </p>
-    <a href="{% url 'appointments:doctor_list' %}" class="inline-flex h-10 items-center justify-center rounded-lg bg-[#1666C4] px-4 text-[14px] text-white hover:bg-[#1155A6]" style="font-weight:600;">Book appointment</a>
   </div>
 
   <div class="overflow-x-auto">
@@ -18,10 +51,12 @@
       <thead>
         <tr class="border-b border-[#E2E8F0] bg-white text-left text-[13px] uppercase text-[#64748B]" style="letter-spacing:.04em;">
           <th class="px-4 py-3" style="font-weight:600;">Doctor</th>
+          <th class="px-4 py-3" style="font-weight:600;">Department</th>
           <th class="px-4 py-3" style="font-weight:600;">Date</th>
           <th class="px-4 py-3" style="font-weight:600;">Time</th>
           <th class="px-4 py-3" style="font-weight:600;">Status</th>
           <th class="px-4 py-3" style="font-weight:600;">Notes</th>
+          <th class="px-4 py-3" style="font-weight:600;">Prescription</th>
           <th class="px-4 py-3 text-right" style="font-weight:600;">Actions</th>
         </tr>
       </thead>
@@ -29,23 +64,39 @@
         {% for appt in appointments %}
         <tr class="hover:bg-[#F8FAFC]">
           <td class="px-4 py-3">Dr. {{ appt.doctor.username }}</td>
+          <td class="px-4 py-3 text-[#64748B]">{{ appt.doctor.get_department_display|default:"—" }}</td>
           <td class="px-4 py-3 tnum">{{ appt.appointment_date|date:"d M Y" }}</td>
           <td class="px-4 py-3 tnum">{{ appt.time_slot|time:"H:i" }}</td>
           <td class="px-4 py-3">
-            {% include "_status_badge.html" with status=appt.status label=appt.get_status_display %}
+            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[12px]
+              {% if appt.status == 'CONFIRMED' %}bg-[#E8F1FC] text-[#1666C4]
+              {% elif appt.status == 'PENDING' %}bg-[#FEF3C7] text-[#D97706]
+              {% elif appt.status == 'COMPLETED' %}bg-[#DCFCE7] text-[#16A34A]
+              {% elif appt.status == 'NO_SHOW' %}bg-[#FEE2E2] text-[#DC2626]
+              {% else %}bg-[#F1F5F9] text-[#64748B]{% endif %}" style="font-weight:500;">{{ appt.get_status_display }}</span>
             {% if appt.status == 'CANCELLED' and appt.cancel_reason %}
             <p class="mt-1 text-[13px] text-[#64748B]">{{ appt.cancel_reason }}</p>
             {% endif %}
           </td>
           <td class="px-4 py-3 text-[#64748B]">{{ appt.notes|default:"—" }}</td>
-          <td class="px-4 py-3 text-right">
+
+          <td class="px-4 py-3">
+            {% if appt.prescription %}
+              <a href="{% url 'prescriptions:view' appt.id %}" class="text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">View</a>
+            {% else %}
+              <span class="text-[#64748B]">—</span>
+            {% endif %}
+          </td>
+
+          {# Reschedule and Cancel only while the visit can still change #}
+          <td class="px-4 py-3 text-right whitespace-nowrap">
             {% if appt.status == 'PENDING' or appt.status == 'CONFIRMED' %}
+              <a href="{% url 'appointments:reschedule' appt.id %}" class="text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">Reschedule</a>
+              <span class="text-[#E2E8F0]">·</span>
               <form method="post" action="{% url 'appointments:cancel' appt.id %}" class="inline">
                 {% csrf_token %}
                 <button type="submit" onclick="return confirm('Cancel this appointment?');" class="text-[#DC2626] hover:underline" style="font-weight:500;">Cancel</button>
               </form>
-            {% elif appt.status == 'COMPLETED' and appt.prescription %}
-              <a href="{% url 'prescriptions:view' appt.id %}" class="text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">View prescription</a>
             {% else %}
               <span class="text-[#64748B]">—</span>
             {% endif %}
@@ -53,7 +104,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="6">
+          <td colspan="8">
             <div class="flex flex-col items-center gap-3 py-12 text-center">
               <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>
               <p class="text-[14px] text-[#64748B]">You have no appointments yet.</p>

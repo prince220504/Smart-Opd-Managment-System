@@ -3,6 +3,19 @@
 {% block title %}Medical History · Smart OPD{% endblock %}
 {% block page_title %}Medical History{% endblock %}
 
+{% block page_intro %}
+<div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Visit history</span>
+    <p class="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">Every past appointment, prescription and lab test, kept together.</p>
+  </div>
+  <span class="inline-flex items-center gap-2 self-start rounded-full border border-[#E2E8F0] bg-white px-3 py-1.5 text-[13px] text-[#64748B] sm:self-auto" style="font-weight:500;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1666C4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>
+    <span class="tnum">{% now "d M Y" %}</span>
+  </span>
+</div>
+{% endblock %}
+
 {% block content %}
 <div class="space-y-5">
 
@@ -21,18 +34,29 @@
     </div>
   </div>
 
-  <!-- one card per visit -->
+  <h2 class="pt-1 text-[18px]" style="font-weight:600;">Past visits</h2>
+
+  <!-- one card per visit — a table cannot hold the prescription and the tests
+       that hang off each visit, so this stays a tree -->
   {% for appt in appointments %}
   <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
 
     <div class="flex flex-col gap-2 border-b border-[#E2E8F0] pb-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <p class="text-[16px]" style="font-weight:600;">Dr. {{ appt.doctor.username }}</p>
+        <p class="text-[16px]" style="font-weight:600;">
+          Dr. {{ appt.doctor.username }}
+          {% if appt.doctor.department %}<span class="text-[13px] text-[#64748B]" style="font-weight:400;">· {{ appt.doctor.get_department_display }}</span>{% endif %}
+        </p>
         <p class="mt-1 text-[14px] text-[#64748B] tnum">
           {{ appt.appointment_date|date:"d M Y" }} at {{ appt.time_slot|time:"H:i" }}
         </p>
       </div>
-      {% include "_status_badge.html" with status=appt.status label=appt.get_status_display %}
+      <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[12px]
+        {% if appt.status == 'CONFIRMED' %}bg-[#E8F1FC] text-[#1666C4]
+        {% elif appt.status == 'PENDING' %}bg-[#FEF3C7] text-[#D97706]
+        {% elif appt.status == 'COMPLETED' %}bg-[#DCFCE7] text-[#16A34A]
+        {% elif appt.status == 'NO_SHOW' %}bg-[#FEE2E2] text-[#DC2626]
+        {% else %}bg-[#F1F5F9] text-[#64748B]{% endif %}" style="font-weight:500;">{{ appt.get_status_display }}</span>
     </div>
 
     <!-- prescription -->
