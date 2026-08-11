@@ -22,4 +22,5 @@ urlpatterns = [
     path('history/', views.medical_history, name='medical_history'),
     path('history/<int:patient_id>/', views.medical_history, name='patient_history'),
     path('export/csv/', views.export_appointments_csv, name='export_csv'),
+    path('reschedule/<int:appointment_id>/', views.reschedule_appointment, name='reschedule'),
 ]

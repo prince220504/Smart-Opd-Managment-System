@@ -27,7 +27,15 @@ def _redirect_after_action(request):
 @login_required
 def doctor_list(request):
     doctors = User.objects.filter(role='DOCTOR').order_by('username')
-    return render(request, 'appointments/doctor_list.html', {'doctors': doctors})
+    department = request.GET.get('department', '')
+    if department:
+        doctors = doctors.filter(department=department)
+
+    return render(request, 'appointments/doctor_list.html', {
+        'doctors': doctors,
+        'department': department,
+        'departments': User.Department.choices,
+    })
 
 @login_required
 def book_appointment(request, doctor_id):
@@ -55,6 +63,45 @@ def book_appointment(request, doctor_id):
     ).first()
 
     return render(request, 'appointments/book.html', {'form':form, 'doctor': doctor, 'availability': availability})
+
+@login_required
+def reschedule_appointment(request, appointment_id):
+    # the scoped lookup is the permission check: your own appointment, and 
+    # only one that has not finished yet
+    appointment = get_object_or_404(
+        Appointment,
+        id=appointment_id,
+        patient=request.user,
+        status__in=[Appointment.Status.PENDING, Appointment.Status.CONFIRMED],
+    )
+
+    if request.method == 'POST':
+        form = BookAppointmentForm(request.POST, instance=appointment)
+        if form.is_valid():
+            # a moved visit is no longer the one the doctor agreed to
+            appointment.status = Appointment.Status.PENDING
+            appointment.save()
+            notify(
+                recipient=appointment.doctor,
+                message=f'{request.user.username} moved an appointment to {appointment.appointment_date} at {appointment.time_slot}.',
+                notification_type=Notification.Type.STATUS,
+                link=reverse('appointments:doctor_today'), 
+            )
+            return redirect('appointments:my_appointments')
+    else:
+        form = BookAppointmentForm(instance=appointment)
+
+    availability = appointment.doctor.availabilities.exclude(
+        recurrence=DoctorAvailability.Recurrence.DATE
+    ).first()
+
+    return render(request, 'appointments/reschedule.html',{
+        'form': form,
+        'appointment': appointment,
+        'doctor': appointment.doctor,
+        'availability': availability,
+    })
+
 
 @login_required
 def patient_dashboard(request):
@@ -93,7 +140,20 @@ def my_appointments(request):
     appointments = (
         request.user.patient_appointments.select_related('doctor', 'prescription').all()
     )
-    return render(request, 'appointments/my_appointments.html', {'appointments': appointments})
+    # filter ride in the querystring, so the page stays one plain GET
+    status = request.GET.get('status', '')
+    q = request.GET.get('q', '').strip()
+    if status:
+        appointments = appointments.filter(status=status)
+    if q:
+        appointments = appointments.filter(doctor__username__icontains=q)
+
+    return render(request, 'appointments/my_appointments.html', {
+        'appointments': appointments,
+        'status': status,
+        'q': q,
+        'statuses': Appointment.Status.choices,
+    })
 
 @login_required 
 def doctor_today(request):
