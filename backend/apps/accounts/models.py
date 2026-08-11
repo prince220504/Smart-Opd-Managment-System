@@ -9,6 +9,14 @@ class CustomUser(AbstractUser):
         LAB = 'LAB', 'Lab Technician'
         PATIENT = 'PATIENT','Patient'
 
+    class Department(models.TextChoices):
+        GENERAL = 'GENERAL', 'General Medicine'
+        CARDIOLOGY = 'CARDIOLOGY', 'Cardiology'
+        ORTHOPAEDICS = 'ORTHOPAEDICS', 'Orthopaedics'
+        DERMATOLOGY = 'DERMATOLOGY', 'Dermatology'
+        ENT = 'ENT', 'ENT'
+        PAEDIATRICS = 'PAEDIATRICS', 'Paediatrics'
+
     phone_validator = RegexValidator(regex=r'^[6-9]\d{9}$', message='Enter a valid 10-digit Indian mobile number (must start with 6, 7, 8, or 9).',)
 
     email = models.EmailField(unique=True)
@@ -18,6 +26,12 @@ class CustomUser(AbstractUser):
         max_length=20,
         choices=Role.choices,
         default=Role.PATIENT,
+    )
+
+    department = models.CharField(
+        max_length=20,
+        choices=Department.choices,
+        blank=True, 
     )
 
     @property
