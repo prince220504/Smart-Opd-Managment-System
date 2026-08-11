@@ -14,6 +14,11 @@
 </head>
 <body class="min-h-screen overflow-x-hidden antialiased">
 
+{% comment %}
+One block for the whole page body, so the login/register split screen can
+replace sidebar + header + footer outright and still share head + main.js.
+{% endcomment %}
+{% block body %}
 <div class="flex min-h-screen">
 {% if user.is_authenticated %}
 
@@ -153,11 +158,34 @@
     <!-- one <main>, one content block. Django parses this file before it knows
          who is logged in, so a block name can only appear once. Only the
          wrapper classes differ per branch. -->
-    <main class="flex-1 {% if user.is_authenticated %}p-4 sm:p-6{% endif %}">
-      <div class="mx-auto max-w-6xl {% if not user.is_authenticated %}px-4 sm:px-6{% endif %}">
-        {% include "_messages.html" %}
+    <main class="flex-1 {% if user.is_authenticated %}relative overflow-hidden p-4 sm:p-6{% endif %}">
+      {% if user.is_authenticated %}
+      <!-- decorative backdrop: dots top-right, soft blue glow top-left.
+           pointer-events-none so it never steals a click. -->
+      <div class="pointer-events-none absolute inset-0" aria-hidden="true">
+        <div class="opd-dots absolute right-0 top-0 h-56 w-56 opacity-[0.06]"></div>
+        <div class="absolute -left-24 -top-28 h-72 w-72 rounded-full bg-[#E8F1FC] blur-3xl opacity-60"></div>
       </div>
-      <div class="{% if user.is_authenticated %}mx-auto max-w-6xl{% endif %}">
+      {% endif %}
+      <div class="relative mx-auto max-w-6xl {% if not user.is_authenticated %}px-4 sm:px-6{% endif %}">
+        {% if messages %}
+        <div id="flash" class="mb-6 space-y-3">
+          {% for message in messages %}
+          <div class="flex items-start justify-between gap-3 rounded-lg border-l-[3px] px-4 py-3
+               {% if 'error' in message.tags or 'danger' in message.tags %}border-[#DC2626] bg-[#FEF2F2]
+               {% elif 'warning' in message.tags %}border-[#D97706] bg-[#FFFBEB]
+               {% else %}border-[#1666C4] bg-[#E8F1FC]{% endif %}">
+            <p class="text-[14px] text-[#1A2333]">{{ message }}</p>
+            <button type="button" onclick="this.parentElement.remove()" class="shrink-0 text-[#64748B] hover:text-[#1A2333]" aria-label="Dismiss">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      <div class="{% if user.is_authenticated %}relative mx-auto max-w-6xl{% endif %}">
+        {% block page_intro %}{% endblock %}
         {% block content %}{% endblock %}
       </div>
     </main>
@@ -174,6 +202,7 @@
     </footer>
   </div>
 </div>
+{% endblock %}
 
 <script src="{% static 'js/main.js' %}"></script>
 {% block extra_js %}{% endblock %}
