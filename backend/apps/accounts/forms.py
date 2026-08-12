@@ -23,4 +23,15 @@ class RegisterForm(forms.ModelForm):
         if commit:
             user.save()
         return user    
-    
+
+class WalkInPatientForm(RegisterForm):
+    """Reception registering a walk-in. Same rules as self-registeration,
+    plus the desk details a patient gives at the counter."""
+
+    class Meta(RegisterForm.Meta):
+        fields = ['username', 'email', 'phone', 'age', 'gender', 'blood_group', 'address']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ('phone', 'age', 'gender'):
+            self.fields[name].required = True

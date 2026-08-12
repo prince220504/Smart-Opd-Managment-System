@@ -2,7 +2,11 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
-from .forms import RegisterForm
+from .forms import RegisterForm, WalkInPatientForm
+from django.db.models import Q
+from django.contrib import messages
+from django.http import Http404
+from .models import CustomUser
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -18,7 +22,7 @@ def login_view(request):
                     return redirect('appointments:doctor_schedule')
                 return redirect('appointments:doctor_dashboard')
             if user.role == 'RECEPTION':
-                return redirect('appointments:appointment_list')
+                return redirect('appointments:dashboard')
             if user.role == 'LAB':
                 return redirect('lab:dashboard')
             return redirect('appointments:patient_dashboard')
@@ -48,3 +52,33 @@ def logout_view(request):
 @login_required
 def profile_view(request):
     return render(request, 'accounts/profile.html')
+
+@login_required
+def patient_registry(request):
+    if request.user.role != 'RECEPTION':
+        raise Http404()
+
+    patients = CustomUser.objects.filter(role='PATIENT').order_by('-date_joined')    
+    q = request.GET.get('q', '').strip()
+    if q:
+        patients = patients.filter(
+            Q(username__icontains=q) | Q(email__icontains=q) | Q(phone__icontains=q)
+        )
+
+    return render(request, 'accounts/patient_registry.html', {'patients':patients, 'q':q})
+
+@login_required
+def register_patient(request):
+    if request.user.role != 'RECEPTION':
+        raise Http404()
+
+    if request.method == 'POST':
+        form = WalkInPatientForm(request.POST)
+        if form.is_valid():
+            patient = form.save()
+            messages.success(request, f'{patient.username} registered')
+            return redirect('appointments:reception_book')
+    else:
+        form = WalkInPatientForm()
+
+    return render(request, 'accounts/register_patient.html', {'form':form})
