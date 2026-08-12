@@ -59,13 +59,17 @@ replace sidebar + header + footer outright and still share head + main.js.
         </a>
 
       {% elif user.role == 'DOCTOR' %}
-        <a href="{% url 'appointments:doctor_today' %}" class="rounded-lg px-3 py-2 text-[14px] flex items-center gap-3 text-white/80 hover:bg-white/10">
+        <a href="{% url 'appointments:doctor_dashboard' %}" class="rounded-lg px-3 py-2 text-[14px] flex items-center gap-3 text-white/80 hover:bg-white/10">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3M8 13h8M8 16.5h5"/></svg>
-          Today's Appointments
+          Dashboard
         </a>
         <a href="{% url 'appointments:doctor_records' %}" class="rounded-lg px-3 py-2 text-[14px] flex items-center gap-3 text-white/80 hover:bg-white/10">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M14.5 3.5V8h4.5M8.5 12.5h7M8.5 16h7"/></svg>
           Appointment Records
+        </a>
+        <a href="{% url 'appointments:doctor_patients' %}" class="rounded-lg px-3 py-2 text-[14px] flex items-center gap-3 text-white/80 hover:bg-white/10">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19"/><circle cx="10" cy="8" r="3.5"/><path d="M19 19v-1.5a3.5 3.5 0 0 0-2.5-3.35"/></svg>
+          My Patients
         </a>
         <a href="{% url 'appointments:doctor_upcoming' %}" class="rounded-lg px-3 py-2 text-[14px] flex items-center gap-3 text-white/80 hover:bg-white/10">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>

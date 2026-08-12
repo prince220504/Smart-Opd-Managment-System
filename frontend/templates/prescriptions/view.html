@@ -89,18 +89,3 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-  /* Arrived from a "Print" link on the list page.
-     Print, then go back, so the user ends up where they started. */
-  if (new URLSearchParams(location.search).get('print') === '1') {
-    window.addEventListener('load', function () {
-      window.addEventListener('afterprint', function () {
-        if (history.length > 1) history.back();
-      });
-      // one frame, so fonts and CSS are applied before the preview is built
-      requestAnimationFrame(function () { window.print(); });
-    });
-  }
-</script>
-{% endblock %}

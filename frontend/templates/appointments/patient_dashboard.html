@@ -21,7 +21,7 @@ bar, so it inherits the #flash slide-down in main.css.
       You have no upcoming appointments.
     {% endif %}
   </p>
-  <button type="button" onclick="this.parentElement.remove()" class="shrink-0 text-[#64748B] hover:text-[#1A2333]" aria-label="Dismiss">
+  <button type="button" data-dismiss class="shrink-0 text-[#64748B] hover:text-[#1A2333]" aria-label="Dismiss">
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
   </button>
 </div>
@@ -50,6 +50,7 @@ bar, so it inherits the #flash slide-down in main.css.
       <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[12px]
         {% if next_appointment.status == 'CONFIRMED' %}bg-[#E8F1FC] text-[#1666C4]
         {% elif next_appointment.status == 'PENDING' %}bg-[#FEF3C7] text-[#D97706]
+        {% elif next_appointment.status == 'IN_PROGRESS' %}bg-[#E6F7F7] text-[#0FA3A3]
         {% elif next_appointment.status == 'COMPLETED' %}bg-[#DCFCE7] text-[#16A34A]
         {% elif next_appointment.status == 'NO_SHOW' %}bg-[#FEE2E2] text-[#DC2626]
         {% else %}bg-[#F1F5F9] text-[#64748B]{% endif %}" style="font-weight:500;">{{ next_appointment.get_status_display }}</span>
@@ -85,9 +86,10 @@ bar, so it inherits the #flash slide-down in main.css.
 
   <div class="mt-5 flex flex-wrap gap-3">
     <a href="{% url 'appointments:reschedule' next_appointment.id %}" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white px-4 text-[14px] text-[#1A2333] hover:bg-[#F8FAFC]" style="font-weight:500;">Reschedule</a>
-    <form method="post" action="{% url 'appointments:cancel' next_appointment.id %}">
+    <form method="post" action="{% url 'appointments:cancel' next_appointment.id %}" data-cancel>
       {% csrf_token %}
-      <button type="submit" onclick="return confirm('Cancel this appointment?');" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white px-4 text-[14px] text-[#DC2626] hover:bg-[#FEF2F2]" style="font-weight:500;">Cancel</button>
+      <input type="hidden" name="cancel_reason">
+      <button type="submit" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white px-4 text-[14px] text-[#DC2626] hover:bg-[#FEF2F2]" style="font-weight:500;">Cancel</button>
     </form>
   </div>
 

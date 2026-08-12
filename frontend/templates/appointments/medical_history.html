@@ -54,6 +54,7 @@
       <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[12px]
         {% if appt.status == 'CONFIRMED' %}bg-[#E8F1FC] text-[#1666C4]
         {% elif appt.status == 'PENDING' %}bg-[#FEF3C7] text-[#D97706]
+        {% elif appt.status == 'IN_PROGRESS' %}bg-[#E6F7F7] text-[#0FA3A3]
         {% elif appt.status == 'COMPLETED' %}bg-[#DCFCE7] text-[#16A34A]
         {% elif appt.status == 'NO_SHOW' %}bg-[#FEE2E2] text-[#DC2626]
         {% else %}bg-[#F1F5F9] text-[#64748B]{% endif %}" style="font-weight:500;">{{ appt.get_status_display }}</span>
