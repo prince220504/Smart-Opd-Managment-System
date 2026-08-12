@@ -114,3 +114,107 @@ function toggleSidebar() {
     io.observe(el);
   });
 })();
+
+/* ==========================================================================
+   Cancelling an appointment: ask for the reason, do not park a text box in
+   every table row. The reason is optional, so an empty answer still cancels —
+   only dismissing the prompt calls the whole thing off.
+   ========================================================================== */
+
+document.querySelectorAll('form[data-cancel]').forEach(function (form) {
+  form.addEventListener('submit', function (e) {
+    if (form.dataset.asked) return;           // second pass: let it through
+    e.preventDefault();
+
+    var reason = prompt('Cancel this appointment?\nReason (optional):');
+    if (reason === null) return;              // dismissed — nothing is sent
+
+    var field = form.querySelector('input[name="cancel_reason"]');
+    if (field) field.value = reason;
+    form.dataset.asked = '1';
+    form.submit();                            // bypasses this handler
+  });
+});
+
+/* ==========================================================================
+   Repeating form rows: medicines on the consultation page, breaks on the
+   schedule page. The button names the container it grows; the first row in
+   that container is the template, cloned and blanked. Every row reuses the
+   same input names, so the view reads them back with getlist and zips the
+   lists into one item per position.
+   ========================================================================== */
+
+document.querySelectorAll('[data-clone-row]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var box = document.getElementById(btn.dataset.cloneRow);
+    if (!box || !box.firstElementChild) return;
+
+    var copy = box.firstElementChild.cloneNode(true);
+    copy.querySelectorAll('input').forEach(function (i) { i.value = ''; });
+    box.appendChild(copy);
+    copy.querySelector('input').focus();
+  });
+});
+
+/* ==========================================================================
+   Printing a prescription from the list page: the document is loaded into an
+   off-screen iframe and that frame is printed, so the user never leaves the
+   list. Chrome refuses to print a zero-sized or display:none frame, so the
+   frame gets a real page-sized box and is pushed off-screen instead.
+   ========================================================================== */
+
+document.querySelectorAll('a[data-print]').forEach(function (link) {
+  link.addEventListener('click', function (e) {
+    e.preventDefault();
+    if (link.dataset.busy) return;                // ignore double clicks
+    link.dataset.busy = '1';
+
+    var frame = document.createElement('iframe');
+    frame.setAttribute('aria-hidden', 'true');
+    frame.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;height:1123px;border:0;';
+
+    frame.addEventListener('load', function () {
+      // one beat so webfonts and Tailwind have painted inside the frame
+      setTimeout(function () {
+        try {
+          frame.contentWindow.focus();            // Safari prints the parent without this
+          frame.contentWindow.print();
+        } catch (err) {
+          window.location.href = link.href;       // blocked: fall back to navigating
+          return;
+        }
+        setTimeout(function () {
+          frame.remove();
+          delete link.dataset.busy;
+        }, 1000);
+      }, 250);
+    });
+
+    document.body.appendChild(frame);
+    frame.src = link.dataset.print;               // set src after it is in the DOM
+  });
+});
+
+/* ==========================================================================
+   The printed page itself, opened with ?print=1: print, then go back, so the
+   reader ends up where they started. Other pages ignore this entirely.
+   ========================================================================== */
+
+if (new URLSearchParams(location.search).get('print') === '1') {
+  window.addEventListener('afterprint', function () {
+    if (history.length > 1) history.back();
+  });
+  // one frame, so fonts and CSS are applied before the preview is built
+  requestAnimationFrame(function () { window.print(); });
+}
+
+/* ==========================================================================
+   Dismissable bars (the welcome strip on the patient dashboard).
+   ========================================================================== */
+
+document.querySelectorAll('[data-dismiss]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var box = btn.closest('[id], div');
+    if (box) box.remove();
+  });
+});
