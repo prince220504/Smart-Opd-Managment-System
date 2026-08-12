@@ -95,9 +95,17 @@ replace sidebar + header + footer outright and still share head + main.js.
         </a>
 
       {% elif user.role == 'LAB' %}
-        <a href="{% url 'lab:queue' %}" class="rounded-lg px-3 py-2 text-[14px] flex items-center gap-3 text-white/80 hover:bg-white/10">
+        <a href="{% url 'lab:dashboard' %}" class="rounded-lg px-3 py-2 text-[14px] flex items-center gap-3 text-white/80 hover:bg-white/10">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3.5v6L4.5 18a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3l-5-8.5v-6M8 3.5h8M7.5 14h9"/></svg>
-          Lab Queue
+          Dashboard
+        </a>
+        <a href="{% url 'lab:pending_results' %}" class="rounded-lg px-3 py-2 text-[14px] flex items-center gap-3 text-white/80 hover:bg-white/10">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h11M4 12h11M4 17.5h7"/><path d="M17 15l2.5 2.5L23 13"/></svg>
+          Enter Result
+        </a>
+        <a href="{% url 'lab:all_requests' %}" class="rounded-lg px-3 py-2 text-[14px] flex items-center gap-3 text-white/80 hover:bg-white/10">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M14.5 3.5V8h4.5M8.5 12.5h7M8.5 16h7"/></svg>
+          Test Requests
         </a>
       {% endif %}
     </nav>
