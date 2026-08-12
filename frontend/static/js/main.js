@@ -218,3 +218,53 @@ document.querySelectorAll('[data-dismiss]').forEach(function (btn) {
     if (box) box.remove();
   });
 });
+
+/* ==========================================================================
+   Reception dashboard charts. The data arrives through json_script tags, so
+   this reads them with JSON.parse rather than having Django write JavaScript.
+   Every page loads main.js, so both the canvases and Chart itself are checked
+   before anything runs.
+   ========================================================================== */
+
+(function () {
+  var doctorEl = document.getElementById('doctorChart');
+  var statusEl = document.getElementById('statusChart');
+  if (!doctorEl || !statusEl || typeof Chart === 'undefined') return;
+
+  var perDoctor = JSON.parse(document.getElementById('per-doctor-data').textContent);
+  var stats = JSON.parse(document.getElementById('stats-data').textContent);
+
+  new Chart(doctorEl, {
+    type: 'bar',
+    data: {
+      labels: perDoctor.map(function (row) { return 'Dr. ' + row.doctor__username; }),
+      datasets: [{
+        label: 'Appointments',
+        data: perDoctor.map(function (row) { return row.total; }),
+        backgroundColor: '#1666C4',
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+      maintainAspectRatio: false,
+    }
+  });
+
+  new Chart(statusEl, {
+    type: 'doughnut',
+    data: {
+      labels: ['Pending', 'Confirmed', 'Completed', 'Cancelled', 'No show'],
+      datasets: [{
+        data: [stats.pending, stats.confirmed, stats.completed, stats.cancelled, stats.no_show],
+        backgroundColor: ['#D97706', '#1666C4', '#16A34A', '#DC2626', '#94A3B8'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } },
+      maintainAspectRatio: false,
+    }
+  });
+})();
