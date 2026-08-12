@@ -8,7 +8,7 @@ urlpatterns = [
     path('doctors/', views.doctor_list, name='doctor_list'),
     path('book/<int:doctor_id>/', views.book_appointment, name='book'),
     path('mine/', views.my_appointments, name='my_appointments'),
-    path('doctor/today/', views.doctor_today, name='doctor_today'),
+    path('doctor/dashboard/', views.doctor_dashboard, name='doctor_dashboard'),
     path('cancel/<int:appointment_id>/', views.cancel_appointment, name='cancel'),
     path('reception/book/', views.reception_book, name='reception_book'),
     path('confirm/<int:appointment_id>/', views.confirm_appointment, name='confirm'),
@@ -23,4 +23,6 @@ urlpatterns = [
     path('history/<int:patient_id>/', views.medical_history, name='patient_history'),
     path('export/csv/', views.export_appointments_csv, name='export_csv'),
     path('reschedule/<int:appointment_id>/', views.reschedule_appointment, name='reschedule'),
+    path('start/<int:appointment_id>/', views.start_appointment, name='start'),
+    path('doctor/patients/', views.doctor_patients, name='doctor_patients'),
 ]

@@ -4,8 +4,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from .forms import BookAppointmentForm, ReceptionBookingForm, DoctorScheduleForm
 from .models import Appointment, DoctorAvailability
-from datetime import date
-from django.db.models import Q, Count
+from datetime import date, timedelta
+from django.db.models import Q, Count, Max
 from django.http import Http404, HttpResponse
 from django.urls import reverse
 from apps.notifications.services import notify
@@ -21,7 +21,7 @@ def _redirect_after_action(request):
     if request.user.role == 'RECEPTION':
         return redirect('appointments:appointment_list')
     if request.user.role == 'DOCTOR':
-        return redirect('appointments:doctor_today')
+        return redirect('appointments:doctor_dashboard')
     return redirect('appointments:my_appointments')
 
 @login_required
@@ -85,7 +85,7 @@ def reschedule_appointment(request, appointment_id):
                 recipient=appointment.doctor,
                 message=f'{request.user.username} moved an appointment to {appointment.appointment_date} at {appointment.time_slot}.',
                 notification_type=Notification.Type.STATUS,
-                link=reverse('appointments:doctor_today'), 
+                link=reverse('appointments:doctor_dashboard'), 
             )
             return redirect('appointments:my_appointments')
     else:
@@ -113,7 +113,7 @@ def patient_dashboard(request):
         raise Http404()
 
     today = timezone.localdate()
-    live = [Appointment.Status.PENDING, Appointment.Status.CONFIRMED]
+    live = [Appointment.Status.PENDING, Appointment.Status.CONFIRMED, Appointment.Status.IN_PROGRESS]
 
     upcoming = (
         request.user.patient_appointments
@@ -156,37 +156,87 @@ def my_appointments(request):
     })
 
 @login_required 
-def doctor_today(request):
-    today = date.today()
+def doctor_dashboard(request):
+    today = timezone.localdate()
     appointments = (
         request.user.doctor_appointments
         .filter(appointment_date=today)
         .select_related('patient', 'prescription')
         .prefetch_related('lab_tests__result')
     )
+    # one table scan for three counters, instead of three .count() round trips
+    stats = appointments.aggregate(
+        total=Count('id'),
+        completed=Count('id', filter=Q(status='COMPLETED')),
+        pending=Count('id', filter=Q(status__in=['PENDING','CONFIRMED','IN_PROGRESS'])),
+    )
+
+    # last 7 days, one row per (day, status), gaps filled in python
+    week_start = today - timedelta(days=6)
+    done, rest = {}, {}
+    for row in (
+        request.user.doctor_appointments
+        .filter(appointment_date__range=[week_start, today])
+        .values('appointment_date', 'status')
+        .annotate(total=Count('id'))
+    ):
+        bucket = done if row['status'] == 'COMPLETED' else rest
+        key = row['appointment_date']
+        bucket[key] = bucket.get(key, 0) + row['total']
+
+    week = []
+    for i in range(7):
+        day = week_start + timedelta(days=i)
+        week.append({
+            'label': day.strftime('%a'),
+            'done': done.get(day, 0),
+            'rest': rest.get(day, 0),
+            'total': done.get(day, 0) + rest.get(day,0),
+        })
+    week_scale = max(1, max(d['total'] for d in week))
+ 
     return render(request,
-        'appointments/doctor_today.html', {
+        'appointments/doctor_dashboard.html', {
             'appointments': appointments,
             'today': today,
+            'stats':stats,
+            'week': week,
+            'week_scale': week_scale,
+            'week_total': sum(d['total'] for d in week),
+            'week_done': sum(d['done'] for d in week),
         }              
     )    
 
 @login_required 
 def doctor_records(request):
-    today = date.today()
+    today = timezone.localdate()
     appointments = (
         request.user.doctor_appointments
         .filter(appointment_date__lte=today)
-        .select_related('patient')
+        .select_related('patient', 'prescription')
         .prefetch_related('lab_tests__result')
     )
+    status = request.GET.get('status', '')
+    appt_date = request.GET.get('date', '')
+    q = request.GET.get('q', '').strip()
+    if status:
+        appointments = appointments.filter(status=status)
+    if appt_date:
+        appointments = appointments.filter(appointment_date=appt_date)
+    if q:
+        appointments = appointments.filter(patient__username__icontains=q)
+
     return render(request, 'appointments/doctor_records.html', {
         'appointments': appointments,
+        'status': status,
+        'date': appt_date,
+        'q': q,
+        'statuses': Appointment.Status.choices,
     })
 
 @login_required
 def doctor_upcoming(request):
-    today = date.today()
+    today = timezone.localdate()
     appointments = (
         request.user.doctor_appointments
         .filter(appointment_date__gt=today)
@@ -195,6 +245,27 @@ def doctor_upcoming(request):
     )
     return render(request, 'appointments/doctor_upcoming.html', {
         'appointments': appointments,
+    })
+
+@login_required
+def doctor_patients(request):
+    if request.user.role != 'DOCTOR':
+        raise Http404()
+
+    patients = (
+        User.objects
+        .filter(
+            patient_appointments__doctor=request.user,
+            patient_appointments__status=Appointment.Status.COMPLETED,
+        )
+        .annotate(
+            visits=Count('patient_appointments'),
+            last_visit=Max('patient_appointments__appointment_date'),
+        )
+        .order_by('-last_visit')
+    )
+    return render(request, 'appointments/doctor_patients.html',{
+        'patients': patients,
     })
 
 @login_required
@@ -285,13 +356,27 @@ def confirm_appointment(request, appointment_id):
 
 @login_required
 @require_POST
-def complete_appointment(request, appointment_id):
+def start_appointment(request, appointment_id):
     if request.user.role == 'RECEPTION':
         appointment = get_object_or_404(Appointment, id=appointment_id)
     else:
         appointment = get_object_or_404(Appointment, id=appointment_id, doctor=request.user)
 
     if appointment.status == Appointment.Status.CONFIRMED:
+        appointment.status = Appointment.Status.IN_PROGRESS
+        appointment.save()
+
+    return _redirect_after_action(request)
+
+@login_required
+@require_POST
+def complete_appointment(request, appointment_id):
+    if request.user.role == 'RECEPTION':
+        appointment = get_object_or_404(Appointment, id=appointment_id)
+    else:
+        appointment = get_object_or_404(Appointment, id=appointment_id, doctor=request.user)
+
+    if appointment.status in (Appointment.Status.CONFIRMED, Appointment.Status.IN_PROGRESS):
         appointment.status = Appointment.Status.COMPLETED
         appointment.save()
     

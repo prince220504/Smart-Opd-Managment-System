@@ -16,7 +16,7 @@ def login_view(request):
             if user.role == 'DOCTOR':
                 if not user.availabilities.exclude(recurrence='DATE').exists():
                     return redirect('appointments:doctor_schedule')
-                return redirect('appointments:doctor_today')
+                return redirect('appointments:doctor_dashboard')
             if user.role == 'RECEPTION':
                 return redirect('appointments:appointment_list')
             if user.role == 'LAB':
