@@ -481,10 +481,18 @@ def reception_dashboard(request):
         .order_by('-total')
     )
 
+    today_appointments = (
+        Appointment.objects
+        .filter(appointment_date=today)
+        .select_related('patient', 'doctor')
+        .order_by('time_slot')
+    )
+
     return render(request, 'appointments/dashboard.html', {
         'stats': stats,
         'per_doctor': per_doctor,
         'today': today,
+        'today_appointments': today_appointments,
     })
 
 @login_required
