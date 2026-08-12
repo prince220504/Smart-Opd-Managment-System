@@ -1,24 +1,119 @@
 {% extends 'base.html' %}
 
-{% block title %}Upload Result - Smart OPD{% endblock %}
+{% block title %}Enter Result · {{ test.test_name }} · Smart OPD{% endblock %}
+{% block page_title %}Enter Result{% endblock %}
+
+{% block page_intro %}
+<div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Enter result</span>
+    <p class="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">Attach the signed report and say whether the reading is normal.</p>
+  </div>
+  <span class="inline-flex items-center gap-2 self-start rounded-full border border-[#E2E8F0] bg-white px-3 py-1.5 text-[13px] text-[#64748B] sm:self-auto" style="font-weight:500;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1666C4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v9M12 20.5a4 4 0 0 0 4-4H8a4 4 0 0 0 4 4zM8.5 8.5h7"/></svg>
+    {{ test.test_name }}
+  </span>
+</div>
+{% endblock %}
 
 {% block content %}
-<h1>Upload Result</h1>
-<p><strong>Test:</strong> {{ test.test_name }} - {{ test.appointment.patient.username }}</p>
+<div class="grid gap-6 lg:grid-cols-5">
 
-{% if form.errors %}
-    <div style="color:red">
+  <div class="lg:col-span-2">
+    <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="text-[18px]" style="font-weight:600;">Request details</h2>
+        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[12px]
+          {% if test.status == 'DONE' %}bg-[#DCFCE7] text-[#16A34A]
+          {% elif test.status == 'IN_PROGRESS' %}bg-[#E6F7F7] text-[#0FA3A3]
+          {% else %}bg-[#FEF3C7] text-[#D97706]{% endif %}" style="font-weight:500;">{{ test.get_status_display }}</span>
+      </div>
+
+      <div class="mt-5 flex items-center gap-3">
+        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#0B2545] text-[15px] text-white" style="font-weight:600;">{{ test.appointment.patient.username|slice:":2"|upper }}</span>
+        <div class="min-w-0">
+          <p class="truncate text-[15px]" style="font-weight:600;">{{ test.appointment.patient.username }}</p>
+          <p class="text-[13px] text-[#64748B]">Patient</p>
+        </div>
+      </div>
+
+      <div class="mt-5 grid grid-cols-2 gap-3">
+        <div class="rounded-xl bg-[#F5F7FA] p-3">
+          <p class="text-[12px] text-[#64748B]">Test name</p>
+          <p class="mt-0.5 text-[14px]" style="font-weight:600;">{{ test.test_name }}</p>
+        </div>
+        <div class="rounded-xl bg-[#F5F7FA] p-3">
+          <p class="text-[12px] text-[#64748B]">Requested by</p>
+          <p class="mt-0.5 text-[14px]" style="font-weight:600;">Dr. {{ test.requested_by.username }}</p>
+        </div>
+        <div class="rounded-xl bg-[#F5F7FA] p-3">
+          <p class="text-[12px] text-[#64748B]">Requested on</p>
+          <p class="mt-0.5 text-[14px] tnum" style="font-weight:600;">{{ test.requested_at|date:"d M Y, H:i" }}</p>
+        </div>
+        <div class="rounded-xl bg-[#F5F7FA] p-3">
+          <p class="text-[12px] text-[#64748B]">Visit date</p>
+          <p class="mt-0.5 text-[14px] tnum" style="font-weight:600;">{{ test.appointment.appointment_date|date:"d M Y" }}</p>
+        </div>
+      </div>
+
+      {% if test.result %}
+      <div class="mt-5 rounded-lg border-l-[3px] border-[#1666C4] bg-[#E8F1FC] px-4 py-3">
+        <p class="text-[14px] text-[#1A2333]">A result was already uploaded on <span class="tnum">{{ test.result.result_date|date:"d M Y, H:i" }}</span>. Saving again replaces it.</p>
+        <a href="{{ test.result.result_file.url }}" class="mt-1 inline-flex items-center gap-1.5 text-[13px] text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 11l4.5 4.5 4.5-4.5M5 19.5h14"/></svg>
+          Open the current report
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="lg:col-span-3">
+    {# enctype is the half that makes the file actually arrive; the view reads request.FILES #}
+    <form method="post" enctype="multipart/form-data" class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+      {% csrf_token %}
+      <h2 class="text-[18px]" style="font-weight:600;">Enter result</h2>
+
+      {% if form.errors %}
+      <div class="mt-4 rounded-lg border border-[#FECACA] bg-[#FEF2F2] p-3 text-[13px] text-[#DC2626]">
         {% for field, errors in form.errors.items %}
         <p>{{ field }}: {{ errors|join:", " }}</p>
         {% endfor %}
-    </div>
-{% endif %}
+      </div>
+      {% endif %}
 
-<form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Upload Result</button>
-</form>
+      <div class="mt-5 space-y-5">
+        <div>
+          <label for="{{ form.is_normal.id_for_label }}" class="block text-[13px] text-[#1A2333]" style="font-weight:500;">Result status <span class="text-[#DC2626]">*</span></label>
+          <select id="{{ form.is_normal.id_for_label }}" name="{{ form.is_normal.html_name }}"
+                  class="mt-1.5 h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px]">
+            <option value="True" {% if form.is_normal.value %}selected{% endif %}>Normal</option>
+            <option value="False" {% if not form.is_normal.value %}selected{% endif %}>Abnormal — needs review</option>
+          </select>
+          <p class="mt-1 text-[13px] text-[#64748B]">The patient sees this as a Normal or Review badge beside the test.</p>
+        </div>
 
-<p><a href="{% url 'lab:queue' %}"><- Back to queue</a></p>
+        <div>
+          <label for="{{ form.result_file.id_for_label }}" class="block text-[13px] text-[#1A2333]" style="font-weight:500;">Report file <span class="text-[#DC2626]">*</span></label>
+          <input id="{{ form.result_file.id_for_label }}" type="file" name="{{ form.result_file.html_name }}"
+                 class="mt-1.5 block w-full rounded-lg border border-[#E2E8F0] px-3 py-2 text-[14px] file:mr-3 file:rounded-lg file:border-0 file:bg-[#E8F1FC] file:px-3 file:py-1.5 file:text-[13px] file:text-[#1666C4]">
+          <p class="mt-1 text-[13px] text-[#64748B]">PDF or image. This exact file is what the patient and doctor download.</p>
+        </div>
+
+        <div>
+          <label for="{{ form.notes.id_for_label }}" class="block text-[13px] text-[#1A2333]" style="font-weight:500;">Remarks</label>
+          <textarea id="{{ form.notes.id_for_label }}" name="{{ form.notes.html_name }}" rows="4"
+                    class="mt-1.5 w-full rounded-lg border border-[#E2E8F0] px-3 py-2 text-[14px]"
+                    placeholder="Anything the doctor should read before opening the report">{{ form.notes.value|default:"" }}</textarea>
+        </div>
+      </div>
+
+      <div class="mt-6 flex flex-col gap-3 border-t border-[#E2E8F0] pt-6 sm:flex-row sm:justify-end">
+        <a href="{% url 'lab:dashboard' %}" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white px-4 text-[14px] hover:bg-[#F8FAFC]" style="font-weight:500;">Back to queue</a>
+        <button type="submit" class="inline-flex h-10 items-center justify-center rounded-lg bg-[#1666C4] px-4 text-[14px] text-white hover:bg-[#1155A6]" style="font-weight:600;">Save result</button>
+      </div>
+    </form>
+  </div>
+
+</div>
 {% endblock %}

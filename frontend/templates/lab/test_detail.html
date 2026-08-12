@@ -1,23 +1,143 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ test.test_name }} - Smart OPD{% endblock %}
+{% block title %}{{ test.test_name }} · Smart OPD{% endblock %}
+{% block page_title %}Lab Report{% endblock %}
+
+{% block page_intro %}
+<div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Lab report</span>
+    <p class="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">{{ test.test_name }} for {{ test.appointment.patient.username }}.</p>
+  </div>
+  <span class="inline-flex items-center rounded-full px-3 py-1.5 text-[13px]
+    {% if test.status == 'DONE' %}bg-[#DCFCE7] text-[#16A34A]
+    {% elif test.status == 'IN_PROGRESS' %}bg-[#E6F7F7] text-[#0FA3A3]
+    {% else %}bg-[#FEF3C7] text-[#D97706]{% endif %} self-start sm:self-auto" style="font-weight:500;">{{ test.get_status_display }}</span>
+</div>
+{% endblock %}
 
 {% block content %}
-<h1>{{ test.test_name }}</h1>
+<div class="grid gap-6 lg:grid-cols-5">
 
-<p><strong>Patient:</strong> {{ test.appointment.patient.username }}</p>
-<p><strong>Status:</strong> {{ test.get_status_display }}</p>
-<p><strong>Requested:</strong> {{ test.requested_at }}</p>
+  <div class="lg:col-span-2">
+    <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+      <h2 class="text-[18px]" style="font-weight:600;">Request details</h2>
 
-{% if test.status == 'DONE' %}
-    <p><strong>Result:</strong> {% if test.result.is_normal %}Normal{% else %}Abnormal{% endif %}</p>
-    <p><strong>Technician:</strong> {{ test.result.uploaded_by.username }}</p>
-    <p><strong>Result date:</strong> {{ test.result.result_date }}</p>
-    <p><strong>Notes:</strong>{{ test.result.notes|default:"-" }}</p>
-    <p><a href="{{ test.result.result_file.url }}">Download Result</a></p>
-{% else %}
-    <p>Result not ready yet.</p>
-{% endif %}
+      <div class="mt-5 flex items-center gap-3">
+        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#0B2545] text-[15px] text-white" style="font-weight:600;">{{ test.appointment.patient.username|slice:":2"|upper }}</span>
+        <div class="min-w-0">
+          <p class="truncate text-[15px]" style="font-weight:600;">{{ test.appointment.patient.username }}</p>
+          <p class="text-[13px] text-[#64748B]">Patient</p>
+        </div>
+      </div>
 
-<p><a href="{% url 'appointments:doctor_dashboard' %}">&larr; Back</a></p>
+      <div class="mt-5 grid grid-cols-2 gap-3">
+        <div class="rounded-xl bg-[#F5F7FA] p-3">
+          <p class="text-[12px] text-[#64748B]">Test name</p>
+          <p class="mt-0.5 text-[14px]" style="font-weight:600;">{{ test.test_name }}</p>
+        </div>
+        <div class="rounded-xl bg-[#F5F7FA] p-3">
+          <p class="text-[12px] text-[#64748B]">Requested by</p>
+          <p class="mt-0.5 text-[14px]" style="font-weight:600;">Dr. {{ test.requested_by.username }}</p>
+        </div>
+        <div class="rounded-xl bg-[#F5F7FA] p-3">
+          <p class="text-[12px] text-[#64748B]">Requested on</p>
+          <p class="mt-0.5 text-[14px] tnum" style="font-weight:600;">{{ test.requested_at|date:"d M Y, H:i" }}</p>
+        </div>
+        <div class="rounded-xl bg-[#F5F7FA] p-3">
+          <p class="text-[12px] text-[#64748B]">Visit date</p>
+          <p class="mt-0.5 text-[14px] tnum" style="font-weight:600;">{{ test.appointment.appointment_date|date:"d M Y" }}</p>
+        </div>
+      </div>
+
+      <a href="{% if user.role == 'PATIENT' %}{% url 'lab:my_tests' %}{% elif user.role == 'LAB' %}{% url 'lab:all_requests' %}{% else %}{% url 'appointments:doctor_records' %}{% endif %}"
+         class="mt-5 inline-flex h-10 w-full items-center justify-center rounded-lg border border-[#E2E8F0] px-4 text-[14px] hover:bg-[#F8FAFC]" style="font-weight:500;">Back</a>
+    </div>
+  </div>
+
+  <div class="lg:col-span-3">
+    {% if test.status == 'DONE' and test.result %}
+    <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-[18px]" style="font-weight:600;">Result</h2>
+        {% if test.result.is_normal %}
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-[#DCFCE7] px-2.5 py-1 text-[12px] text-[#16A34A]" style="font-weight:500;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
+          Normal
+        </span>
+        {% else %}
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-[#FEE2E2] px-2.5 py-1 text-[12px] text-[#DC2626]" style="font-weight:500;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5h.01"/><circle cx="12" cy="12" r="9"/></svg>
+          Needs review
+        </span>
+        {% endif %}
+      </div>
+
+      <dl class="mt-5 grid gap-3 sm:grid-cols-2">
+        <div class="rounded-xl bg-[#F5F7FA] p-3">
+          <dt class="text-[12px] text-[#64748B]">Reported by</dt>
+          <dd class="mt-0.5 text-[14px]" style="font-weight:600;">{{ test.result.uploaded_by.username }}</dd>
+        </div>
+        <div class="rounded-xl bg-[#F5F7FA] p-3">
+          <dt class="text-[12px] text-[#64748B]">Reported on</dt>
+          <dd class="mt-0.5 text-[14px] tnum" style="font-weight:600;">{{ test.result.result_date|date:"d M Y, H:i" }}</dd>
+        </div>
+      </dl>
+
+      <div class="mt-4">
+        <p class="text-[13px] text-[#64748B]" style="font-weight:500;">Lab remarks</p>
+        <p class="mt-1 text-[14px]">{{ test.result.notes|default:"No remarks were added." }}</p>
+      </div>
+
+      {% comment %}
+      An image report is shown inline. A PDF is not: Django sends
+      X-Frame-Options DENY on every response, media files included, so the
+      browser refuses to embed it and any iframe or object would render an
+      empty box. It gets a file card and the two buttons below instead.
+      {% endcomment %}
+      {% with name=test.result.result_file.name|lower %}
+      {% if '.png' in name or '.jpg' in name or '.jpeg' in name or '.gif' in name or '.webp' in name %}
+      <div class="mt-5 overflow-hidden rounded-xl border border-[#E2E8F0] bg-[#F5F7FA]">
+        <img src="{{ test.result.result_file.url }}" alt="{{ test.test_name }} report" class="mx-auto block max-h-[560px] w-auto max-w-full">
+      </div>
+      {% else %}
+      <div class="mt-5 flex items-center gap-4 rounded-xl border border-[#E2E8F0] bg-[#F5F7FA] p-4">
+        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-[#DC2626]">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M14.5 3.5V8h4.5"/></svg>
+        </span>
+        <div class="min-w-0">
+          <p class="truncate text-[14px]" style="font-weight:600;">{{ test.result.result_file.name|cut:"lab_results/" }}</p>
+          <p class="mt-0.5 text-[13px] text-[#64748B]">Open it in a new tab to read it, or download a copy.</p>
+        </div>
+      </div>
+      {% endif %}
+      {% endwith %}
+
+      <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-end">
+        <a href="{{ test.result.result_file.url }}" target="_blank" rel="noopener" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 text-[14px] hover:bg-[#F8FAFC]" style="font-weight:500;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-8.5 8.5M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+          Open in a new tab
+        </a>
+        <a href="{{ test.result.result_file.url }}" download class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#1666C4] px-4 text-[14px] text-white hover:bg-[#1155A6]" style="font-weight:600;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 11l4.5 4.5 4.5-4.5M5 19.5h14"/></svg>
+          Download
+        </a>
+      </div>
+    </div>
+
+    {% else %}
+    <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+      <h2 class="text-[18px]" style="font-weight:600;">Result</h2>
+      <div class="mt-6 flex flex-col items-center gap-3 py-12 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+        <p class="text-[14px] text-[#64748B]">
+          {% if test.status == 'IN_PROGRESS' %}The lab has started this test. The report appears here once it is uploaded.
+          {% else %}Waiting for the lab to pick this test up.{% endif %}
+        </p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
 {% endblock %}
