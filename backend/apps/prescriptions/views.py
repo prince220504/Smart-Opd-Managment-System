@@ -14,7 +14,11 @@ def write_prescription(request, appointment_id):
         Appointment, 
         id=appointment_id,
         doctor=request.user,
-        status=Appointment.Status.COMPLETED,
+        status__in=[
+            Appointment.Status.CONFIRMED,
+            Appointment.Status.IN_PROGRESS,
+            Appointment.Status.COMPLETED,
+        ]
     )
     existing = getattr(appointment, 'prescription', None)
 
@@ -44,7 +48,7 @@ def write_prescription(request, appointment_id):
                 notification_type=Notification.Type.PRESCRIPTION,
                 link=reverse('prescriptions:view', args=[appointment.id]),
             )
-            return redirect('appointments:doctor_records')
+            return redirect('prescriptions:write', appointment_id=appointment.id)
     else:
         form = PrescriptionForm(instance=existing)
 

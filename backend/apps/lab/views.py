@@ -17,7 +17,7 @@ User = get_user_model()
 def request_test(request, appointment_id):
     appointment = get_object_or_404(
         Appointment, id=appointment_id, doctor=request.user,
-        status=Appointment.Status.CONFIRMED,
+        status__in=[Appointment.Status.CONFIRMED, Appointment.Status.IN_PROGRESS],
     )
     test_name = request.POST.get('test_name', '').strip()
     if test_name:
@@ -33,7 +33,7 @@ def request_test(request, appointment_id):
                 notification_type=Notification.Type.TEST,
                 link=reverse('lab:queue'),
             )
-    return redirect('appointments:doctor_today')
+    return redirect('prescriptions:write', appointment_id=appointment.id)
 
 @login_required
 def lab_queue(request):
@@ -99,7 +99,19 @@ def my_tests(request):
         .filter(appointment__patient=request.user)
         .select_related('appointment', 'result')
     )
-    return render(request, 'lab/my_tests.html', {'tests':tests})
+    status = request.GET.get('status', '')
+    q = request.GET.get('q', '').strip()
+    if status:
+        tests = tests.filter(status=status)
+    if q: 
+        tests = tests.filter(test_name__icontains=q)
+
+    return render(request, 'lab/my_tests.html', {
+        'tests':tests,
+        'statuses': LabTest.Status.choices,
+        'status': status,
+        'q': q,
+    })
 
 @login_required
 def test_detail(request, test_id):
