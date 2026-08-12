@@ -20,7 +20,7 @@ def login_view(request):
             if user.role == 'RECEPTION':
                 return redirect('appointments:appointment_list')
             if user.role == 'LAB':
-                return redirect('lab:queue')
+                return redirect('lab:dashboard')
             return redirect('appointments:patient_dashboard')
         else:
             return render(request, 'accounts/login.html', {'error': 'Invalid username or password',})
