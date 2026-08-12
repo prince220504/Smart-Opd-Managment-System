@@ -93,6 +93,14 @@ replace sidebar + header + footer outright and still share head + main.js.
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16M4 12h16M4 17.5h16"/></svg>
           All Appointments
         </a>
+        <a href="{% url 'accounts:patient_registry' %}" class="rounded-lg px-3 py-2 text-[14px] flex items-center gap-3 text-white/80 hover:bg-white/10">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19"/><circle cx="10" cy="8" r="3.5"/><path d="M19 19v-1.5a3.5 3.5 0 0 0-2.5-3.35"/></svg>
+          Patients
+        </a>
+        <a href="{% url 'accounts:register_patient' %}" class="rounded-lg px-3 py-2 text-[14px] flex items-center gap-3 text-white/80 hover:bg-white/10">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-4A3.5 3.5 0 0 0 4 17.5V19"/><circle cx="9.5" cy="8" r="3.5"/><path d="M18 8v6M15 11h6"/></svg>
+          Register Patient
+        </a>
 
       {% elif user.role == 'LAB' %}
         <a href="{% url 'lab:dashboard' %}" class="rounded-lg px-3 py-2 text-[14px] flex items-center gap-3 text-white/80 hover:bg-white/10">
