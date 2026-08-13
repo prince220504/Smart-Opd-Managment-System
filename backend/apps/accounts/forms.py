@@ -36,3 +36,26 @@ class WalkInPatientForm(RegisterForm):
         super().__init__(*args, **kwargs)
         for name in ('phone', 'age', 'gender'):
             self.fields[name].required = True
+
+class ProfileForm(forms.ModelForm):
+    """Edit your own profile. Also the 'complete your profile' page a new
+    patient is sent to on first login."""
+
+    class Meta:
+        model = CustomUser
+        fields = ['full_name', 'email', 'phone', 'gender', 
+                  'age', 'blood_group', 'address', 'department']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ('full_name', 'email', 'phone'):
+            self.fields[name].required = True 
+
+        if self.instance.role == 'PATIENT':
+            self.fields['age'].required = True
+        else:
+            for name in ('age', 'blood_group', 'address'):
+                del self.fields[name]
+
+        if self.instance.role != 'DOCTOR':
+            del self.fields['department']

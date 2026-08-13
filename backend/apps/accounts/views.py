@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
-from .forms import RegisterForm, WalkInPatientForm
+from .forms import RegisterForm, WalkInPatientForm, ProfileForm
 from django.db.models import Q
 from django.contrib import messages
 from django.http import Http404
@@ -25,6 +25,8 @@ def login_view(request):
                 return redirect('appointments:dashboard')
             if user.role == 'LAB':
                 return redirect('lab:dashboard')
+            if not user.age:
+                return redirect('accounts:profile_edit')
             return redirect('appointments:patient_dashboard')
         else:
             return render(request, 'accounts/login.html', {'error': 'Invalid username or password',})
@@ -39,7 +41,7 @@ def register_view(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return redirect('accounts:profile')
+            return redirect('accounts:profile_edit')
         return render(request, 'accounts/register.html', {'form': form})
     form = RegisterForm()
     return render(request, 'accounts/register.html',{'form':form})                        
@@ -52,6 +54,19 @@ def logout_view(request):
 @login_required
 def profile_view(request):
     return render(request, 'accounts/profile.html')
+
+@login_required
+def profile_edit(request):
+    if request.method == 'POST':
+        form = ProfileForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profile updated.')
+            return redirect('accounts:profile')
+    else:
+        form = ProfileForm(instance=request.user)
+
+    return render(request, 'accounts/profile_edit.html', {'form':form})
 
 @login_required
 def patient_registry(request):
