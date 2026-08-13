@@ -35,7 +35,12 @@
           <span class="flex h-11 w-11 items-center justify-center rounded-full bg-[#E8F1FC] text-[15px] text-[#1666C4]" style="font-weight:600;">{{ appointment.patient.display_name|slice:":2"|upper }}</span>
           <div>
             <h2 class="text-[18px] leading-tight" style="font-weight:600;">{{ appointment.patient.display_name }}</h2>
-            <p class="text-[13px] text-[#64748B]">Patient</p>
+            <p class="text-[13px] text-[#64748B]">
+              {% if appointment.patient.age %}<span class="tnum">{{ appointment.patient.age }}</span> yrs{% else %}Age not set{% endif %}{% if appointment.patient.gender %} · {{ appointment.patient.get_gender_display }}{% endif %}
+              {% if appointment.patient.blood_group %}
+              <span class="ml-1 inline-flex items-center rounded-full bg-[#FEE2E2] px-2 py-0.5 text-[12px] text-[#DC2626]" style="font-weight:600;">{{ appointment.patient.blood_group }}</span>
+              {% endif %}
+            </p>
           </div>
         </div>
         <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[12px]

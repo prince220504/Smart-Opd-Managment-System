@@ -28,9 +28,12 @@
       <div class="min-w-0">
         <p class="truncate text-[16px]" style="font-weight:600;">{{ patient.display_name }}</p>
         <p class="text-[13px] text-[#64748B]">
-          <span class="tnum">{{ appointments|length }}</span> visit{{ appointments|length|pluralize }} on record
+          {% if patient.age %}<span class="tnum">{{ patient.age }}</span> yrs · {% endif %}{% if patient.gender %}{{ patient.get_gender_display }} · {% endif %}<span class="tnum">{{ appointments|length }}</span> visit{{ appointments|length|pluralize }} on record
         </p>
       </div>
+      {% if patient.blood_group %}
+      <span class="ml-auto inline-flex shrink-0 items-center rounded-full bg-[#FEE2E2] px-3 py-1 text-[13px] text-[#DC2626]" style="font-weight:600;">{{ patient.blood_group }}</span>
+      {% endif %}
     </div>
   </div>
 
