@@ -49,7 +49,7 @@ def book_appointment(request, doctor_id):
             appointment.save()
             notify(
                 recipient=appointment.patient,
-                message=f'Appointment booked with Dr. {doctor.username} on {appointment.appointment_date}.',
+                message=f'Appointment booked with Dr. {doctor.display_name} on {appointment.appointment_date}.',
                 notification_type=Notification.Type.BOOKING,
                 link=reverse('appointments:my_appointments'),
                 email=True,
@@ -83,7 +83,7 @@ def reschedule_appointment(request, appointment_id):
             appointment.save()
             notify(
                 recipient=appointment.doctor,
-                message=f'{request.user.username} moved an appointment to {appointment.appointment_date} at {appointment.time_slot}.',
+                message=f'{request.user.display_name} moved an appointment to {appointment.appointment_date} at {appointment.time_slot}.',
                 notification_type=Notification.Type.STATUS,
                 link=reverse('appointments:doctor_dashboard'), 
             )
@@ -146,7 +146,7 @@ def my_appointments(request):
     if status:
         appointments = appointments.filter(status=status)
     if q:
-        appointments = appointments.filter(doctor__username__icontains=q)
+        appointments = appointments.filter(Q(doctor__full_name__icontains=q) | Q(doctor__username__icontains=q))
 
     return render(request, 'appointments/my_appointments.html', {
         'appointments': appointments,
@@ -224,7 +224,7 @@ def doctor_records(request):
     if appt_date:
         appointments = appointments.filter(appointment_date=appt_date)
     if q:
-        appointments = appointments.filter(patient__username__icontains=q)
+        appointments = appointments.filter(Q(patient__full_name__icontains=q) | Q(patient__username__icontains=q))
 
     return render(request, 'appointments/doctor_records.html', {
         'appointments': appointments,
@@ -323,7 +323,7 @@ def reception_book(request):
             appointment = form.save()
             notify(
                 recipient=appointment.patient,
-                message=f'Appointment booked with Dr. {appointment.doctor.username} on {appointment.appointment_date}.',
+                message=f'Appointment booked with Dr. {appointment.doctor.display_name} on {appointment.appointment_date}.',
                 notification_type=Notification.Type.BOOKING,
                 link=reverse('appointments:my_appointments'),
                 email=True,
@@ -476,7 +476,7 @@ def reception_dashboard(request):
 
     per_doctor = list(
         Appointment.objects
-        .values('doctor__username')
+        .values('doctor__full_name', 'doctor__username')
         .annotate(total=Count('id'))
         .order_by('-total')
     )
@@ -539,8 +539,8 @@ def export_appointments_csv(request):
 
     for appt in appointments:
         writer.writerow([
-            _csv_safe(appt.patient.username),
-            _csv_safe(appt.doctor.username),
+            _csv_safe(appt.patient.display_name),
+            _csv_safe(appt.doctor.display_name),
             appt.appointment_date,
             appt.time_slot,
             appt.get_status_display(),

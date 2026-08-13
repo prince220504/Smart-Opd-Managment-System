@@ -36,7 +36,7 @@ def send_appointment_reminders():
     for appt in appointments:
         notify(
             appt.patient,
-            f'Reminder: appointment with Dr. {appt.doctor.username} tomorrow at {appt.time_slot}.',
+            f'Reminder: appointment with Dr. {appt.doctor.display_name} tomorrow at {appt.time_slot}.',
             Notification.Type.REMINDER,
             link=reverse('appointments:my_appointments'),
             email=True,
@@ -63,7 +63,7 @@ def expire_stale_appointments():
         appt.save(update_fields=['status', 'cancel_reason'])
         notify(
             appt.patient,
-            f'Your appointment with Dr. {appt.doctor.username} on {appt.appointment_date} was auto-cancelled (never confirmed).',
+            f'Your appointment with Dr. {appt.doctor.display_name} on {appt.appointment_date} was auto-cancelled (never confirmed).',
             Notification.Type.STATUS,
             link=reverse('appointments:my_appointments'),
         )

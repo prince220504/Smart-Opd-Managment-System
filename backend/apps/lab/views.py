@@ -31,7 +31,7 @@ def request_test(request, appointment_id):
         for tech in User.objects.filter(role='LAB'):
             notify(
                 recipient=tech,
-                message=f'New test requested: {test_name} for {appointment.patient.username}.',
+                message=f'New test requested: {test_name} for {appointment.patient.display_name}.',
                 notification_type=Notification.Type.TEST,
                 link=reverse('lab:dashboard'),
             )
@@ -83,7 +83,7 @@ def all_requests(request):
         tests= tests.filter(status=status)
     if q:
         tests = tests.filter(
-            Q(test_name__icontains=q) | Q(appointment__patient__username__icontains=q)
+            Q(test_name__icontains=q) | Q(appointment__patient__full_name__icontains=q) | Q(appointment__patient__username__icontains=q)
         )
 
     return render(request, 'lab/all_requests.html', {
@@ -129,7 +129,7 @@ def upload_result(request, test_id):
             )
             notify(
                 recipient=appointment.doctor,
-                message=f'Result uploaded for {test.test_name} ({appointment.patient.username}).',
+                message=f'Result uploaded for {test.test_name} ({appointment.patient.display_name}).',
                 notification_type=Notification.Type.RESULT,
                 link=reverse('lab:test_detail', args=[test.id]),
             )

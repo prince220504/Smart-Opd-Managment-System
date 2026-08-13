@@ -62,7 +62,7 @@ def patient_registry(request):
     q = request.GET.get('q', '').strip()
     if q:
         patients = patients.filter(
-            Q(username__icontains=q) | Q(email__icontains=q) | Q(phone__icontains=q)
+            Q(full_name__icontains=q) | Q(username__icontains=q) | Q(email__icontains=q) | Q(phone__icontains=q)
         )
 
     return render(request, 'accounts/patient_registry.html', {'patients':patients, 'q':q})
@@ -76,7 +76,7 @@ def register_patient(request):
         form = WalkInPatientForm(request.POST)
         if form.is_valid():
             patient = form.save()
-            messages.success(request, f'{patient.username} registered')
+            messages.success(request, f'{patient.display_name} registered')
             return redirect('appointments:reception_book')
     else:
         form = WalkInPatientForm()
