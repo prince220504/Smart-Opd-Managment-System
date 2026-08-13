@@ -268,3 +268,29 @@ document.querySelectorAll('[data-dismiss]').forEach(function (btn) {
     }
   });
 })();
+
+/* ---------------------------------------------------------------
+   Sidebar: mark the link for the page you are on.
+   Done here rather than with an {% if %} on all 17 links, so a new
+   nav item needs no extra markup.
+   --------------------------------------------------------------- */
+(function () {
+  var here = window.location.pathname;
+  var links = document.querySelectorAll('#sidebar nav a[href]');
+  var best = null;
+
+  links.forEach(function (a) {
+    var path = a.getAttribute('href');
+    // longest matching prefix wins, so /appointments/doctor/records/
+    // beats a shorter link that is also a prefix of it
+    if (here === path || here.indexOf(path) === 0) {
+      if (!best || path.length > best.getAttribute('href').length) best = a;
+    }
+  });
+
+  if (best) {
+    best.classList.remove('text-white/80', 'hover:bg-white/10');
+    best.classList.add('bg-white/15', 'text-white');
+    best.setAttribute('aria-current', 'page');
+  }
+})();
