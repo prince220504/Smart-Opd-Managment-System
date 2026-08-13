@@ -4,10 +4,11 @@ from .models import CustomUser
 class RegisterForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput)
     password_confirm = forms.CharField(widget=forms.PasswordInput)
+    full_name = forms.CharField(max_length=100)
 
     class Meta:
         model = CustomUser
-        fields = ['username','email','phone']
+        fields = ['full_name','username','email','phone']
 
     def clean_password_confirm(self):
         password = self.cleaned_data.get('password')
@@ -29,7 +30,7 @@ class WalkInPatientForm(RegisterForm):
     plus the desk details a patient gives at the counter."""
 
     class Meta(RegisterForm.Meta):
-        fields = ['username', 'email', 'phone', 'age', 'gender', 'blood_group', 'address']
+        fields = ['full_name','username', 'email', 'phone', 'age', 'gender', 'blood_group', 'address']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
