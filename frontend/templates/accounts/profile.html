@@ -9,6 +9,7 @@
     <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Your profile</span>
     <p class="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">The details the hospital has on file for you.</p>
   </div>
+  <a href="{% url 'accounts:profile_edit' %}" class="inline-flex h-10 items-center justify-center self-start rounded-lg bg-[#1666C4] px-4 text-[14px] text-white hover:bg-[#1155A6] sm:self-auto" style="font-weight:600;">Edit profile</a>
 </div>
 {% endblock %}
 
@@ -54,6 +55,30 @@
         <dt class="text-[13px] text-[#64748B]">Phone</dt>
         <dd class="mt-1 text-[14px]">{{ user.phone|default:"—" }}</dd>
       </div>
+      {% if user.role == 'PATIENT' %}
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Age</dt>
+        <dd class="mt-1 text-[14px]">{{ user.age|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Blood group</dt>
+        <dd class="mt-1 text-[14px]">{{ user.blood_group|default:"—" }}</dd>
+      </div>
+      <div class="sm:col-span-2">
+        <dt class="text-[13px] text-[#64748B]">Address</dt>
+        <dd class="mt-1 text-[14px]">{{ user.address|default:"—" }}</dd>
+      </div>
+      {% endif %}
+      {% if user.role == 'DOCTOR' %}
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Department</dt>
+        <dd class="mt-1 text-[14px]">{{ user.get_department_display|default:"—" }}</dd>
+      </div>
+      {% endif %}
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Gender</dt>
+        <dd class="mt-1 text-[14px]">{{ user.get_gender_display|default:"—" }}</dd>
+      </div>
       <div>
         <dt class="text-[13px] text-[#64748B]">Joined</dt>
         <dd class="mt-1 text-[14px]">{{ user.date_joined|date:"d M Y" }}</dd>
@@ -64,7 +89,7 @@
       </div>
     </dl>
     <p class="mt-6 border-t border-[#E2E8F0] pt-4 text-[13px] text-[#64748B]">
-      Editing your details and uploading a profile photo are not available yet.
+      Use <strong>Edit profile</strong> to update these details. Your username and password are not changed here.
     </p>
   </div>
 </div>
