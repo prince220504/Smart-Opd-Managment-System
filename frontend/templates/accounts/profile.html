@@ -19,10 +19,10 @@
   <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
     <div class="flex items-center gap-4">
       <span class="flex h-14 w-14 items-center justify-center rounded-full bg-[#E8F1FC] text-[20px] text-[#1666C4]" style="font-weight:600;">
-        {{ user.username|slice:":2"|upper }}
+        {{ user.display_name|slice:":2"|upper }}
       </span>
       <div class="min-w-0">
-        <p class="truncate text-[16px]" style="font-weight:600;">{{ user.username }}</p>
+        <p class="truncate text-[16px]" style="font-weight:600;">{{ user.display_name }}</p>
         <span class="mt-1 inline-flex items-center rounded-full bg-[#F1F5F9] px-2.5 py-1 text-[12px] text-[#64748B]" style="font-weight:500;">
           {{ user.get_role_display }}
         </span>
@@ -34,6 +34,10 @@
   <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm lg:col-span-2">
     <h2 class="text-[18px]" style="font-weight:600;">Account details</h2>
     <dl class="mt-4 grid gap-4 sm:grid-cols-2">
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Full name</dt>
+        <dd class="mt-1 text-[14px]">{{ user.full_name|default:"—" }}</dd>
+      </div>
       <div>
         <dt class="text-[13px] text-[#64748B]">Username</dt>
         <dd class="mt-1 text-[14px]">{{ user.username }}</dd>

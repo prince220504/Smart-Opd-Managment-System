@@ -31,7 +31,13 @@
 
       <div class="mt-5 grid gap-4 sm:grid-cols-2">
         <div>
-          <label for="{{ form.username.id_for_label }}" class="mb-1 block text-[13px]" style="font-weight:500;">Full name <span class="text-[#DC2626]">*</span></label>
+          <label for="{{ form.full_name.id_for_label }}" class="mb-1 block text-[13px]" style="font-weight:500;">Full name <span class="text-[#DC2626]">*</span></label>
+          <input id="{{ form.full_name.id_for_label }}" type="text" name="{{ form.full_name.html_name }}" value="{{ form.full_name.value|default:'' }}" required
+                 class="h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px]" placeholder="e.g. Ananya Iyer">
+        </div>
+
+        <div>
+          <label for="{{ form.username.id_for_label }}" class="mb-1 block text-[13px]" style="font-weight:500;">Username <span class="text-[#DC2626]">*</span></label>
           <input id="{{ form.username.id_for_label }}" type="text" name="{{ form.username.html_name }}" value="{{ form.username.value|default:'' }}" required
                  class="h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px]" placeholder="e.g. ananya_iyer">
           <p class="mt-1 text-[13px] text-[#64748B]">This is the login name, so no spaces.</p>

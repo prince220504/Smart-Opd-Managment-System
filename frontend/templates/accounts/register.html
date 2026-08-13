@@ -75,6 +75,15 @@
           {% csrf_token %}
 
           <div>
+            <label for="id_full_name" class="block text-[13px] text-[#1A2333]" style="font-weight:500;">Full name <span class="text-[#DC2626]">*</span></label>
+            <input id="id_full_name" name="full_name" type="text" required
+                   value="{{ form.full_name.value|default:'' }}"
+                   class="mt-1.5 h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px]"
+                   placeholder="Ananya Sharma">
+            {% for e in form.full_name.errors %}<p class="mt-1 text-[13px] text-[#DC2626]">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div>
             <label for="id_username" class="block text-[13px] text-[#1A2333]" style="font-weight:500;">Username <span class="text-[#DC2626]">*</span></label>
             <input id="id_username" name="username" type="text" required
                    value="{{ form.username.value|default:'' }}"
