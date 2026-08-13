@@ -23,10 +23,10 @@
   <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
     <div class="flex items-center gap-4">
       <span class="flex h-12 w-12 items-center justify-center rounded-full bg-[#E8F1FC] text-[16px] text-[#1666C4]" style="font-weight:600;">
-        {{ patient.username|slice:":2"|upper }}
+        {{ patient.display_name|slice:":2"|upper }}
       </span>
       <div class="min-w-0">
-        <p class="truncate text-[16px]" style="font-weight:600;">{{ patient.username }}</p>
+        <p class="truncate text-[16px]" style="font-weight:600;">{{ patient.display_name }}</p>
         <p class="text-[13px] text-[#64748B]">
           <span class="tnum">{{ appointments|length }}</span> visit{{ appointments|length|pluralize }} on record
         </p>
@@ -44,7 +44,7 @@
     <div class="flex flex-col gap-2 border-b border-[#E2E8F0] pb-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <p class="text-[16px]" style="font-weight:600;">
-          Dr. {{ appt.doctor.username }}
+          Dr. {{ appt.doctor.display_name }}
           {% if appt.doctor.department %}<span class="text-[13px] text-[#64748B]" style="font-weight:400;">· {{ appt.doctor.get_department_display }}</span>{% endif %}
         </p>
         <p class="mt-1 text-[14px] text-[#64748B] tnum">

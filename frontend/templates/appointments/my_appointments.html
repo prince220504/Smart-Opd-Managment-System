@@ -63,7 +63,7 @@
       <tbody class="divide-y divide-[#E2E8F0]">
         {% for appt in appointments %}
         <tr class="hover:bg-[#F8FAFC]">
-          <td class="px-4 py-3">Dr. {{ appt.doctor.username }}</td>
+          <td class="px-4 py-3">Dr. {{ appt.doctor.display_name }}</td>
           <td class="px-4 py-3 text-[#64748B]">{{ appt.doctor.get_department_display|default:"—" }}</td>
           <td class="px-4 py-3 tnum">{{ appt.appointment_date|date:"d M Y" }}</td>
           <td class="px-4 py-3 tnum">{{ appt.time_slot|time:"H:i" }}</td>

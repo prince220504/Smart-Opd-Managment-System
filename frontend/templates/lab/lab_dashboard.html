@@ -66,12 +66,12 @@
         <tr class="hover:bg-[#F8FAFC]">
           <td class="px-4 py-3">
             <div class="flex items-center gap-3">
-              <span class="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8F1FC] text-[13px] text-[#1666C4]" style="font-weight:600;">{{ test.appointment.patient.username|slice:":2"|upper }}</span>
-              <span style="font-weight:500;">{{ test.appointment.patient.username }}</span>
+              <span class="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8F1FC] text-[13px] text-[#1666C4]" style="font-weight:600;">{{ test.appointment.patient.display_name|slice:":2"|upper }}</span>
+              <span style="font-weight:500;">{{ test.appointment.patient.display_name }}</span>
             </div>
           </td>
           <td class="px-4 py-3">{{ test.test_name }}</td>
-          <td class="px-4 py-3 text-[#64748B]">Dr. {{ test.requested_by.username }}</td>
+          <td class="px-4 py-3 text-[#64748B]">Dr. {{ test.requested_by.display_name }}</td>
           <td class="px-4 py-3 tnum whitespace-nowrap">{{ test.requested_at|date:"d M Y, H:i" }}</td>
           <td class="px-4 py-3 whitespace-nowrap">
             <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[12px]

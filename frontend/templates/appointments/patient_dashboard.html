@@ -11,9 +11,9 @@ bar, so it inherits the #flash slide-down in main.css.
 {% endcomment %}
 <div id="flash" class="mb-6 flex items-start justify-between gap-3 rounded-lg border-l-[3px] border-[#1666C4] bg-[#E8F1FC] px-4 py-3">
   <p class="text-[14px] text-[#1A2333]">
-    Welcome back, {{ user.username }}.
+    Welcome back, {{ user.display_name }}.
     {% if next_appointment %}
-      Your next visit is with Dr. {{ next_appointment.doctor.username }} on
+      Your next visit is with Dr. {{ next_appointment.doctor.display_name }} on
       <span class="tnum">{{ next_appointment.appointment_date|date:"d M Y" }}</span>
       at <span class="tnum">{{ next_appointment.time_slot|time:"H:i" }}</span>
       ({{ next_appointment.get_status_display|lower }}).
@@ -61,7 +61,7 @@ bar, so it inherits the #flash slide-down in main.css.
   <div class="mt-4 grid gap-4 sm:grid-cols-2">
     <div>
       <p class="text-[13px] text-[#64748B]">Doctor</p>
-      <p class="text-[14px]" style="font-weight:500;">Dr. {{ next_appointment.doctor.username }}</p>
+      <p class="text-[14px]" style="font-weight:500;">Dr. {{ next_appointment.doctor.display_name }}</p>
     </div>
     <div>
       <p class="text-[13px] text-[#64748B]">Department</p>

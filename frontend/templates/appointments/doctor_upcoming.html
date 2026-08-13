@@ -42,7 +42,7 @@
           <td class="px-4 py-3 tnum whitespace-nowrap">{{ appt.time_slot|time:"H:i" }}</td>
 
           <td class="px-4 py-3">
-            <a href="{% url 'appointments:patient_history' appt.patient_id %}" class="text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">{{ appt.patient.username }}</a>
+            <a href="{% url 'appointments:patient_history' appt.patient_id %}" class="text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">{{ appt.patient.display_name }}</a>
           </td>
 
           <td class="px-4 py-3 text-[#64748B]">{{ appt.notes|default:"—" }}</td>

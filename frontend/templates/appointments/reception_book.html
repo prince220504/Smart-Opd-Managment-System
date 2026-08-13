@@ -43,7 +43,7 @@
                   class="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px]">
             <option value="">Select a patient</option>
             {% for choice in form.fields.patient.queryset %}
-            <option value="{{ choice.id }}" {% if form.patient.value|stringformat:"s" == choice.id|stringformat:"s" %}selected{% endif %}>{{ choice.username }}{% if choice.phone %} · {{ choice.phone }}{% endif %}</option>
+            <option value="{{ choice.id }}" {% if form.patient.value|stringformat:"s" == choice.id|stringformat:"s" %}selected{% endif %}>{{ choice.display_name }}{% if choice.phone %} · {{ choice.phone }}{% endif %}</option>
             {% endfor %}
           </select>
         </div>
@@ -54,7 +54,7 @@
                   class="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px]">
             <option value="">Select a doctor</option>
             {% for choice in form.fields.doctor.queryset %}
-            <option value="{{ choice.id }}" {% if form.doctor.value|stringformat:"s" == choice.id|stringformat:"s" %}selected{% endif %}>Dr. {{ choice.username }}{% if choice.department %} · {{ choice.get_department_display }}{% endif %}</option>
+            <option value="{{ choice.id }}" {% if form.doctor.value|stringformat:"s" == choice.id|stringformat:"s" %}selected{% endif %}>Dr. {{ choice.display_name }}{% if choice.department %} · {{ choice.get_department_display }}{% endif %}</option>
             {% endfor %}
           </select>
         </div>

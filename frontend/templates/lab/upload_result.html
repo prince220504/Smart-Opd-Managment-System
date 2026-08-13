@@ -30,9 +30,9 @@
       </div>
 
       <div class="mt-5 flex items-center gap-3">
-        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#0B2545] text-[15px] text-white" style="font-weight:600;">{{ test.appointment.patient.username|slice:":2"|upper }}</span>
+        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#0B2545] text-[15px] text-white" style="font-weight:600;">{{ test.appointment.patient.display_name|slice:":2"|upper }}</span>
         <div class="min-w-0">
-          <p class="truncate text-[15px]" style="font-weight:600;">{{ test.appointment.patient.username }}</p>
+          <p class="truncate text-[15px]" style="font-weight:600;">{{ test.appointment.patient.display_name }}</p>
           <p class="text-[13px] text-[#64748B]">Patient</p>
         </div>
       </div>
@@ -44,7 +44,7 @@
         </div>
         <div class="rounded-xl bg-[#F5F7FA] p-3">
           <p class="text-[12px] text-[#64748B]">Requested by</p>
-          <p class="mt-0.5 text-[14px]" style="font-weight:600;">Dr. {{ test.requested_by.username }}</p>
+          <p class="mt-0.5 text-[14px]" style="font-weight:600;">Dr. {{ test.requested_by.display_name }}</p>
         </div>
         <div class="rounded-xl bg-[#F5F7FA] p-3">
           <p class="text-[12px] text-[#64748B]">Requested on</p>

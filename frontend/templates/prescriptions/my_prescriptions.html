@@ -38,7 +38,7 @@
         {% for prescription in prescriptions %}
         <tr class="hover:bg-[#F8FAFC]">
           <td class="px-4 py-3 tnum">{{ prescription.appointment.appointment_date|date:"d M Y" }}</td>
-          <td class="px-4 py-3">Dr. {{ prescription.appointment.doctor.username }}</td>
+          <td class="px-4 py-3">Dr. {{ prescription.appointment.doctor.display_name }}</td>
           <td class="px-4 py-3 text-[#64748B]">{{ prescription.appointment.doctor.get_department_display|default:"—" }}</td>
           <td class="px-4 py-3">{{ prescription.diagnosis|default:"—" }}</td>
           <td class="px-4 py-3 tnum text-[#64748B]">{{ prescription.medicines|length }}</td>

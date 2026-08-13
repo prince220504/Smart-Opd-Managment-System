@@ -36,7 +36,7 @@
       <select id="doctor" name="doctor" class="mt-1.5 h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px]">
         <option value="">All doctors</option>
         {% for doc in doctors %}
-        <option value="{{ doc.id }}" {% if request.GET.doctor == doc.id|stringformat:"s" %}selected{% endif %}>Dr. {{ doc.username }}</option>
+        <option value="{{ doc.id }}" {% if request.GET.doctor == doc.id|stringformat:"s" %}selected{% endif %}>Dr. {{ doc.display_name }}</option>
         {% endfor %}
       </select>
     </div>
@@ -73,9 +73,9 @@
         {% for appt in appointments %}
         <tr class="align-top hover:bg-[#F8FAFC]">
           <td class="px-4 py-3">
-            <a href="{% url 'appointments:patient_history' appt.patient_id %}" class="text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">{{ appt.patient.username }}</a>
+            <a href="{% url 'appointments:patient_history' appt.patient_id %}" class="text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">{{ appt.patient.display_name }}</a>
           </td>
-          <td class="px-4 py-3">Dr. {{ appt.doctor.username }}</td>
+          <td class="px-4 py-3">Dr. {{ appt.doctor.display_name }}</td>
           <td class="px-4 py-3 text-[#64748B]">{{ appt.doctor.get_department_display|default:"—" }}</td>
           <td class="px-4 py-3 tnum whitespace-nowrap">{{ appt.appointment_date|date:"d M Y" }}</td>
           <td class="px-4 py-3 tnum whitespace-nowrap">{{ appt.time_slot|time:"H:i" }}</td>

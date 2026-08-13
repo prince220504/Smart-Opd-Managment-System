@@ -18,10 +18,10 @@
   <div class="flex flex-wrap items-center gap-x-5 gap-y-3">
     <div class="flex min-w-0 items-center gap-3">
       <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E8F1FC] text-[14px] text-[#1666C4]" style="font-weight:600;">
-        {{ doctor.username|slice:":2"|upper }}
+        {{ doctor.display_name|slice:":2"|upper }}
       </span>
       <div class="min-w-0">
-        <p class="truncate text-[15px]" style="font-weight:600;">Dr. {{ doctor.username }}</p>
+        <p class="truncate text-[15px]" style="font-weight:600;">Dr. {{ doctor.display_name }}</p>
         <p class="truncate text-[13px] text-[#64748B]">{{ doctor.email|default:"—" }}</p>
       </div>
     </div>

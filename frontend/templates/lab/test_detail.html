@@ -7,7 +7,7 @@
 <div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
   <div>
     <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Lab report</span>
-    <p class="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">{{ test.test_name }} for {{ test.appointment.patient.username }}.</p>
+    <p class="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">{{ test.test_name }} for {{ test.appointment.patient.display_name }}.</p>
   </div>
   <span class="inline-flex items-center rounded-full px-3 py-1.5 text-[13px]
     {% if test.status == 'DONE' %}bg-[#DCFCE7] text-[#16A34A]
@@ -24,9 +24,9 @@
       <h2 class="text-[18px]" style="font-weight:600;">Request details</h2>
 
       <div class="mt-5 flex items-center gap-3">
-        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#0B2545] text-[15px] text-white" style="font-weight:600;">{{ test.appointment.patient.username|slice:":2"|upper }}</span>
+        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#0B2545] text-[15px] text-white" style="font-weight:600;">{{ test.appointment.patient.display_name|slice:":2"|upper }}</span>
         <div class="min-w-0">
-          <p class="truncate text-[15px]" style="font-weight:600;">{{ test.appointment.patient.username }}</p>
+          <p class="truncate text-[15px]" style="font-weight:600;">{{ test.appointment.patient.display_name }}</p>
           <p class="text-[13px] text-[#64748B]">Patient</p>
         </div>
       </div>
@@ -38,7 +38,7 @@
         </div>
         <div class="rounded-xl bg-[#F5F7FA] p-3">
           <p class="text-[12px] text-[#64748B]">Requested by</p>
-          <p class="mt-0.5 text-[14px]" style="font-weight:600;">Dr. {{ test.requested_by.username }}</p>
+          <p class="mt-0.5 text-[14px]" style="font-weight:600;">Dr. {{ test.requested_by.display_name }}</p>
         </div>
         <div class="rounded-xl bg-[#F5F7FA] p-3">
           <p class="text-[12px] text-[#64748B]">Requested on</p>
@@ -76,7 +76,7 @@
       <dl class="mt-5 grid gap-3 sm:grid-cols-2">
         <div class="rounded-xl bg-[#F5F7FA] p-3">
           <dt class="text-[12px] text-[#64748B]">Reported by</dt>
-          <dd class="mt-0.5 text-[14px]" style="font-weight:600;">{{ test.result.uploaded_by.username }}</dd>
+          <dd class="mt-0.5 text-[14px]" style="font-weight:600;">{{ test.result.uploaded_by.display_name }}</dd>
         </div>
         <div class="rounded-xl bg-[#F5F7FA] p-3">
           <dt class="text-[12px] text-[#64748B]">Reported on</dt>
