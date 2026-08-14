@@ -29,7 +29,7 @@ def login_view(request):
                 return redirect('accounts:profile_edit')
             return redirect('appointments:patient_dashboard')
         else:
-            return render(request, 'accounts/login.html', {'error': 'Invalid username or password',})
+            return render(request, 'accounts/login.html', {'error': 'Invalid username/email or password',})
         
     return render(request, 'accounts/login.html')
 

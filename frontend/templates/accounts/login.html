@@ -72,10 +72,10 @@
         <form action="{% url 'accounts:login' %}" method="post" class="space-y-4">
           {% csrf_token %}
           <div>
-            <label for="username" class="block text-[13px] text-[#1A2333]" style="font-weight:500;">Username <span class="text-[#DC2626]">*</span></label>
+            <label for="username" class="block text-[13px] text-[#1A2333]" style="font-weight:500;">Username or email <span class="text-[#DC2626]">*</span></label>
             <input id="username" name="username" type="text" required autofocus
                    class="mt-1.5 h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px]"
-                   placeholder="your username">
+                   placeholder="username or you@example.com">
           </div>
           <div>
             <label for="password" class="block text-[13px] text-[#1A2333]" style="font-weight:500;">Password <span class="text-[#DC2626]">*</span></label>
