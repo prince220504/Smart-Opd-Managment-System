@@ -78,7 +78,10 @@
                    placeholder="username or you@example.com">
           </div>
           <div>
-            <label for="password" class="block text-[13px] text-[#1A2333]" style="font-weight:500;">Password <span class="text-[#DC2626]">*</span></label>
+            <div class="flex items-baseline justify-between">
+              <label for="password" class="block text-[13px] text-[#1A2333]" style="font-weight:500;">Password <span class="text-[#DC2626]">*</span></label>
+              <a href="{% url 'accounts:password_reset' %}" class="text-[13px] text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">Forgot password?</a>
+            </div>
             <input id="password" name="password" type="password" required
                    class="mt-1.5 h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px]"
                    placeholder="••••••••">
