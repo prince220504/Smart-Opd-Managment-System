@@ -28,8 +28,8 @@ Step-by-step Django learning notes. Revise any time. Each file covers **what**, 
 | 18 | `notifications` + background tasks | [18-notifications.md](18-notifications.md) | ✅ Done (18a–18d) |
 | 18e | Celery + Redis (background tasks, Beat) | [18e-celery-redis.md](18e-celery-redis.md) | ✅ Done |
 | 19 | Dashboard (aggregation + Chart.js) · medical history · CSV export | [19-dashboard.md](19-dashboard.md) , [19c-medical-history.md](19c-medical-history.md) | ✅ Done (19a–19d) |
-| 20 | Deploy (Whitenoise + Render) | _coming_ | |
-| 21 | Frontend (Stitch → Django) + README + availability calendar | _coming_ | |
+| 20 | Frontend on the Figma export (all 4 roles) + README | [20fg-names-and-profile.md](20fg-names-and-profile.md) | 20a-20g ✅, 20h (README) left |
+| 21 | Deploy (Whitenoise + Render) | _coming_ | |
 
 ## How to use
 

@@ -5,6 +5,7 @@ from datetime import timedelta
 from django.urls import reverse
 from django.utils import timezone
 from apps.appointments.models import Appointment
+from django.db import transaction
 
 @shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def send_notification_email(self, notification_id):
@@ -36,7 +37,7 @@ def send_appointment_reminders():
     for appt in appointments:
         notify(
             appt.patient,
-            f'Reminder: appointment with Dr. {appt.doctor.username} tomorrow at {appt.time_slot}.',
+            f'Reminder: appointment with Dr. {appt.doctor.display_name} tomorrow at {appt.time_slot}.',
             Notification.Type.REMINDER,
             link=reverse('appointments:my_appointments'),
             email=True,
@@ -58,14 +59,15 @@ def expire_stale_appointments():
 
     expired = 0
     for appt in stale:
-        appt.status = Appointment.Status.CANCELLED
-        appt.cancel_reason = 'Auto-cancelled: not confirmed before the appointment date.'
-        appt.save(update_fields=['status', 'cancel_reason'])
-        notify(
-            appt.patient,
-            f'Your appointment with Dr. {appt.doctor.username} on {appt.appointment_date} was auto-cancelled (never confirmed).',
-            Notification.Type.STATUS,
-            link=reverse('appointments:my_appointments'),
-        )
+        with transaction.atomic():
+            appt.status = Appointment.Status.CANCELLED
+            appt.cancel_reason = 'Auto-cancelled: not confirmed before the appointment date.'
+            appt.save(update_fields=['status', 'cancel_reason'])
+            notify(
+                appt.patient,
+                f'Your appointment with Dr. {appt.doctor.display_name} on {appt.appointment_date} was auto-cancelled (never confirmed).',
+                Notification.Type.STATUS,
+                link=reverse('appointments:my_appointments'),
+            )
         expired += 1
     return expired

@@ -1,55 +1,91 @@
 {% extends 'base.html' %}
 
-{% block title %}Prescription -{{ prescription.appointment.patient.username }}-{{ prescription.appointment.appointment_date|date:"Y-m-d" }}{% endblock %}
+{# the browser suggests document.title as the "Save as PDF" filename #}
+{% block title %}Prescription -{{ prescription.appointment.patient.display_name }}-{{ prescription.appointment.appointment_date|date:"Y-m-d" }}{% endblock %}
+{% block page_title %}Prescription{% endblock %}
+
+{% block page_intro %}
+{# no-print: the intro belongs to the app, not to the printed prescription #}
+<div class="no-print mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Prescription</span>
+    <p class="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">Written after your visit. Print it or save it as a PDF.</p>
+  </div>
+  <span class="inline-flex items-center gap-2 self-start rounded-full border border-[#E2E8F0] bg-white px-3 py-1.5 text-[13px] text-[#64748B] sm:self-auto" style="font-weight:500;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1666C4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M14.5 3.5V8h4.5M8.5 12.5h7M8.5 16h7"/></svg>
+    <span class="tnum">{{ prescription.appointment.appointment_date|date:"d M Y" }}</span>
+  </span>
+</div>
+{% endblock %}
 
 {% block content %}
-<style>
-    @media print{
-        header, footer, .no-print{ display: none;}
-    }
-</style>
+<div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
 
-<h1>Prescription</h1>
-<p>Dr. {{ prescription.appointment.doctor.username }}
-   &middot; {{ prescription.appointment.appointment_date }}
-   at {{ prescription.appointment.time_slot }}</p>
+  <!-- header -->
+  <div class="flex flex-col gap-4 border-b border-[#E2E8F0] pb-5 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <h2 class="text-[18px]" style="font-weight:600;">Dr. {{ prescription.appointment.doctor.display_name }}</h2>
+      {% if prescription.appointment.doctor.department %}
+      <p class="mt-1 text-[14px] text-[#64748B]">{{ prescription.appointment.doctor.get_department_display }}</p>
+      {% endif %}
+      <p class="mt-1 text-[14px] text-[#64748B] tnum">
+        {{ prescription.appointment.appointment_date|date:"d M Y" }} at {{ prescription.appointment.time_slot|time:"H:i" }}
+      </p>
+      <p class="mt-1 text-[14px] text-[#64748B]">Patient: {{ prescription.appointment.patient.display_name }}</p>
+    </div>
+    <button type="button" onclick="window.print()" class="no-print inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#1666C4] px-4 text-[14px] text-white hover:bg-[#1155A6]" style="font-weight:600;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9V3.5h10V9M7 18.5H5.5A1.5 1.5 0 0 1 4 17v-5a1.5 1.5 0 0 1 1.5-1.5h13A1.5 1.5 0 0 1 20 12v5a1.5 1.5 0 0 1-1.5 1.5H17M7 14.5h10v6H7z"/></svg>
+      Print / Save as PDF
+    </button>
+  </div>
 
-<h3>Diagnosis</h3>
-<p>{{ prescription.diagnosis }}</p>
+  <!-- diagnosis -->
+  <div class="mt-5">
+    <p class="text-[13px] text-[#64748B]">Diagnosis</p>
+    <p class="mt-1 text-[14px]">{{ prescription.diagnosis|default:"—" }}</p>
+  </div>
 
-<h3>Medicines</h3>
-{% if prescription.medicines %}
-    <table border="1" cellpadding="6">
-        <thead>
-            <tr><th>Name</th>
-                <th>Dosage</th>    
-                <th>Frequency</th>    
-                <th>Duration</th>    
-            </tr>
-        </thead>
-        <tbody>
-            {% for m in prescription.medicines %}
-            <tr>
-                <td>{{ m.name }}</td>
-                <td>{{ m.dosage }}</td>
-                <td>{{ m.frequency }}</td>
-                <td>{{ m.duration }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
+  <!-- medicines -->
+  <h3 class="mt-6 text-[16px]" style="font-weight:600;">Medicines</h3>
+  {% if prescription.medicines %}
+  <div class="mt-3 overflow-x-auto rounded-lg border border-[#E2E8F0]">
+    <table class="w-full min-w-[560px] text-[14px]">
+      <thead>
+        <tr class="border-b border-[#E2E8F0] bg-[#F8FAFC] text-left text-[13px] uppercase text-[#64748B]" style="letter-spacing:.04em;">
+          <th class="px-4 py-3" style="font-weight:600;">Name</th>
+          <th class="px-4 py-3" style="font-weight:600;">Dosage</th>
+          <th class="px-4 py-3" style="font-weight:600;">Frequency</th>
+          <th class="px-4 py-3" style="font-weight:600;">Duration</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-[#E2E8F0]">
+        {% for m in prescription.medicines %}
+        <tr class="hover:bg-[#F8FAFC]">
+          <td class="px-4 py-3">{{ m.name }}</td>
+          <td class="px-4 py-3">{{ m.dosage }}</td>
+          <td class="px-4 py-3">{{ m.frequency }}</td>
+          <td class="px-4 py-3">{{ m.duration }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
-{% else %}
-    <p>No medicines listed.</p>
-{% endif %}
+  </div>
+  {% else %}
+  <p class="mt-2 text-[14px] text-[#64748B]">No medicines listed.</p>
+  {% endif %}
 
-{% if prescription.advice %}
-    <h3>Advice</h3>
-    <p>{{ prescription.advice }}</p>
-{% endif %}
+  <!-- advice -->
+  {% if prescription.advice %}
+  <div class="mt-6">
+    <p class="text-[13px] text-[#64748B]">Advice</p>
+    <p class="mt-1 text-[14px]">{{ prescription.advice }}</p>
+  </div>
+  {% endif %}
 
-<p class="no-print">
-    <button type="button" onclick="window.print()">Print / Save as PDF</button>
-</p>
-
-<p class="no-print"><a href="{% url 'appointments:my_appointments' %}">Back to My Appointments</a></p>
+  <div class="no-print mt-6 flex flex-wrap gap-4 border-t border-[#E2E8F0] pt-4">
+    <a href="{% url 'prescriptions:my_prescriptions' %}" class="text-[14px] text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">← All prescriptions</a>
+    <a href="{% url 'appointments:my_appointments' %}" class="text-[14px] text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">My appointments</a>
+  </div>
+</div>
 {% endblock %}
+

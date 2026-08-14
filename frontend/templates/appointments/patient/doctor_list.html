@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Find a Doctor · Smart OPD{% endblock %}
+{% block page_title %}Find a Doctor{% endblock %}
+
+{% block page_intro %}
+<div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Find a doctor</span>
+    <p class="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">Browse the doctors on duty and book a slot.</p>
+  </div>
+  <span class="inline-flex items-center gap-2 self-start rounded-full border border-[#E2E8F0] bg-white px-3 py-1.5 text-[13px] text-[#64748B] sm:self-auto" style="font-weight:500;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1666C4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>
+    <span class="tnum">{% now "d M Y" %}</span>
+  </span>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- department filter — plain GET, so the choice survives a refresh -->
+<form method="get" class="mb-5 flex flex-col gap-3 rounded-xl border border-[#E2E8F0] bg-white p-4 shadow-sm sm:flex-row sm:items-end">
+  <div class="sm:w-64">
+    <label for="department" class="block text-[13px] text-[#1A2333]" style="font-weight:500;">Department</label>
+    <select id="department" name="department" class="mt-1.5 h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px]">
+      <option value="">All departments</option>
+      {% for value, label in departments %}
+      <option value="{{ value }}" {% if department == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="inline-flex h-10 items-center justify-center rounded-lg bg-[#1666C4] px-4 text-[14px] text-white hover:bg-[#1155A6]" style="font-weight:600;">Filter</button>
+  {% if department %}
+  <a href="{% url 'appointments:doctor_list' %}" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white px-4 text-[14px] text-[#1A2333] hover:bg-[#F8FAFC]" style="font-weight:500;">Clear</a>
+  {% endif %}
+</form>
+
+<div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+  {% for doctor in doctors %}
+  <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+    <div class="flex items-center gap-3">
+      <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#E8F1FC] text-[15px] text-[#1666C4]" style="font-weight:600;">
+        {{ doctor.display_name|slice:":2"|upper }}
+      </span>
+      <div class="min-w-0">
+        <p class="truncate text-[16px]" style="font-weight:600;">Dr. {{ doctor.display_name }}</p>
+        <p class="truncate text-[13px] text-[#64748B]">{{ doctor.email|default:"—" }}</p>
+      </div>
+    </div>
+
+    {% if doctor.department %}
+    <span class="mt-4 inline-flex items-center rounded-full bg-[#E8F1FC] px-2.5 py-1 text-[12px] text-[#1666C4]" style="font-weight:500;">{{ doctor.get_department_display }}</span>
+    {% endif %}
+
+    <a href="{% url 'appointments:book' doctor.id %}" class="mt-5 inline-flex h-10 w-full items-center justify-center rounded-lg bg-[#1666C4] px-4 text-[14px] text-white hover:bg-[#1155A6]" style="font-weight:600;">
+      Book appointment
+    </a>
+  </div>
+  {% empty %}
+  <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm sm:col-span-2 lg:col-span-3">
+    <div class="flex flex-col items-center gap-3 py-12 text-center">
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
+      <p class="text-[14px] text-[#64748B]">No doctors are available right now.</p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

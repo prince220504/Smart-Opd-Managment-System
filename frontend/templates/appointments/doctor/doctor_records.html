@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block title %}Appointment Records · Smart OPD{% endblock %}
+{% block page_title %}Appointment Records{% endblock %}
+
+{% block page_intro %}
+<div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Records</span>
+    <p class="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">Filter, search and review every visit you have seen.</p>
+  </div>
+  <span class="inline-flex items-center gap-2 self-start rounded-full border border-[#E2E8F0] bg-white px-3 py-1.5 text-[13px] text-[#64748B] sm:self-auto" style="font-weight:500;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1666C4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M14.5 3.5V8h4.5M8.5 12.5h7M8.5 16h7"/></svg>
+    <span class="tnum">{{ appointments|length }}</span>
+  </span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="rounded-xl border border-[#E2E8F0] bg-white shadow-sm">
+  <div class="px-6 pt-6">
+    <h2 class="text-[18px]" style="font-weight:600;">All appointments</h2>
+  </div>
+
+  <!-- filter bar: plain GET, so a filtered view can be refreshed or shared -->
+  <form method="get" class="flex flex-col gap-3 border-b border-[#E2E8F0] px-6 pb-4 pt-4 sm:flex-row sm:flex-wrap sm:items-end">
+    <div class="sm:w-40">
+      <label for="status" class="mb-1 block text-[13px] text-[#64748B]">Status</label>
+      <select id="status" name="status" class="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px]">
+        <option value="">All statuses</option>
+        {% for value, label in statuses %}
+        <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="sm:w-44">
+      <label for="date" class="mb-1 block text-[13px] text-[#64748B]">Date</label>
+      <input id="date" name="date" type="date" value="{{ date }}" class="h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px]">
+    </div>
+    <div class="flex-1 sm:min-w-[12rem]">
+      <label for="q" class="mb-1 block text-[13px] text-[#64748B]">Search</label>
+      <input id="q" name="q" type="text" value="{{ q }}" placeholder="Patient name" class="h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px]">
+    </div>
+    <button type="submit" class="inline-flex h-10 items-center justify-center rounded-lg bg-[#1666C4] px-4 text-[14px] text-white hover:bg-[#1155A6]" style="font-weight:500;">Apply</button>
+    {% if status or date or q %}
+    <a href="{% url 'appointments:doctor_records' %}" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white px-4 text-[14px] text-[#1A2333] hover:bg-[#F8FAFC]" style="font-weight:500;">Clear</a>
+    {% endif %}
+  </form>
+
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[1040px] text-[14px]">
+      <thead>
+        <tr class="border-b border-[#E2E8F0] text-left text-[13px] uppercase text-[#64748B]" style="letter-spacing:.04em;">
+          <th class="px-4 py-3" style="font-weight:600;">Date</th>
+          <th class="px-4 py-3" style="font-weight:600;">Time</th>
+          <th class="px-4 py-3" style="font-weight:600;">Patient</th>
+          <th class="px-4 py-3" style="font-weight:600;">Reason</th>
+          <th class="px-4 py-3" style="font-weight:600;">Status</th>
+          <th class="px-4 py-3" style="font-weight:600;">Consultation</th>
+          <th class="px-4 py-3 text-right" style="font-weight:600;">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-[#E2E8F0]">
+        {% for appt in appointments %}
+        <tr class="align-top hover:bg-[#F8FAFC]">
+          <td class="px-4 py-3 tnum whitespace-nowrap">{{ appt.appointment_date|date:"d M Y" }}</td>
+          <td class="px-4 py-3 tnum whitespace-nowrap">{{ appt.time_slot|time:"H:i" }}</td>
+
+          <td class="px-4 py-3">
+            <a href="{% url 'appointments:patient_history' appt.patient_id %}" class="text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">{{ appt.patient.display_name }}</a>
+          </td>
+
+          <td class="px-4 py-3 text-[#64748B]">{{ appt.notes|default:"—" }}</td>
+
+          <td class="px-4 py-3 whitespace-nowrap">
+            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[12px]
+              {% if appt.status == 'CONFIRMED' %}bg-[#E8F1FC] text-[#1666C4]
+              {% elif appt.status == 'PENDING' %}bg-[#FEF3C7] text-[#D97706]
+              {% elif appt.status == 'IN_PROGRESS' %}bg-[#E6F7F7] text-[#0FA3A3]
+              {% elif appt.status == 'COMPLETED' %}bg-[#DCFCE7] text-[#16A34A]
+              {% elif appt.status == 'NO_SHOW' %}bg-[#FEE2E2] text-[#DC2626]
+              {% else %}bg-[#F1F5F9] text-[#64748B]{% endif %}" style="font-weight:500;">{{ appt.get_status_display }}</span>
+            {% if appt.status == 'CANCELLED' and appt.cancel_reason %}
+            <p class="mt-1 text-[13px] text-[#64748B]">{{ appt.cancel_reason }}</p>
+            {% endif %}
+          </td>
+
+          {# one door to the consult: prescription + lab requests live on that page #}
+          <td class="px-4 py-3">
+            {% if appt.status == 'CONFIRMED' or appt.status == 'IN_PROGRESS' or appt.status == 'COMPLETED' %}
+            <a href="{% url 'prescriptions:write' appt.id %}" class="inline-flex h-8 items-center rounded-lg border border-[#E2E8F0] px-3 text-[13px] hover:bg-[#F8FAFC]" style="font-weight:500;">
+              {% if appt.prescription %}View / Edit{% else %}Open{% endif %}
+            </a>
+            {% else %}
+            <span class="text-[#64748B]">—</span>
+            {% endif %}
+            {% for test in appt.lab_tests.all %}
+            <p class="mt-1 text-[13px] text-[#64748B]">
+              {% if test.status == 'DONE' %}<a href="{% url 'lab:test_detail' test.id %}" class="text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">{{ test.test_name }}</a>{% else %}{{ test.test_name }}{% endif %}
+              · {{ test.get_status_display }}
+            </p>
+            {% endfor %}
+          </td>
+
+          <td class="px-4 py-3 text-right">
+            {% if appt.status == 'PENDING' %}
+            <div class="flex flex-col items-end gap-2">
+              <form method="post" action="{% url 'appointments:confirm' appt.id %}">
+                {% csrf_token %}
+                <button type="submit" class="inline-flex h-8 items-center rounded-lg bg-[#1666C4] px-3 text-[13px] text-white hover:bg-[#1155A6]" style="font-weight:500;">Accept</button>
+              </form>
+              <form method="post" action="{% url 'appointments:cancel' appt.id %}" data-cancel class="flex items-center gap-2">
+                {% csrf_token %}
+                <input type="hidden" name="cancel_reason">
+                <button type="submit" class="inline-flex h-8 items-center rounded-lg border border-[#E2E8F0] px-3 text-[13px] text-[#DC2626] hover:bg-[#FEF2F2]" style="font-weight:500;">Cancel</button>
+              </form>
+            </div>
+
+            {% elif appt.status == 'CONFIRMED' %}
+            <div class="flex flex-col items-end gap-2">
+              <div class="flex gap-2">
+                <form method="post" action="{% url 'appointments:start' appt.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="inline-flex h-8 items-center rounded-lg bg-[#1666C4] px-3 text-[13px] text-white hover:bg-[#1155A6]" style="font-weight:500;">Start</button>
+                </form>
+                <form method="post" action="{% url 'appointments:no_show' appt.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="inline-flex h-8 items-center rounded-lg border border-[#E2E8F0] px-3 text-[13px] hover:bg-[#F8FAFC]" style="font-weight:500;">No-show</button>
+                </form>
+              </div>
+              <form method="post" action="{% url 'appointments:cancel' appt.id %}" data-cancel class="flex items-center gap-2">
+                {% csrf_token %}
+                <input type="hidden" name="cancel_reason">
+                <button type="submit" class="inline-flex h-8 items-center rounded-lg border border-[#E2E8F0] px-3 text-[13px] text-[#DC2626] hover:bg-[#FEF2F2]" style="font-weight:500;">Cancel</button>
+              </form>
+            </div>
+
+            {% elif appt.status == 'IN_PROGRESS' %}
+            <div class="flex flex-col items-end gap-2">
+              <form method="post" action="{% url 'appointments:complete' appt.id %}">
+                {% csrf_token %}
+                <button type="submit" class="inline-flex h-8 items-center rounded-lg bg-[#1666C4] px-3 text-[13px] text-white hover:bg-[#1155A6]" style="font-weight:500;">Complete</button>
+              </form>
+              <form method="post" action="{% url 'appointments:cancel' appt.id %}" data-cancel>
+                {% csrf_token %}
+                <input type="hidden" name="cancel_reason">
+                <button type="submit" class="inline-flex h-8 items-center rounded-lg border border-[#E2E8F0] px-3 text-[13px] text-[#DC2626] hover:bg-[#FEF2F2]" style="font-weight:500;">Cancel</button>
+              </form>
+            </div>
+
+            {% else %}
+            <span class="text-[#64748B]">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7">
+            <div class="flex flex-col items-center gap-3 py-12 text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M14.5 3.5V8h4.5M8.5 12.5h7M8.5 16h7"/></svg>
+              <p class="text-[14px] text-[#64748B]">No appointments match these filters.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

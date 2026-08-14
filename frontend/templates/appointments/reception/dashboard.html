@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block title %}Front Desk · Smart OPD{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% comment %}
+Chart.js goes in the head, not extra_js: base.html loads main.js at the end of
+the body and extra_js after it, so a CDN tag down there would define Chart
+only after main.js had already run and skipped the charts.
+{% endcomment %}
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block page_intro %}
+<div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Front desk</span>
+    <p class="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">Today's clinic at a glance, {{ user.display_name }}.</p>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    <a href="{% url 'accounts:register_patient' %}" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white px-4 text-[14px] hover:bg-[#F8FAFC]" style="font-weight:500;">Register patient</a>
+    <a href="{% url 'appointments:reception_book' %}" class="inline-flex h-10 items-center justify-center rounded-lg bg-[#1666C4] px-4 text-[14px] text-white hover:bg-[#1155A6]" style="font-weight:600;">Book appointment</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E8F1FC] text-[#1666C4]">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>
+    </span>
+    <p class="mt-4 text-[30px] tnum" style="font-weight:600;">{{ stats.today }}</p>
+    <p class="mt-1 text-[13px] text-[#64748B]">Today</p>
+  </div>
+  <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FEF3C7] text-[#D97706]">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+    </span>
+    <p class="mt-4 text-[30px] tnum" style="font-weight:600;">{{ stats.pending }}</p>
+    <p class="mt-1 text-[13px] text-[#64748B]">Awaiting confirmation</p>
+  </div>
+  <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#DCFCE7] text-[#16A34A]">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg>
+    </span>
+    <p class="mt-4 text-[30px] tnum" style="font-weight:600;">{{ stats.completed }}</p>
+    <p class="mt-1 text-[13px] text-[#64748B]">Completed</p>
+  </div>
+  <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#F1F5F9] text-[#64748B]">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M14.5 3.5V8h4.5"/></svg>
+    </span>
+    <p class="mt-4 text-[30px] tnum" style="font-weight:600;">{{ stats.total }}</p>
+    <p class="mt-1 text-[13px] text-[#64748B]">All time</p>
+  </div>
+</div>
+
+<p class="mt-8 mb-3 text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Today</p>
+
+<div class="rounded-xl border border-[#E2E8F0] bg-white shadow-sm">
+  <div class="flex items-center justify-between gap-4 border-b border-[#E2E8F0] p-4">
+    <h2 class="text-[18px]" style="font-weight:600;">Today's appointments</h2>
+    <a href="{% url 'appointments:appointment_list' %}" class="text-[13px] text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">All appointments →</a>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[820px] text-[14px]">
+      <thead>
+        <tr class="border-b border-[#E2E8F0] text-left text-[13px] uppercase text-[#64748B]" style="letter-spacing:.04em;">
+          <th class="px-4 py-3" style="font-weight:600;">Time</th>
+          <th class="px-4 py-3" style="font-weight:600;">Patient</th>
+          <th class="px-4 py-3" style="font-weight:600;">Doctor</th>
+          <th class="px-4 py-3" style="font-weight:600;">Department</th>
+          <th class="px-4 py-3" style="font-weight:600;">Status</th>
+          <th class="px-4 py-3 text-right" style="font-weight:600;">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-[#E2E8F0]">
+        {% for appt in today_appointments %}
+        <tr class="hover:bg-[#F8FAFC]">
+          <td class="px-4 py-3 tnum whitespace-nowrap">{{ appt.time_slot|time:"H:i" }}</td>
+          <td class="px-4 py-3">
+            <a href="{% url 'appointments:patient_history' appt.patient_id %}" class="text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">{{ appt.patient.display_name }}</a>
+          </td>
+          <td class="px-4 py-3">Dr. {{ appt.doctor.display_name }}</td>
+          <td class="px-4 py-3 text-[#64748B]">{{ appt.doctor.get_department_display|default:"—" }}</td>
+          <td class="px-4 py-3 whitespace-nowrap">
+            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[12px]
+              {% if appt.status == 'CONFIRMED' %}bg-[#E8F1FC] text-[#1666C4]
+              {% elif appt.status == 'PENDING' %}bg-[#FEF3C7] text-[#D97706]
+              {% elif appt.status == 'IN_PROGRESS' %}bg-[#E6F7F7] text-[#0FA3A3]
+              {% elif appt.status == 'COMPLETED' %}bg-[#DCFCE7] text-[#16A34A]
+              {% elif appt.status == 'NO_SHOW' %}bg-[#FEE2E2] text-[#DC2626]
+              {% else %}bg-[#F1F5F9] text-[#64748B]{% endif %}" style="font-weight:500;">{{ appt.get_status_display }}</span>
+          </td>
+          <td class="px-4 py-3 text-right">
+            {% if appt.status == 'PENDING' %}
+            <form method="post" action="{% url 'appointments:confirm' appt.id %}" class="inline">
+              {% csrf_token %}
+              <button type="submit" class="inline-flex h-8 items-center rounded-lg bg-[#1666C4] px-3 text-[13px] text-white hover:bg-[#1155A6]" style="font-weight:500;">Accept</button>
+            </form>
+            {% else %}
+            <span class="text-[#64748B]">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="flex flex-col items-center gap-3 py-12 text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>
+              <p class="text-[14px] text-[#64748B]">Nothing booked for today yet.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<p class="mt-8 mb-3 text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Overview</p>
+
+{% comment %}
+json_script is the Python-to-JS handoff: it writes the data into a
+type="application/json" tag the browser stores but never executes, with
+< > and & escaped, so a username containing markup cannot break out.
+main.js reads both blocks with JSON.parse.
+{% endcomment %}
+{{ per_doctor|json_script:"per-doctor-data" }}
+{{ stats|json_script:"stats-data" }}
+
+<div class="grid gap-6 lg:grid-cols-3">
+  <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm lg:col-span-2">
+    <h2 class="text-[18px]" style="font-weight:600;">Appointments per doctor</h2>
+    {# maintainAspectRatio:false makes Chart.js size to this box, so the box needs a real height #}
+    <div class="mt-4" style="height:280px;"><canvas id="doctorChart"></canvas></div>
+  </div>
+  <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+    <h2 class="text-[18px]" style="font-weight:600;">By status</h2>
+    <div class="mt-4" style="height:280px;"><canvas id="statusChart"></canvas></div>
+  </div>
+</div>
+
+<div class="mt-6 rounded-xl border border-[#E2E8F0] bg-white shadow-sm">
+  <div class="border-b border-[#E2E8F0] p-4">
+    <h2 class="text-[18px]" style="font-weight:600;">Load per doctor</h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-[14px]">
+      <thead>
+        <tr class="border-b border-[#E2E8F0] text-left text-[13px] uppercase text-[#64748B]" style="letter-spacing:.04em;">
+          <th class="px-4 py-3" style="font-weight:600;">Doctor</th>
+          <th class="px-4 py-3 text-right" style="font-weight:600;">Appointments</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-[#E2E8F0]">
+        {% for row in per_doctor %}
+        <tr class="hover:bg-[#F8FAFC]">
+          <td class="px-4 py-3">Dr. {{ row.doctor__full_name|default:row.doctor__username }}</td>
+          <td class="px-4 py-3 text-right tnum">{{ row.total }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="2" class="px-4 py-8 text-center text-[14px] text-[#64748B]">No appointments yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

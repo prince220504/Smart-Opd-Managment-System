@@ -1,25 +1,104 @@
 {% extends 'base.html' %}
 
-{% block title %}Log in - Smart OPD{% endblock %}
+{% block title %}Log in · Smart OPD{% endblock %}
 
-{% block content %}
-<h1>Log in</h1>
+{# split screen replaces the whole page body — no sidebar, no site header/footer #}
+{% block body %}
+<main class="grid min-h-screen lg:grid-cols-2">
 
-{% if error %}
-<p style="color:red;">{{error}}</p>
-{% endif %}
+  <!-- ============ BRAND PANEL (hidden below lg) ============ -->
+  <div class="relative hidden overflow-hidden bg-[#0B2545] text-white lg:flex lg:flex-col lg:justify-between lg:p-12" aria-hidden="true">
+    <div class="opd-dots pointer-events-none absolute inset-0 opacity-[0.10]"></div>
+    <div class="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-[#1666C4] blur-3xl opacity-30"></div>
+    <div class="pointer-events-none absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-[#0FA3A3] blur-3xl opacity-20"></div>
 
-<form method="post" action="{% url 'accounts:login' %}">
-    {% csrf_token %}
-    
-    <label for="id_username">Username</label>
-    <input type="text" name="username" id="id_username" required>
+    <div class="relative flex items-center gap-2.5">
+      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1666C4] text-white">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12h4l2-5 3 10 2-5h5.5"/></svg>
+      </span>
+      <span class="text-[15px]" style="font-weight:600;">Smart OPD</span>
+    </div>
 
-    <label for="id_password">Password</label>
-    <input type="password" name="password" id="id_password" required>
+    <div class="relative max-w-sm">
+      <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Outpatient care, organised</span>
+      <p class="mt-3 text-[28px] leading-snug" style="font-weight:600;">Book appointments, track prescriptions and lab reports in one calm place.</p>
+      <ul class="mt-6 space-y-3 text-[14px] text-white/80">
+        <li class="flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4 10-10"/></svg>Real-time appointment status</li>
+        <li class="flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4 10-10"/></svg>Digital prescriptions</li>
+        <li class="flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4 10-10"/></svg>Secure lab reports</li>
+      </ul>
+    </div>
 
-    <button type="submit">Log in</button>
-</form>
+    <p class="relative text-[13px] text-white/50">Your health information stays private and secure.</p>
+  </div>
 
-<p>No account? <a href="{% url 'accounts:register' %}">Register</a></p>
+  <!-- ============ FORM PANEL ============ -->
+  <div class="flex items-center justify-center px-4 py-10 sm:px-6">
+    <div class="w-full max-w-md">
+      <!-- logo only on small screens, where the brand panel is hidden -->
+      <a href="{% url 'home' %}" class="mb-6 flex items-center justify-center gap-2.5 lg:hidden">
+        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1666C4] text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12h4l2-5 3 10 2-5h5.5"/></svg>
+        </span>
+        <span class="text-[15px]" style="font-weight:600;">Smart OPD</span>
+      </a>
+
+      <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Welcome back</span>
+      <h1 class="mt-1 text-[24px]" style="font-weight:600;">Log in</h1>
+      <p class="mt-1 text-[14px] text-[#64748B]">Access your account.</p>
+
+      <div class="mt-6 rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+        {% if messages %}
+        <div id="flash" class="mb-6 space-y-3">
+          {% for message in messages %}
+          <div class="flex items-start justify-between gap-3 rounded-lg border-l-[3px] px-4 py-3
+               {% if 'error' in message.tags or 'danger' in message.tags %}border-[#DC2626] bg-[#FEF2F2]
+               {% elif 'warning' in message.tags %}border-[#D97706] bg-[#FFFBEB]
+               {% else %}border-[#1666C4] bg-[#E8F1FC]{% endif %}">
+            <p class="text-[14px] text-[#1A2333]">{{ message }}</p>
+            <button type="button" onclick="this.parentElement.remove()" class="shrink-0 text-[#64748B] hover:text-[#1A2333]" aria-label="Dismiss">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% if error %}
+        <div class="mb-4 rounded-lg border-l-[3px] border-[#DC2626] bg-[#FEF2F2] px-4 py-3">
+          <p class="text-[14px] text-[#1A2333]">{{ error }}</p>
+        </div>
+        {% endif %}
+
+        <form action="{% url 'accounts:login' %}" method="post" class="space-y-4">
+          {% csrf_token %}
+          <div>
+            <label for="username" class="block text-[13px] text-[#1A2333]" style="font-weight:500;">Username or email <span class="text-[#DC2626]">*</span></label>
+            <input id="username" name="username" type="text" required autofocus
+                   class="mt-1.5 h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px]"
+                   placeholder="username or you@example.com">
+          </div>
+          <div>
+            <div class="flex items-baseline justify-between">
+              <label for="password" class="block text-[13px] text-[#1A2333]" style="font-weight:500;">Password <span class="text-[#DC2626]">*</span></label>
+              <a href="{% url 'accounts:password_reset' %}" class="text-[13px] text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">Forgot password?</a>
+            </div>
+            <input id="password" name="password" type="password" required
+                   class="mt-1.5 h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px]"
+                   placeholder="••••••••">
+          </div>
+          <button type="submit" class="inline-flex h-10 w-full items-center justify-center rounded-lg bg-[#1666C4] px-4 text-[14px] text-white hover:bg-[#1155A6]" style="font-weight:600;">Log in</button>
+        </form>
+
+        <div class="mt-4 text-center">
+          <span class="text-[14px] text-[#64748B]">New patient? </span>
+          <a href="{% url 'accounts:register' %}" class="text-[14px] text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">Register as Patient</a>
+        </div>
+
+        <p class="mt-4 border-t border-[#E2E8F0] pt-4 text-[13px] text-[#64748B]">
+          Hospital staff: log in with the account given to you.
+        </p>
+      </div>
+    </div>
+  </div>
+</main>
 {% endblock %}

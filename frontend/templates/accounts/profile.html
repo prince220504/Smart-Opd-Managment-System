@@ -1,15 +1,96 @@
 {% extends 'base.html' %}
 
-{% block title %}Profile - Smart OPD{% endblock %}
+{% block title %}My Profile · Smart OPD{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+
+{% block page_intro %}
+<div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Your profile</span>
+    <p class="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">The details the hospital has on file for you.</p>
+  </div>
+  <a href="{% url 'accounts:profile_edit' %}" class="inline-flex h-10 items-center justify-center self-start rounded-lg bg-[#1666C4] px-4 text-[14px] text-white hover:bg-[#1155A6] sm:self-auto" style="font-weight:600;">Edit profile</a>
+</div>
+{% endblock %}
 
 {% block content %}
-<h1>Welcome {{user.username}}</h1>
-<p>Role: {{user.role}}</p>
-<p>Email: {{user.email}}</p>
-<p>Phone: {{user.phone}}</p>
+<div class="grid gap-5 lg:grid-cols-3">
 
-<form method="post" action="{% url 'accounts:logout' %}">
-    {% csrf_token %}
-    <button type="submit">Log out</button>
-</form>
+  <!-- identity card -->
+  <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+    <div class="flex items-center gap-4">
+      <span class="flex h-14 w-14 items-center justify-center rounded-full bg-[#E8F1FC] text-[20px] text-[#1666C4]" style="font-weight:600;">
+        {{ user.display_name|slice:":2"|upper }}
+      </span>
+      <div class="min-w-0">
+        <p class="truncate text-[16px]" style="font-weight:600;">{{ user.display_name }}</p>
+        <span class="mt-1 inline-flex items-center rounded-full bg-[#F1F5F9] px-2.5 py-1 text-[12px] text-[#64748B]" style="font-weight:500;">
+          {{ user.get_role_display }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- account details -->
+  <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm lg:col-span-2">
+    <h2 class="text-[18px]" style="font-weight:600;">Account details</h2>
+    <dl class="mt-4 grid gap-4 sm:grid-cols-2">
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Full name</dt>
+        <dd class="mt-1 text-[14px]">{{ user.full_name|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Username</dt>
+        <dd class="mt-1 text-[14px]">{{ user.username }}</dd>
+      </div>
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Role</dt>
+        <dd class="mt-1 text-[14px]">{{ user.get_role_display }}</dd>
+      </div>
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Email</dt>
+        <dd class="mt-1 text-[14px]">{{ user.email|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Phone</dt>
+        <dd class="mt-1 text-[14px]">{{ user.phone|default:"—" }}</dd>
+      </div>
+      {% if user.role == 'PATIENT' %}
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Age</dt>
+        <dd class="mt-1 text-[14px]">{{ user.age|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Blood group</dt>
+        <dd class="mt-1 text-[14px]">{{ user.blood_group|default:"—" }}</dd>
+      </div>
+      <div class="sm:col-span-2">
+        <dt class="text-[13px] text-[#64748B]">Address</dt>
+        <dd class="mt-1 text-[14px]">{{ user.address|default:"—" }}</dd>
+      </div>
+      {% endif %}
+      {% if user.role == 'DOCTOR' %}
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Department</dt>
+        <dd class="mt-1 text-[14px]">{{ user.get_department_display|default:"—" }}</dd>
+      </div>
+      {% endif %}
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Gender</dt>
+        <dd class="mt-1 text-[14px]">{{ user.get_gender_display|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Joined</dt>
+        <dd class="mt-1 text-[14px]">{{ user.date_joined|date:"d M Y" }}</dd>
+      </div>
+      <div>
+        <dt class="text-[13px] text-[#64748B]">Last login</dt>
+        <dd class="mt-1 text-[14px]">{{ user.last_login|date:"d M Y, H:i"|default:"—" }}</dd>
+      </div>
+    </dl>
+    <p class="mt-6 border-t border-[#E2E8F0] pt-4 text-[13px] text-[#64748B]">
+      Use <strong>Edit profile</strong> to update these details. Your username and password are not changed here.
+    </p>
+  </div>
+</div>
 {% endblock %}

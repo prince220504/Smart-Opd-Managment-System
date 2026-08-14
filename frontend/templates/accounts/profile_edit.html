@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Profile · Smart OPD{% endblock %}
+{% block page_title %}Edit Profile{% endblock %}
+
+{% block page_intro %}
+<div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Your profile</span>
+    <p class="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">
+      {% if not user.age and user.role == 'PATIENT' %}
+      Complete your details so doctors have what they need before your first visit.
+      {% else %}
+      Keep your contact and personal details up to date.
+      {% endif %}
+    </p>
+  </div>
+  <a href="{% url 'accounts:profile' %}" class="inline-flex h-10 items-center justify-center self-start rounded-lg border border-[#E2E8F0] bg-white px-4 text-[14px] hover:bg-[#F8FAFC] sm:self-auto" style="font-weight:500;">Back to profile</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid gap-6 lg:grid-cols-3">
+
+  <div class="lg:col-span-2">
+    <form method="post" class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+      {% csrf_token %}
+      <h2 class="text-[18px]" style="font-weight:600;">Your details</h2>
+
+      {% if form.errors %}
+      <div class="mt-4 rounded-lg border border-[#FECACA] bg-[#FEF2F2] p-3 text-[13px] text-[#DC2626]">
+        {% for field, errors in form.errors.items %}
+        <p>{{ field }}: {{ errors|join:", " }}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="mt-5 grid gap-4 sm:grid-cols-2">
+        <div>
+          <label for="{{ form.full_name.id_for_label }}" class="mb-1 block text-[13px]" style="font-weight:500;">Full name <span class="text-[#DC2626]">*</span></label>
+          <input id="{{ form.full_name.id_for_label }}" type="text" name="{{ form.full_name.html_name }}" value="{{ form.full_name.value|default:'' }}" required
+                 class="h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px]" placeholder="e.g. Ananya Iyer">
+          <p class="mt-1 text-[13px] text-[#64748B]">Shown across the app. Your username stays <strong>{{ user.username }}</strong>.</p>
+        </div>
+
+        <div>
+          <label for="{{ form.phone.id_for_label }}" class="mb-1 block text-[13px]" style="font-weight:500;">Phone <span class="text-[#DC2626]">*</span></label>
+          <input id="{{ form.phone.id_for_label }}" type="text" name="{{ form.phone.html_name }}" value="{{ form.phone.value|default:'' }}" required
+                 class="h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px]" placeholder="10 digits, starting 6-9">
+        </div>
+
+        <div class="sm:col-span-2">
+          <label for="{{ form.email.id_for_label }}" class="mb-1 block text-[13px]" style="font-weight:500;">Email <span class="text-[#DC2626]">*</span></label>
+          <input id="{{ form.email.id_for_label }}" type="email" name="{{ form.email.html_name }}" value="{{ form.email.value|default:'' }}" required
+                 class="h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px]" placeholder="you@example.com">
+          <p class="mt-1 text-[13px] text-[#64748B]">Booking confirmations and results are emailed here.</p>
+        </div>
+
+        {% if form.age %}
+        <div>
+          <label for="{{ form.age.id_for_label }}" class="mb-1 block text-[13px]" style="font-weight:500;">Age <span class="text-[#DC2626]">*</span></label>
+          <input id="{{ form.age.id_for_label }}" type="number" min="0" max="120" name="{{ form.age.html_name }}" value="{{ form.age.value|default:'' }}" required
+                 class="h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px]">
+        </div>
+        {% endif %}
+
+        <div>
+          <label for="{{ form.gender.id_for_label }}" class="mb-1 block text-[13px]" style="font-weight:500;">Gender</label>
+          <select id="{{ form.gender.id_for_label }}" name="{{ form.gender.html_name }}"
+                  class="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px]">
+            <option value="">Select</option>
+            {% for value, label in form.fields.gender.choices %}
+            {% if value %}<option value="{{ value }}" {% if form.gender.value == value %}selected{% endif %}>{{ label }}</option>{% endif %}
+            {% endfor %}
+          </select>
+        </div>
+
+        {% if form.blood_group %}
+        <div>
+          <label for="{{ form.blood_group.id_for_label }}" class="mb-1 block text-[13px]" style="font-weight:500;">Blood group</label>
+          <select id="{{ form.blood_group.id_for_label }}" name="{{ form.blood_group.html_name }}"
+                  class="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px]">
+            <option value="">Not known</option>
+            {% for value, label in form.fields.blood_group.choices %}
+            {% if value %}<option value="{{ value }}" {% if form.blood_group.value == value %}selected{% endif %}>{{ label }}</option>{% endif %}
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+
+        {% if form.department %}
+        <div>
+          <label for="{{ form.department.id_for_label }}" class="mb-1 block text-[13px]" style="font-weight:500;">Department</label>
+          <select id="{{ form.department.id_for_label }}" name="{{ form.department.html_name }}"
+                  class="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px]">
+            <option value="">Not set</option>
+            {% for value, label in form.fields.department.choices %}
+            {% if value %}<option value="{{ value }}" {% if form.department.value == value %}selected{% endif %}>{{ label }}</option>{% endif %}
+            {% endfor %}
+          </select>
+          <p class="mt-1 text-[13px] text-[#64748B]">Patients see this when choosing a doctor.</p>
+        </div>
+        {% endif %}
+
+        {% if form.address %}
+        <div class="sm:col-span-2">
+          <label for="{{ form.address.id_for_label }}" class="mb-1 block text-[13px]" style="font-weight:500;">Address</label>
+          <textarea id="{{ form.address.id_for_label }}" name="{{ form.address.html_name }}" rows="3"
+                    class="w-full rounded-lg border border-[#E2E8F0] px-3 py-2 text-[14px]"
+                    placeholder="House, street, city">{{ form.address.value|default:"" }}</textarea>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="mt-6 flex flex-col gap-3 border-t border-[#E2E8F0] pt-6 sm:flex-row sm:justify-end">
+        <a href="{% url 'accounts:profile' %}" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white px-4 text-[14px] hover:bg-[#F8FAFC]" style="font-weight:500;">Cancel</a>
+        <button type="submit" class="inline-flex h-10 items-center justify-center rounded-lg bg-[#1666C4] px-4 text-[14px] text-white hover:bg-[#1155A6]" style="font-weight:600;">Save changes</button>
+      </div>
+    </form>
+  </div>
+
+  <aside class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+    <h2 class="text-[16px]" style="font-weight:600;">Why we ask</h2>
+    <dl class="mt-4 space-y-4 text-[13px]">
+      <div>
+        <dt class="text-[#1A2333]" style="font-weight:600;">Full name</dt>
+        <dd class="mt-0.5 text-[#64748B]">Appears on prescriptions, lab reports and every list in the app.</dd>
+      </div>
+      {% if form.age %}
+      <div>
+        <dt class="text-[#1A2333]" style="font-weight:600;">Age and blood group</dt>
+        <dd class="mt-0.5 text-[#64748B]">Doctors use these when prescribing. Blood group is optional but useful before any procedure.</dd>
+      </div>
+      {% endif %}
+      <div>
+        <dt class="text-[#1A2333]" style="font-weight:600;">Email and phone</dt>
+        <dd class="mt-0.5 text-[#64748B]">Booking confirmations, results and the 24-hour reminder go here.</dd>
+      </div>
+    </dl>
+    <p class="mt-6 border-t border-[#E2E8F0] pt-4 text-[13px] text-[#64748B]">Your username and password are not changed here.</p>
+  </aside>
+
+</div>
+{% endblock %}

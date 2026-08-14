@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}All Appointments · Smart OPD{% endblock %}
+{% block page_title %}Appointments{% endblock %}
+
+{% block page_intro %}
+<div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Appointments</span>
+    <p class="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">Every booking in the clinic, newest first.</p>
+  </div>
+  <a href="{% url 'appointments:reception_book' %}" class="inline-flex h-10 items-center justify-center self-start rounded-lg bg-[#1666C4] px-4 text-[14px] text-white hover:bg-[#1155A6] sm:self-auto" style="font-weight:600;">Book appointment</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="rounded-xl border border-[#E2E8F0] bg-white shadow-sm">
+
+  <div class="flex items-center justify-between gap-4 border-b border-[#E2E8F0] p-4">
+    <h2 class="text-[18px]" style="font-weight:600;">All appointments</h2>
+    <p class="text-[13px] text-[#64748B]"><span class="tnum">{{ appointments|length }}</span> shown</p>
+  </div>
+
+  <form method="get" class="flex flex-col gap-3 border-b border-[#E2E8F0] p-4 sm:flex-row sm:items-end">
+    <div class="sm:w-44">
+      <label for="status" class="block text-[13px] text-[#1A2333]" style="font-weight:500;">Status</label>
+      <select id="status" name="status" class="mt-1.5 h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px]">
+        <option value="">All statuses</option>
+        {% for value, label in statuses %}
+        <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="sm:w-44">
+      <label for="doctor" class="block text-[13px] text-[#1A2333]" style="font-weight:500;">Doctor</label>
+      <select id="doctor" name="doctor" class="mt-1.5 h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px]">
+        <option value="">All doctors</option>
+        {% for doc in doctors %}
+        <option value="{{ doc.id }}" {% if request.GET.doctor == doc.id|stringformat:"s" %}selected{% endif %}>Dr. {{ doc.display_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="sm:w-44">
+      <label for="date" class="block text-[13px] text-[#1A2333]" style="font-weight:500;">Date</label>
+      <input id="date" type="date" name="date" value="{{ request.GET.date }}"
+             class="mt-1.5 h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px]">
+    </div>
+    <button type="submit" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white px-4 text-[14px] text-[#1A2333] hover:bg-[#F8FAFC]" style="font-weight:500;">Filter</button>
+    {% if request.GET.status or request.GET.doctor or request.GET.date %}
+    <a href="{% url 'appointments:appointment_list' %}" class="inline-flex h-10 items-center justify-center rounded-lg px-4 text-[14px] text-[#64748B] hover:bg-[#F8FAFC]" style="font-weight:500;">Clear</a>
+    {% endif %}
+    {# the export inherits whatever is filtered right now #}
+    <a href="{% url 'appointments:export_csv' %}?{{ request.GET.urlencode }}" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 text-[14px] hover:bg-[#F8FAFC]" style="font-weight:500;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 11l4.5 4.5 4.5-4.5M5 19.5h14"/></svg>
+      CSV
+    </a>
+  </form>
+
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[980px] text-[14px]">
+      <thead>
+        <tr class="border-b border-[#E2E8F0] text-left text-[13px] uppercase text-[#64748B]" style="letter-spacing:.04em;">
+          <th class="px-4 py-3" style="font-weight:600;">Patient</th>
+          <th class="px-4 py-3" style="font-weight:600;">Doctor</th>
+          <th class="px-4 py-3" style="font-weight:600;">Department</th>
+          <th class="px-4 py-3" style="font-weight:600;">Date</th>
+          <th class="px-4 py-3" style="font-weight:600;">Time</th>
+          <th class="px-4 py-3" style="font-weight:600;">Status</th>
+          <th class="px-4 py-3 text-right" style="font-weight:600;">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-[#E2E8F0]">
+        {% for appt in appointments %}
+        <tr class="align-top hover:bg-[#F8FAFC]">
+          <td class="px-4 py-3">
+            <a href="{% url 'appointments:patient_history' appt.patient_id %}" class="text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">{{ appt.patient.display_name }}</a>
+          </td>
+          <td class="px-4 py-3">Dr. {{ appt.doctor.display_name }}</td>
+          <td class="px-4 py-3 text-[#64748B]">{{ appt.doctor.get_department_display|default:"—" }}</td>
+          <td class="px-4 py-3 tnum whitespace-nowrap">{{ appt.appointment_date|date:"d M Y" }}</td>
+          <td class="px-4 py-3 tnum whitespace-nowrap">{{ appt.time_slot|time:"H:i" }}</td>
+          <td class="px-4 py-3">
+            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[12px]
+              {% if appt.status == 'CONFIRMED' %}bg-[#E8F1FC] text-[#1666C4]
+              {% elif appt.status == 'PENDING' %}bg-[#FEF3C7] text-[#D97706]
+              {% elif appt.status == 'IN_PROGRESS' %}bg-[#E6F7F7] text-[#0FA3A3]
+              {% elif appt.status == 'COMPLETED' %}bg-[#DCFCE7] text-[#16A34A]
+              {% elif appt.status == 'NO_SHOW' %}bg-[#FEE2E2] text-[#DC2626]
+              {% else %}bg-[#F1F5F9] text-[#64748B]{% endif %}" style="font-weight:500;">{{ appt.get_status_display }}</span>
+            {% if appt.status == 'CANCELLED' and appt.cancel_reason %}
+            <p class="mt-1 text-[13px] text-[#64748B]">{{ appt.cancel_reason }}</p>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-right">
+            {% if appt.status == 'PENDING' %}
+            <div class="flex flex-col items-end gap-2">
+              <form method="post" action="{% url 'appointments:confirm' appt.id %}">
+                {% csrf_token %}
+                <button type="submit" class="inline-flex h-8 items-center rounded-lg bg-[#1666C4] px-3 text-[13px] text-white hover:bg-[#1155A6]" style="font-weight:500;">Accept</button>
+              </form>
+              <form method="post" action="{% url 'appointments:cancel' appt.id %}" data-cancel>
+                {% csrf_token %}
+                <input type="hidden" name="cancel_reason">
+                <button type="submit" class="inline-flex h-8 items-center rounded-lg border border-[#E2E8F0] px-3 text-[13px] text-[#DC2626] hover:bg-[#FEF2F2]" style="font-weight:500;">Cancel</button>
+              </form>
+            </div>
+
+            {% elif appt.status == 'CONFIRMED' %}
+            <div class="flex flex-col items-end gap-2">
+              <div class="flex justify-end gap-2">
+                <form method="post" action="{% url 'appointments:start' appt.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="inline-flex h-8 items-center rounded-lg bg-[#1666C4] px-3 text-[13px] text-white hover:bg-[#1155A6]" style="font-weight:500;">Start</button>
+                </form>
+                <form method="post" action="{% url 'appointments:no_show' appt.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="inline-flex h-8 items-center rounded-lg border border-[#E2E8F0] px-3 text-[13px] hover:bg-[#F8FAFC]" style="font-weight:500;">No-show</button>
+                </form>
+              </div>
+              <form method="post" action="{% url 'appointments:cancel' appt.id %}" data-cancel>
+                {% csrf_token %}
+                <input type="hidden" name="cancel_reason">
+                <button type="submit" class="inline-flex h-8 items-center rounded-lg border border-[#E2E8F0] px-3 text-[13px] text-[#DC2626] hover:bg-[#FEF2F2]" style="font-weight:500;">Cancel</button>
+              </form>
+            </div>
+
+            {% elif appt.status == 'IN_PROGRESS' %}
+            <div class="flex flex-col items-end gap-2">
+              <form method="post" action="{% url 'appointments:complete' appt.id %}">
+                {% csrf_token %}
+                <button type="submit" class="inline-flex h-8 items-center rounded-lg bg-[#1666C4] px-3 text-[13px] text-white hover:bg-[#1155A6]" style="font-weight:500;">Complete</button>
+              </form>
+              <form method="post" action="{% url 'appointments:cancel' appt.id %}" data-cancel>
+                {% csrf_token %}
+                <input type="hidden" name="cancel_reason">
+                <button type="submit" class="inline-flex h-8 items-center rounded-lg border border-[#E2E8F0] px-3 text-[13px] text-[#DC2626] hover:bg-[#FEF2F2]" style="font-weight:500;">Cancel</button>
+              </form>
+            </div>
+
+            {% else %}
+            <span class="text-[#64748B]">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7">
+            <div class="flex flex-col items-center gap-3 py-12 text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>
+              {% if request.GET.status or request.GET.doctor or request.GET.date %}
+              <p class="text-[14px] text-[#64748B]">No appointments match that filter.</p>
+              {% else %}
+              <p class="text-[14px] text-[#64748B]">No appointments have been booked yet.</p>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% block title %}Today's Appointments · Smart OPD{% endblock %}
+{% block page_title %}Today{% endblock %}
+
+{% block page_intro %}
+<div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Today</span>
+    <p class="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">Your clinic day, Dr. {{ user.display_name }}.</p>
+  </div>
+  <span class="inline-flex items-center gap-2 self-start rounded-full border border-[#E2E8F0] bg-white px-3 py-1.5 text-[13px] text-[#64748B] sm:self-auto" style="font-weight:500;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1666C4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>
+    <span class="tnum">{{ today|date:"d M Y" }}</span>
+  </span>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- three counters, one aggregate query in the view -->
+<div class="grid gap-5 sm:grid-cols-3">
+  <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E8F1FC] text-[#1666C4]">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>
+    </span>
+    <p class="mt-4 text-[30px] tnum" style="font-weight:600;">{{ stats.total }}</p>
+    <p class="mt-1 text-[13px] text-[#64748B]">Today's appointments</p>
+  </div>
+  <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E8F1FC] text-[#1666C4]">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg>
+    </span>
+    <p class="mt-4 text-[30px] tnum" style="font-weight:600;">{{ stats.completed }}</p>
+    <p class="mt-1 text-[13px] text-[#64748B]">Completed today</p>
+  </div>
+  <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E8F1FC] text-[#1666C4]">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+    </span>
+    <p class="mt-4 text-[30px] tnum" style="font-weight:600;">{{ stats.pending }}</p>
+    <p class="mt-1 text-[13px] text-[#64748B]">Still to see</p>
+  </div>
+</div>
+
+<p class="mt-8 mb-3 text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Schedule</p>
+
+<div class="rounded-xl border border-[#E2E8F0] bg-white shadow-sm">
+  <div class="flex items-center justify-between gap-4 border-b border-[#E2E8F0] p-4">
+    <h2 class="text-[18px]" style="font-weight:600;">Today's schedule</h2>
+    <span class="text-[13px] text-[#64748B] tnum">{{ today|date:"d M Y" }}</span>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[980px] text-[14px]">
+      <thead>
+        <tr class="border-b border-[#E2E8F0] text-left text-[13px] uppercase text-[#64748B]" style="letter-spacing:.04em;">
+          <th class="px-4 py-3" style="font-weight:600;">Time</th>
+          <th class="px-4 py-3" style="font-weight:600;">Patient</th>
+          <th class="px-4 py-3" style="font-weight:600;">Reason</th>
+          <th class="px-4 py-3" style="font-weight:600;">Status</th>
+          <th class="px-4 py-3" style="font-weight:600;">Consultation</th>
+          <th class="px-4 py-3 text-right" style="font-weight:600;">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-[#E2E8F0]">
+        {% for appt in appointments %}
+        <tr class="align-top hover:bg-[#F8FAFC]">
+          <td class="px-4 py-3 tnum whitespace-nowrap">{{ appt.time_slot|time:"H:i" }}</td>
+
+          <td class="px-4 py-3">
+            <a href="{% url 'appointments:patient_history' appt.patient_id %}" class="text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">{{ appt.patient.display_name }}</a>
+          </td>
+
+          <td class="px-4 py-3 text-[#64748B]">{{ appt.notes|default:"—" }}</td>
+
+          <td class="px-4 py-3 whitespace-nowrap">
+            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[12px]
+              {% if appt.status == 'CONFIRMED' %}bg-[#E8F1FC] text-[#1666C4]
+              {% elif appt.status == 'PENDING' %}bg-[#FEF3C7] text-[#D97706]
+              {% elif appt.status == 'IN_PROGRESS' %}bg-[#E6F7F7] text-[#0FA3A3]
+              {% elif appt.status == 'COMPLETED' %}bg-[#DCFCE7] text-[#16A34A]
+              {% elif appt.status == 'NO_SHOW' %}bg-[#FEE2E2] text-[#DC2626]
+              {% else %}bg-[#F1F5F9] text-[#64748B]{% endif %}" style="font-weight:500;">{{ appt.get_status_display }}</span>
+            {% if appt.status == 'CANCELLED' and appt.cancel_reason %}
+            <p class="mt-1 text-[13px] text-[#64748B]">{{ appt.cancel_reason }}</p>
+            {% endif %}
+          </td>
+
+          {# one door to the consult: prescription + lab requests live on that page #}
+          <td class="px-4 py-3">
+            {% if appt.status == 'CONFIRMED' or appt.status == 'IN_PROGRESS' or appt.status == 'COMPLETED' %}
+            <a href="{% url 'prescriptions:write' appt.id %}" class="inline-flex h-8 items-center rounded-lg border border-[#E2E8F0] px-3 text-[13px] hover:bg-[#F8FAFC]" style="font-weight:500;">
+              {% if appt.prescription %}View / Edit{% else %}Open{% endif %}
+            </a>
+            {% else %}
+            <span class="text-[#64748B]">—</span>
+            {% endif %}
+            {% for test in appt.lab_tests.all %}
+            <p class="mt-1 text-[13px] text-[#64748B]">
+              {% if test.status == 'DONE' %}<a href="{% url 'lab:test_detail' test.id %}" class="text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">{{ test.test_name }}</a>{% else %}{{ test.test_name }}{% endif %}
+              · {{ test.get_status_display }}
+            </p>
+            {% endfor %}
+          </td>
+
+          <td class="px-4 py-3 text-right">
+            {% if appt.status == 'PENDING' %}
+            <div class="flex flex-col items-end gap-2">
+              <form method="post" action="{% url 'appointments:confirm' appt.id %}">
+                {% csrf_token %}
+                <button type="submit" class="inline-flex h-8 items-center rounded-lg bg-[#1666C4] px-3 text-[13px] text-white hover:bg-[#1155A6]" style="font-weight:500;">Accept</button>
+              </form>
+              <form method="post" action="{% url 'appointments:cancel' appt.id %}" data-cancel class="flex items-center gap-2">
+                {% csrf_token %}
+                <input type="hidden" name="cancel_reason">
+                <button type="submit" class="inline-flex h-8 items-center rounded-lg border border-[#E2E8F0] px-3 text-[13px] text-[#DC2626] hover:bg-[#FEF2F2]" style="font-weight:500;">Cancel</button>
+              </form>
+            </div>
+
+            {% elif appt.status == 'CONFIRMED' %}
+            <div class="flex flex-col items-end gap-2">
+              <div class="flex gap-2">
+                <form method="post" action="{% url 'appointments:start' appt.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="inline-flex h-8 items-center rounded-lg bg-[#1666C4] px-3 text-[13px] text-white hover:bg-[#1155A6]" style="font-weight:500;">Start</button>
+                </form>
+                <form method="post" action="{% url 'appointments:no_show' appt.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="inline-flex h-8 items-center rounded-lg border border-[#E2E8F0] px-3 text-[13px] hover:bg-[#F8FAFC]" style="font-weight:500;">No-show</button>
+                </form>
+              </div>
+              <form method="post" action="{% url 'appointments:cancel' appt.id %}" data-cancel class="flex items-center gap-2">
+                {% csrf_token %}
+                <input type="hidden" name="cancel_reason">
+                <button type="submit" class="inline-flex h-8 items-center rounded-lg border border-[#E2E8F0] px-3 text-[13px] text-[#DC2626] hover:bg-[#FEF2F2]" style="font-weight:500;">Cancel</button>
+              </form>
+            </div>
+
+            {% elif appt.status == 'IN_PROGRESS' %}
+            <div class="flex flex-col items-end gap-2">
+              <form method="post" action="{% url 'appointments:complete' appt.id %}">
+                {% csrf_token %}
+                <button type="submit" class="inline-flex h-8 items-center rounded-lg bg-[#1666C4] px-3 text-[13px] text-white hover:bg-[#1155A6]" style="font-weight:500;">Complete</button>
+              </form>
+              <form method="post" action="{% url 'appointments:cancel' appt.id %}" data-cancel>
+                {% csrf_token %}
+                <input type="hidden" name="cancel_reason">
+                <button type="submit" class="inline-flex h-8 items-center rounded-lg border border-[#E2E8F0] px-3 text-[13px] text-[#DC2626] hover:bg-[#FEF2F2]" style="font-weight:500;">Cancel</button>
+              </form>
+            </div>
+
+            {% else %}
+            <span class="text-[#64748B]">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="flex flex-col items-center gap-3 py-12 text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>
+              <p class="text-[14px] text-[#64748B]">No appointments scheduled for today.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<p class="mt-8 mb-3 text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Overview</p>
+
+<div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-[18px]" style="font-weight:600;">Appointments this week</h2>
+    <div class="flex items-center gap-4 text-[13px] text-[#64748B]">
+      <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-[#1666C4]"></span>Completed</span>
+      <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-[#BFD7F2]"></span>Scheduled</span>
+    </div>
+  </div>
+
+  {# bar heights come from widthratio: value / week_scale * 190px, so the tallest bar always fills the plot #}
+  <div class="mt-6 flex gap-3">
+    <div class="relative w-8 shrink-0 text-right text-[12px] text-[#94A3B8] tnum" style="height:190px;">
+      <span class="absolute right-0 -translate-y-1/2" style="top:0;">{{ week_scale }}</span>
+      <span class="absolute right-0 -translate-y-1/2" style="top:33.33%;">{% widthratio week_scale 3 2 %}</span>
+      <span class="absolute right-0 -translate-y-1/2" style="top:66.66%;">{% widthratio week_scale 3 1 %}</span>
+      <span class="absolute right-0 -translate-y-1/2" style="top:100%;">0</span>
+    </div>
+
+    <div class="min-w-0 flex-1">
+      <div class="relative" style="height:190px;">
+        <div class="absolute inset-x-0 border-t border-[#EEF2F6]" style="top:0;"></div>
+        <div class="absolute inset-x-0 border-t border-[#EEF2F6]" style="top:33.33%;"></div>
+        <div class="absolute inset-x-0 border-t border-[#EEF2F6]" style="top:66.66%;"></div>
+        <div class="absolute inset-x-0 bottom-0 border-t border-[#E2E8F0]"></div>
+
+        <div class="absolute inset-0 flex items-end justify-between gap-2">
+          {% for d in week %}
+          <div class="flex flex-1 flex-col items-center justify-end" title="{{ d.label }}: {{ d.done }} completed, {{ d.rest }} scheduled">
+            {% if d.total %}
+            <span class="mb-1 text-[13px] tnum" style="font-weight:600;">{{ d.total }}</span>
+            {% endif %}
+            <div class="w-full max-w-[46px] rounded-t-[3px] bg-[#BFD7F2]" style="height:{% widthratio d.rest week_scale 190 %}px;"></div>
+            <div class="w-full max-w-[46px] bg-[#1666C4]" style="height:{% widthratio d.done week_scale 190 %}px;"></div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="mt-2 flex justify-between gap-2 text-[13px] text-[#64748B]">
+        {% for d in week %}
+        <span class="flex-1 text-center">{{ d.label }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <p class="mt-4 text-[13px] text-[#64748B]">Total this week: <span class="tnum text-[#1A2333]" style="font-weight:600;">{{ week_total }}</span> appointments &middot; <span class="tnum text-[#1A2333]" style="font-weight:600;">{{ week_done }}</span> completed</p>
+</div>
+{% endblock %}

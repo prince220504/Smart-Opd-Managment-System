@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard · Smart OPD{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+{% comment %}
+Welcome bar. The second sentence is read off next_appointment, so it tells the
+truth instead of always claiming a visit is coming. Same id as the messages
+bar, so it inherits the #flash slide-down in main.css.
+{% endcomment %}
+<div id="flash" class="mb-6 flex items-start justify-between gap-3 rounded-lg border-l-[3px] border-[#1666C4] bg-[#E8F1FC] px-4 py-3">
+  <p class="text-[14px] text-[#1A2333]">
+    Welcome back, {{ user.display_name }}.
+    {% if next_appointment %}
+      Your next visit is with Dr. {{ next_appointment.doctor.display_name }} on
+      <span class="tnum">{{ next_appointment.appointment_date|date:"d M Y" }}</span>
+      at <span class="tnum">{{ next_appointment.time_slot|time:"H:i" }}</span>
+      ({{ next_appointment.get_status_display|lower }}).
+    {% else %}
+      You have no upcoming appointments.
+    {% endif %}
+  </p>
+  <button type="button" data-dismiss class="shrink-0 text-[#64748B] hover:text-[#1A2333]" aria-label="Dismiss">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
+</div>
+
+<!-- Summary cards -->
+<div class="grid gap-5 sm:grid-cols-3">
+  <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+    <p class="text-[13px] text-[#64748B]">Upcoming appointments</p>
+    <p class="mt-2 text-[28px] tnum" style="font-weight:600;">{{ upcoming_count }}</p>
+  </div>
+  <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+    <p class="text-[13px] text-[#64748B]">Pending reports</p>
+    <p class="mt-2 text-[28px] tnum" style="font-weight:600;">{{ pending_reports }}</p>
+  </div>
+  <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+    <p class="text-[13px] text-[#64748B]">Prescriptions</p>
+    <p class="mt-2 text-[28px] tnum" style="font-weight:600;">{{ prescription_count }}</p>
+  </div>
+</div>
+
+<!-- Next appointment -->
+<div class="mt-6 rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+  <div class="flex items-center justify-between gap-3">
+    <h2 class="text-[18px]" style="font-weight:600;">Next appointment</h2>
+    {% if next_appointment %}
+      <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[12px]
+        {% if next_appointment.status == 'CONFIRMED' %}bg-[#E8F1FC] text-[#1666C4]
+        {% elif next_appointment.status == 'PENDING' %}bg-[#FEF3C7] text-[#D97706]
+        {% elif next_appointment.status == 'IN_PROGRESS' %}bg-[#E6F7F7] text-[#0FA3A3]
+        {% elif next_appointment.status == 'COMPLETED' %}bg-[#DCFCE7] text-[#16A34A]
+        {% elif next_appointment.status == 'NO_SHOW' %}bg-[#FEE2E2] text-[#DC2626]
+        {% else %}bg-[#F1F5F9] text-[#64748B]{% endif %}" style="font-weight:500;">{{ next_appointment.get_status_display }}</span>
+    {% endif %}
+  </div>
+
+  {% if next_appointment %}
+  <div class="mt-4 grid gap-4 sm:grid-cols-2">
+    <div>
+      <p class="text-[13px] text-[#64748B]">Doctor</p>
+      <p class="text-[14px]" style="font-weight:500;">Dr. {{ next_appointment.doctor.display_name }}</p>
+    </div>
+    <div>
+      <p class="text-[13px] text-[#64748B]">Department</p>
+      <p class="text-[14px]" style="font-weight:500;">{{ next_appointment.doctor.get_department_display|default:"—" }}</p>
+    </div>
+    <div>
+      <p class="text-[13px] text-[#64748B]">Date</p>
+      <p class="text-[14px] tnum" style="font-weight:500;">{{ next_appointment.appointment_date|date:"d M Y" }}</p>
+    </div>
+    <div>
+      <p class="text-[13px] text-[#64748B]">Time</p>
+      <p class="text-[14px] tnum" style="font-weight:500;">{{ next_appointment.time_slot|time:"H:i" }}</p>
+    </div>
+  </div>
+
+  {% if next_appointment.notes %}
+  <div class="mt-4">
+    <p class="text-[13px] text-[#64748B]">Notes</p>
+    <p class="text-[14px]">{{ next_appointment.notes }}</p>
+  </div>
+  {% endif %}
+
+  <div class="mt-5 flex flex-wrap gap-3">
+    <a href="{% url 'appointments:reschedule' next_appointment.id %}" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white px-4 text-[14px] text-[#1A2333] hover:bg-[#F8FAFC]" style="font-weight:500;">Reschedule</a>
+    <form method="post" action="{% url 'appointments:cancel' next_appointment.id %}" data-cancel>
+      {% csrf_token %}
+      <input type="hidden" name="cancel_reason">
+      <button type="submit" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white px-4 text-[14px] text-[#DC2626] hover:bg-[#FEF2F2]" style="font-weight:500;">Cancel</button>
+    </form>
+  </div>
+
+  {% else %}
+  <div class="flex flex-col items-center gap-3 py-10 text-center">
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>
+    <p class="text-[14px] text-[#64748B]">You have no upcoming appointments.</p>
+    <a href="{% url 'appointments:doctor_list' %}" class="inline-flex h-10 items-center justify-center rounded-lg bg-[#1666C4] px-4 text-[14px] text-white hover:bg-[#1155A6]" style="font-weight:600;">Book appointment</a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Recent activity -->
+<div class="mt-6 rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+  <h2 class="text-[18px]" style="font-weight:600;">Recent activity</h2>
+  <ul class="mt-4 divide-y divide-[#E2E8F0]">
+    {% for item in recent %}
+    <li class="flex items-center justify-between gap-4 py-3">
+      <span class="text-[14px]">{{ item.message }}</span>
+      <span class="shrink-0 text-[13px] text-[#64748B] tnum">{{ item.created_at|date:"d M Y" }}</span>
+    </li>
+    {% empty %}
+    <li class="py-6 text-center text-[14px] text-[#64748B]">Nothing has happened yet.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

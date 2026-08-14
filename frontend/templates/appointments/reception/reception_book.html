@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}Book for a Patient · Smart OPD{% endblock %}
+{% block page_title %}Book Appointment{% endblock %}
+
+{% block page_intro %}
+<div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Book on behalf</span>
+    <p class="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">Book a visit for a patient standing at the counter.</p>
+  </div>
+  <a href="{% url 'accounts:register_patient' %}" class="inline-flex h-10 items-center justify-center self-start rounded-lg border border-[#E2E8F0] bg-white px-4 text-[14px] hover:bg-[#F8FAFC] sm:self-auto" style="font-weight:500;">New patient? Register first</a>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="mb-6 space-y-2">
+  {% for message in messages %}
+  <p class="rounded-lg border-l-[3px] border-[#16A34A] bg-[#DCFCE7] px-4 py-3 text-[14px] text-[#1A2333]">{{ message }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="grid gap-6 lg:grid-cols-3">
+  <div class="lg:col-span-2">
+    <form method="post" class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+      {% csrf_token %}
+      <h2 class="text-[18px]" style="font-weight:600;">Appointment details</h2>
+
+      {% if form.errors %}
+      <div class="mt-4 rounded-lg border border-[#FECACA] bg-[#FEF2F2] p-3 text-[13px] text-[#DC2626]">
+        {% for field, errors in form.errors.items %}
+        <p>{{ field }}: {{ errors|join:", " }}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="mt-5 grid gap-4 sm:grid-cols-2">
+        <div>
+          <label for="{{ form.patient.id_for_label }}" class="mb-1 block text-[13px]" style="font-weight:500;">Patient <span class="text-[#DC2626]">*</span></label>
+          <select id="{{ form.patient.id_for_label }}" name="{{ form.patient.html_name }}" required
+                  class="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px]">
+            <option value="">Select a patient</option>
+            {% for choice in form.fields.patient.queryset %}
+            <option value="{{ choice.id }}" {% if form.patient.value|stringformat:"s" == choice.id|stringformat:"s" %}selected{% endif %}>{{ choice.display_name }}{% if choice.phone %} · {{ choice.phone }}{% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label for="{{ form.doctor.id_for_label }}" class="mb-1 block text-[13px]" style="font-weight:500;">Doctor <span class="text-[#DC2626]">*</span></label>
+          <select id="{{ form.doctor.id_for_label }}" name="{{ form.doctor.html_name }}" required
+                  class="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px]">
+            <option value="">Select a doctor</option>
+            {% for choice in form.fields.doctor.queryset %}
+            <option value="{{ choice.id }}" {% if form.doctor.value|stringformat:"s" == choice.id|stringformat:"s" %}selected{% endif %}>Dr. {{ choice.display_name }}{% if choice.department %} · {{ choice.get_department_display }}{% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label for="{{ form.appointment_date.id_for_label }}" class="mb-1 block text-[13px]" style="font-weight:500;">Date <span class="text-[#DC2626]">*</span></label>
+          <input id="{{ form.appointment_date.id_for_label }}" type="date" name="{{ form.appointment_date.html_name }}" value="{{ form.appointment_date.value|date:'Y-m-d'|default:'' }}" required
+                 class="h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px]">
+        </div>
+
+        <div>
+          <label for="{{ form.time_slot.id_for_label }}" class="mb-1 block text-[13px]" style="font-weight:500;">Time <span class="text-[#DC2626]">*</span></label>
+          <input id="{{ form.time_slot.id_for_label }}" type="time" name="{{ form.time_slot.html_name }}" value="{{ form.time_slot.value|time:'H:i'|default:'' }}" required
+                 class="h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px]">
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <label for="{{ form.notes.id_for_label }}" class="mb-1 block text-[13px]" style="font-weight:500;">Reason for visit</label>
+        <textarea id="{{ form.notes.id_for_label }}" name="{{ form.notes.html_name }}" rows="3"
+                  class="w-full rounded-lg border border-[#E2E8F0] px-3 py-2 text-[14px]"
+                  placeholder="What the patient is coming in for">{{ form.notes.value|default:"" }}</textarea>
+      </div>
+
+      <div class="mt-6 flex flex-col gap-3 border-t border-[#E2E8F0] pt-6 sm:flex-row sm:justify-end">
+        <a href="{% url 'appointments:appointment_list' %}" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white px-4 text-[14px] hover:bg-[#F8FAFC]" style="font-weight:500;">Cancel</a>
+        <button type="submit" class="inline-flex h-10 items-center justify-center rounded-lg bg-[#1666C4] px-4 text-[14px] text-white hover:bg-[#1155A6]" style="font-weight:600;">Book appointment</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="lg:col-span-1">
+    <div class="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+      <h2 class="text-[18px]" style="font-weight:600;">Before you book</h2>
+      <div class="mt-5 space-y-4">
+        <div class="flex items-start gap-3">
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#E8F1FC] text-[#1666C4]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+          </span>
+          <div>
+            <p class="text-[14px]" style="font-weight:600;">The doctor's hours are checked</p>
+            <p class="mt-0.5 text-[13px] text-[#64748B]">A time outside their schedule, or inside a break, is refused when you save.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3">
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#FEF3C7] text-[#D97706]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5h.01"/><circle cx="12" cy="12" r="9"/></svg>
+          </span>
+          <div>
+            <p class="text-[14px]" style="font-weight:600;">One slot, one patient</p>
+            <p class="mt-0.5 text-[13px] text-[#64748B]">If that doctor already has someone at that time, the booking is rejected.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3">
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#DCFCE7] text-[#16A34A]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5l16 0M4 12h16M4 17.5h10"/></svg>
+          </span>
+          <div>
+            <p class="text-[14px]" style="font-weight:600;">The patient is emailed</p>
+            <p class="mt-0.5 text-[13px] text-[#64748B]">They get a confirmation email and an in-app notification straight away.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

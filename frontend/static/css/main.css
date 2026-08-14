@@ -1,0 +1,181 @@
+/* ==========================================================================
+   Smart OPD — base styles + opd-fx v2
+   Taken from the Figma export. Tailwind (CDN) does layout; this file holds
+   what utilities cannot express: fonts, focus rings, keyframes, motion.
+   ========================================================================== */
+
+html {
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+body {
+  background-color: #F5F7FA;
+  color: #1A2333;
+}
+
+/* tabular numbers — keeps figures in a column from jittering */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* keyboard focus ring, never shown on mouse click */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(22, 102, 196, 0.30);
+}
+
+/* ==========================================================================
+   opd-fx v2 — keyframes
+   ========================================================================== */
+
+@keyframes opdRise      { from { opacity: 0; transform: translateY(16px);  } to { opacity: 1; transform: none; } }
+@keyframes opdSlideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+@keyframes opdRipple    { to   { transform: scale(2.4); opacity: 0; } }
+@keyframes opdFloat     { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes opdFloatSlow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px);  } }
+
+/* dotted backdrop used behind the hero and the closing bar */
+.opd-dots {
+  background-image: radial-gradient(#1666C4 1.1px, transparent 1.1px);
+  background-size: 22px 22px;
+}
+
+/* reading-progress bar across the top of the window */
+#opd-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 0;
+  background: linear-gradient(90deg, #1666C4, #0FA3A3);
+  z-index: 60;
+  transition: width .1s linear;
+}
+
+/* ==========================================================================
+   opd-fx v2 — always-on transitions
+   (hover/press feedback, not "motion" in the harmful sense)
+   ========================================================================== */
+
+.opd-card {
+  position: relative;
+  transition: transform .25s cubic-bezier(.16, 1, .3, 1),
+              box-shadow .25s ease,
+              border-color .25s ease;
+}
+
+/* gradient hairline that fades in along the top edge of a card on hover */
+.opd-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  border-radius: 12px 12px 0 0;
+  background: linear-gradient(90deg, #1666C4, #0FA3A3);
+  opacity: 0;
+  transition: opacity .25s ease;
+}
+
+a, button {
+  transition: background-color .15s ease,
+              color .15s ease,
+              box-shadow .18s ease,
+              transform .1s ease;
+}
+
+tbody tr {
+  transition: background-color .15s ease, box-shadow .15s ease;
+}
+
+input, select, textarea {
+  transition: box-shadow .18s ease, border-color .18s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #1666C4;
+}
+
+header[data-opd-head] {
+  transition: box-shadow .25s ease, background-color .25s ease;
+}
+
+header[data-opd-head].opd-scrolled {
+  box-shadow: 0 8px 24px -18px rgba(11, 37, 69, .45);
+}
+
+/* flash / messages bar drops in from above */
+#flash {
+  animation: opdSlideDown .4s ease both;
+}
+
+/* teal rail that grows on the active + hovered sidebar link */
+#sidebar nav a {
+  position: relative;
+}
+
+#sidebar nav a::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) scaleY(0);
+  height: 60%;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: #0FA3A3;
+  transition: transform .2s ease;
+}
+
+/* click ripple, injected by main.js into brand-coloured buttons */
+.opd-ripple {
+  position: absolute;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, .5);
+  pointer-events: none;
+  transform: scale(0);
+  animation: opdRipple .6s ease-out forwards;
+}
+
+/* ==========================================================================
+   opd-fx v2 — animations proper
+   Skipped entirely when the OS asks for reduced motion.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: no-preference) {
+  .opd-reveal        { opacity: 0; }
+  .opd-reveal.opd-in { animation: opdRise .6s cubic-bezier(.16, 1, .3, 1) forwards; }
+
+  .opd-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 40px -20px rgba(11, 37, 69, .34);
+    border-color: #CBD8E8;
+  }
+  .opd-card:hover::before { opacity: 1; }
+
+  #sidebar nav a.opd-nav-active::before,
+  #sidebar nav a:hover::before { transform: translateY(-50%) scaleY(1); }
+
+  tbody tr:hover { box-shadow: inset 3px 0 0 #1666C4; }
+
+  /* hero illustration pieces drift gently */
+  .opd-float      { animation: opdFloat 6s ease-in-out infinite; }
+  .opd-float-slow { animation: opdFloatSlow 7s ease-in-out infinite; }
+
+  button:active, a:active { transform: translateY(1px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #opd-progress { display: none; }
+}
+
+/* ==========================================================================
+   print — strip the app chrome, print only the page body
+   (the prescription page relies on this)
+   ========================================================================== */
+
+@media print {
+  #sidebar, #overlay, #opd-progress, header, footer, .no-print { display: none !important; }
+  main { padding: 0 !important; }
+  /* anything still waiting on the scroll observer must print, not vanish */
+  .opd-reveal { opacity: 1 !important; animation: none !important; }
+}

@@ -149,6 +149,9 @@ MEDIA_ROOT = BASE_DIR / 'media'
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
 LOGIN_URL = 'accounts:login'
+AUTHENTICATION_BACKENDS = [
+    'apps.accounts.backends.EmailOrUsernameBackend',
+]
 LOGIN_REDIRECT_URL = 'accounts:profile'
 LOGOUT_REDIRECT_URL = 'accounts:login'
 
@@ -169,11 +172,9 @@ CELERY_BEAT_SCHEDULE = {
     'send-appointment-reminders': {
         'task': 'apps.notifications.tasks.send_appointment_reminders',
         'schedule': crontab(hour=8, minute=0),
-        # 'schedule': crontab(minute='*'),
     },
     'expire-stale-appointments': {
         'task': 'apps.notifications.tasks.expire_stale_appointments',
         'schedule': crontab(hour=0, minute=30),
-        # 'schedule': crontab(minute='*'),
     },
 }

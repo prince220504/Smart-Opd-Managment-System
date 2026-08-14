@@ -4,7 +4,7 @@ from .models import Appointment, DoctorAvailability
 
 User = get_user_model()
 
-def _validate_slot_free(cleaned_data):
+def _validate_slot_free(cleaned_data, instance=None):
     doctor = cleaned_data.get('doctor')
     appt_date = cleaned_data.get('appointment_date')
     slot = cleaned_data.get('time_slot')
@@ -13,9 +13,11 @@ def _validate_slot_free(cleaned_data):
             Appointment.objects
             .filter(doctor=doctor, appointment_date=appt_date, time_slot=slot)
             .exclude(status=Appointment.Status.CANCELLED)
-            .exists()
         )
-        if clash:
+        # editing an existing row: it is allowed to keep its own slot
+        if instance is not None and instance.pk :
+            clash = clash.exclude(pk=instance.pk)
+        if clash.exists():
             raise forms.ValidationError('This slot is already booked for this doctor.')
 
 def _validate_doctor_available(cleaned_data):
@@ -66,7 +68,7 @@ class BookAppointmentForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        _validate_slot_free(cleaned_data)
+        _validate_slot_free(cleaned_data, self.instance)
         _validate_doctor_available(cleaned_data)
         return cleaned_data
         
@@ -86,7 +88,7 @@ class ReceptionBookingForm(forms.ModelForm):
     
     def clean(self):
         cleaned_data = super().clean()
-        _validate_slot_free(cleaned_data)
+        _validate_slot_free(cleaned_data, self.instance)
         _validate_doctor_available(cleaned_data)
         return cleaned_data
 

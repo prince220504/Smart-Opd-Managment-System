@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}Prescriptions · Smart OPD{% endblock %}
+{% block page_title %}Prescriptions{% endblock %}
+
+{% block page_intro %}
+<div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Prescriptions</span>
+    <p class="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">View and print the prescription from each of your visits.</p>
+  </div>
+  <span class="inline-flex items-center gap-2 self-start rounded-full border border-[#E2E8F0] bg-white px-3 py-1.5 text-[13px] text-[#64748B] sm:self-auto" style="font-weight:500;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1666C4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>
+    <span class="tnum">{% now "d M Y" %}</span>
+  </span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="rounded-xl border border-[#E2E8F0] bg-white shadow-sm">
+  <div class="border-b border-[#E2E8F0] p-4">
+    <h2 class="text-[18px]" style="font-weight:600;">Your prescriptions</h2>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[680px] text-[14px]">
+      <thead>
+        <tr class="border-b border-[#E2E8F0] bg-white text-left text-[13px] uppercase text-[#64748B]" style="letter-spacing:.04em;">
+          <th class="px-4 py-3" style="font-weight:600;">Date</th>
+          <th class="px-4 py-3" style="font-weight:600;">Doctor</th>
+          <th class="px-4 py-3" style="font-weight:600;">Department</th>
+          <th class="px-4 py-3" style="font-weight:600;">Diagnosis</th>
+          <th class="px-4 py-3" style="font-weight:600;">Medicines</th>
+          <th class="px-4 py-3 text-right" style="font-weight:600;">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-[#E2E8F0]">
+        {% for prescription in prescriptions %}
+        <tr class="hover:bg-[#F8FAFC]">
+          <td class="px-4 py-3 tnum">{{ prescription.appointment.appointment_date|date:"d M Y" }}</td>
+          <td class="px-4 py-3">Dr. {{ prescription.appointment.doctor.display_name }}</td>
+          <td class="px-4 py-3 text-[#64748B]">{{ prescription.appointment.doctor.get_department_display|default:"—" }}</td>
+          <td class="px-4 py-3">{{ prescription.diagnosis|default:"—" }}</td>
+          <td class="px-4 py-3 tnum text-[#64748B]">{{ prescription.medicines|length }}</td>
+          <td class="px-4 py-3 text-right">
+            <a href="{% url 'prescriptions:view' prescription.appointment.id %}" class="text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">View</a>
+            <span class="text-[#E2E8F0]">·</span>
+            {# JS prints this in a hidden frame; the href is the no-JS fallback #}
+            <a href="{% url 'prescriptions:view' prescription.appointment.id %}?print=1"
+               data-print="{% url 'prescriptions:view' prescription.appointment.id %}"
+               class="text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">Print</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="flex flex-col items-center gap-3 py-12 text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M14.5 3.5V8h4.5M8.5 12.5h7M8.5 16h7"/></svg>
+              <p class="text-[14px] text-[#64748B]">No prescriptions yet.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+

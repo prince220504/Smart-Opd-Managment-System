@@ -1,30 +1,88 @@
 {% extends 'base.html' %}
 
-{% block title %}Notifications{% endblock %}
+{% block title %}Notifications · Smart OPD{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+
+{% block page_intro %}
+<div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <span class="text-[13px] uppercase text-[#0FA3A3]" style="font-weight:600;letter-spacing:.06em;">Notifications</span>
+    <p class="mt-1 text-[14px] text-[#64748B] sm:text-[15px]">Everything the hospital has told you, newest first.</p>
+  </div>
+  <span class="inline-flex items-center gap-2 self-start rounded-full border border-[#E2E8F0] bg-white px-3 py-1.5 text-[13px] text-[#64748B] sm:self-auto" style="font-weight:500;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1666C4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>
+    <span class="tnum">{% now "d M Y" %}</span>
+  </span>
+</div>
+{% endblock %}
 
 {% block content %}
-<h2>Notifications</h2>
+<div class="rounded-xl border border-[#E2E8F0] bg-white shadow-sm">
 
-<table>
-    <tr>
-        <th>Message</th>
-        <th>Type</th>
-        <th>When</th>
-    </tr>
+  <div class="flex items-center justify-between gap-3 border-b border-[#E2E8F0] p-4">
+    <p class="text-[13px] text-[#64748B]">
+      <span class="tnum">{{ notifications|length }}</span> notification{{ notifications|length|pluralize }}
+    </p>
+    {% if unread_count %}
+    <span class="inline-flex items-center rounded-full bg-[#E8F1FC] px-2.5 py-1 text-[12px] text-[#1666C4] tnum" style="font-weight:500;">{{ unread_count }} unread</span>
+    {% endif %}
+  </div>
+
+  <ul class="divide-y divide-[#E2E8F0]">
     {% for notification in notifications %}
-    <tr>
-        <td>
-            <a href="{% url 'notifications:open' notification.id %}">
-                {% if not notification.is_read %}<strong>{% endif %}
-                {{ notification.message }}
-                {% if not notification.is_read %}</strong>{% endif %}
-            </a>
-        </td>
-        <td>{{ notification.get_notification_type_display }}</td>
-        <td>{{ notification.created_at|date:"d M Y, g:i a" }}</td>
-    </tr>
+    <li>
+      <a href="{% url 'notifications:open' notification.id %}"
+         class="flex items-start gap-4 px-4 py-4 hover:bg-[#F8FAFC] {% if not notification.is_read %}border-l-[3px] border-[#1666C4] bg-[#F8FBFF]{% else %}border-l-[3px] border-transparent{% endif %}">
+
+        {# icon carries the type, so the label does not have to shout #}
+        <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg
+          {% if notification.notification_type == 'BOOKING' %}bg-[#E8F1FC] text-[#1666C4]
+          {% elif notification.notification_type == 'REMINDER' %}bg-[#FEF3C7] text-[#D97706]
+          {% elif notification.notification_type == 'TEST' %}bg-[#F1F5F9] text-[#64748B]
+          {% elif notification.notification_type == 'RESULT' %}bg-[#DCFCE7] text-[#16A34A]
+          {% elif notification.notification_type == 'PRESCRIPTION' %}bg-[#E8F1FC] text-[#1666C4]
+          {% else %}bg-[#F1F5F9] text-[#64748B]{% endif %}">
+          {% if notification.notification_type == 'BOOKING' %}
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>
+          {% elif notification.notification_type == 'REMINDER' %}
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+          {% elif notification.notification_type == 'TEST' %}
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3.5v6L4.5 18a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3l-5-8.5v-6M8 3.5h8"/></svg>
+          {% elif notification.notification_type == 'RESULT' %}
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M14.5 3.5V8h4.5M9 14l2 2 4-4"/></svg>
+          {% elif notification.notification_type == 'PRESCRIPTION' %}
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M14.5 3.5V8h4.5M8.5 12.5h7M8.5 16h7"/></svg>
+          {% else %}
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v5M12 16h.01"/></svg>
+          {% endif %}
+        </span>
+
+        <div class="min-w-0 flex-1">
+          <p class="text-[14px] text-[#1A2333]" {% if not notification.is_read %}style="font-weight:600;"{% endif %}>
+            {{ notification.message }}
+          </p>
+          <div class="mt-1.5 flex flex-wrap items-center gap-2">
+            <span class="inline-flex items-center rounded-full bg-[#F1F5F9] px-2.5 py-1 text-[12px] text-[#64748B]" style="font-weight:500;">
+              {{ notification.get_notification_type_display }}
+            </span>
+            <span class="text-[13px] text-[#64748B] tnum">{{ notification.created_at|date:"d M Y, g:i a" }}</span>
+          </div>
+        </div>
+
+        {% if not notification.is_read %}
+        <span class="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#1666C4]" aria-label="Unread"></span>
+        {% endif %}
+      </a>
+    </li>
+
     {% empty %}
-    <tr><td colspan="3">No notification yet.</td></tr>
+    <li>
+      <div class="flex flex-col items-center gap-3 py-12 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6M10 20a2 2 0 0 0 4 0"/></svg>
+        <p class="text-[14px] text-[#64748B]">Nothing here yet. We will tell you when something happens.</p>
+      </div>
+    </li>
     {% endfor %}
-</table>
+  </ul>
+</div>
 {% endblock %}
