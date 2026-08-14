@@ -49,6 +49,9 @@ class ProfileForm(forms.ModelForm):
         fields = ['full_name', 'email', 'phone', 'gender', 
                   'age', 'blood_group', 'address', 'department']
 
+    def clean_email(self):
+        return self.cleaned_data['email'].lower()
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for name in ('full_name', 'email', 'phone'):
