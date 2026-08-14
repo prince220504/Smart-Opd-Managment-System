@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions
 from apps.appointments.models import Appointment
 from apps.appointments.serializers import AppointmentSerializer
+from rest_framework.exceptions import MethodNotAllowed
 
 class AppointmentViewSet(viewsets.ModelViewSet):
     serializer_class = AppointmentSerializer
@@ -16,3 +17,6 @@ class AppointmentViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         serializer.save(patient=self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        raise MethodNotAllowed('DELETE', detail='Cancel the appointment instead of deleting it.')
