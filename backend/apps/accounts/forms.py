@@ -10,6 +10,9 @@ class RegisterForm(forms.ModelForm):
         model = CustomUser
         fields = ['full_name','username','email','phone']
 
+    def clean_email(self):
+        return self.cleaned_data['email'].lower()
+
     def clean_password_confirm(self):
         password = self.cleaned_data.get('password')
         confirm = self.cleaned_data.get('password_confirm')
