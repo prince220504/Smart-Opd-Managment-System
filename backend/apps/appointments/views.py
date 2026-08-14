@@ -31,7 +31,7 @@ def doctor_list(request):
     if department:
         doctors = doctors.filter(department=department)
 
-    return render(request, 'appointments/doctor_list.html', {
+    return render(request, 'appointments/patient/doctor_list.html', {
         'doctors': doctors,
         'department': department,
         'departments': User.Department.choices,
@@ -62,7 +62,7 @@ def book_appointment(request, doctor_id):
         recurrence=DoctorAvailability.Recurrence.DATE
     ).first()
 
-    return render(request, 'appointments/book.html', {'form':form, 'doctor': doctor, 'availability': availability})
+    return render(request, 'appointments/patient/book.html', {'form':form, 'doctor': doctor, 'availability': availability})
 
 @login_required
 def reschedule_appointment(request, appointment_id):
@@ -95,7 +95,7 @@ def reschedule_appointment(request, appointment_id):
         recurrence=DoctorAvailability.Recurrence.DATE
     ).first()
 
-    return render(request, 'appointments/reschedule.html',{
+    return render(request, 'appointments/patient/reschedule.html',{
         'form': form,
         'appointment': appointment,
         'doctor': appointment.doctor,
@@ -122,7 +122,7 @@ def patient_dashboard(request):
         .order_by('appointment_date', 'time_slot')
     )
 
-    return render(request, 'appointments/patient_dashboard.html', {
+    return render(request, 'appointments/patient/patient_dashboard.html', {
         'upcoming_count': upcoming.count(),
         'pending_reports': LabTest.objects.filter(
             appointment__patient=request.user
@@ -137,6 +137,8 @@ def patient_dashboard(request):
 
 @login_required
 def my_appointments(request):
+    if request.user.role != 'PATIENT':
+        raise Http404()
     appointments = (
         request.user.patient_appointments.select_related('doctor', 'prescription').all()
     )
@@ -148,7 +150,7 @@ def my_appointments(request):
     if q:
         appointments = appointments.filter(Q(doctor__full_name__icontains=q) | Q(doctor__username__icontains=q))
 
-    return render(request, 'appointments/my_appointments.html', {
+    return render(request, 'appointments/patient/my_appointments.html', {
         'appointments': appointments,
         'status': status,
         'q': q,
@@ -157,6 +159,8 @@ def my_appointments(request):
 
 @login_required 
 def doctor_dashboard(request):
+    if request.user.role != 'DOCTOR':
+        raise Http404()
     today = timezone.localdate()
     appointments = (
         request.user.doctor_appointments
@@ -196,7 +200,7 @@ def doctor_dashboard(request):
     week_scale = max(1, max(d['total'] for d in week))
  
     return render(request,
-        'appointments/doctor_dashboard.html', {
+        'appointments/doctor/doctor_dashboard.html', {
             'appointments': appointments,
             'today': today,
             'stats':stats,
@@ -209,6 +213,8 @@ def doctor_dashboard(request):
 
 @login_required 
 def doctor_records(request):
+    if request.user.role != 'DOCTOR':
+        raise Http404()
     today = timezone.localdate()
     appointments = (
         request.user.doctor_appointments
@@ -226,7 +232,7 @@ def doctor_records(request):
     if q:
         appointments = appointments.filter(Q(patient__full_name__icontains=q) | Q(patient__username__icontains=q))
 
-    return render(request, 'appointments/doctor_records.html', {
+    return render(request, 'appointments/doctor/doctor_records.html', {
         'appointments': appointments,
         'status': status,
         'date': appt_date,
@@ -236,6 +242,8 @@ def doctor_records(request):
 
 @login_required
 def doctor_upcoming(request):
+    if request.user.role != 'DOCTOR':
+        raise Http404()
     today = timezone.localdate()
     appointments = (
         request.user.doctor_appointments
@@ -243,7 +251,7 @@ def doctor_upcoming(request):
         .select_related('patient')
         .order_by('appointment_date', 'time_slot')
     )
-    return render(request, 'appointments/doctor_upcoming.html', {
+    return render(request, 'appointments/doctor/doctor_upcoming.html', {
         'appointments': appointments,
     })
 
@@ -264,7 +272,7 @@ def doctor_patients(request):
         )
         .order_by('-last_visit')
     )
-    return render(request, 'appointments/doctor_patients.html',{
+    return render(request, 'appointments/doctor/doctor_patients.html',{
         'patients': patients,
     })
 
@@ -307,7 +315,7 @@ def doctor_schedule(request):
     else:
         form = DoctorScheduleForm()
 
-    return render(request, 'appointments/doctor_schedule.html', {
+    return render(request, 'appointments/doctor/doctor_schedule.html', {
         'form': form,
         'current': current,
         'editing': editing,
@@ -332,7 +340,7 @@ def reception_book(request):
     else:
         form = ReceptionBookingForm()
     
-    return render(request, 'appointments/reception_book.html', {'form': form})
+    return render(request, 'appointments/reception/reception_book.html', {'form': form})
 
 @login_required
 @require_POST
@@ -390,7 +398,7 @@ def no_show_appointment(request, appointment_id):
     else:
         appointment = get_object_or_404(Appointment, id=appointment_id, doctor=request.user)
     
-    if appointment.status == Appointment.Status.CONFIRMED:
+    if appointment.status in (Appointment.Status.CONFIRMED, Appointment.Status.IN_PROGRESS):
         appointment.status = Appointment.Status.NO_SHOW
         appointment.save()
 
@@ -451,7 +459,7 @@ def appointment_list(request):
     appointments = _filtered_appointments(request)
     doctors = User.objects.filter(role='DOCTOR').order_by('username')
 
-    return render(request, 'appointments/appointment_list.html', {
+    return render(request, 'appointments/reception/appointment_list.html', {
         'appointments':appointments,
         'doctors': doctors,
         'statuses': Appointment.Status.choices,
@@ -488,7 +496,7 @@ def reception_dashboard(request):
         .order_by('time_slot')
     )
 
-    return render(request, 'appointments/dashboard.html', {
+    return render(request, 'appointments/reception/dashboard.html', {
         'stats': stats,
         'per_doctor': per_doctor,
         'today': today,
@@ -498,6 +506,8 @@ def reception_dashboard(request):
 @login_required
 def medical_history(request, patient_id=None):
     if patient_id is None:
+        if request.user.role != 'PATIENT':
+            raise Http404()
         patient = request.user
     elif request.user.role in ('DOCTOR', 'RECEPTION'):
         patient = get_object_or_404(User, id=patient_id, role='PATIENT')
@@ -511,7 +521,7 @@ def medical_history(request, patient_id=None):
         .prefetch_related('lab_tests__result')
     )
 
-    return render(request, 'appointments/medical_history.html', {
+    return render(request, 'appointments/patient/medical_history.html', {
         'patient': patient,
         'appointments': appointments,
     })
