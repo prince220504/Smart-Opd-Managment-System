@@ -176,7 +176,7 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # Celery
-CELERY_BROKER_URL = config('CELERY_BROKER_URL')
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULE = {
@@ -189,6 +189,8 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(hour=0, minute=30),
     },
 }
+CELERY_TASK_ALWAYS_EAGER = config('CELERY_TASK_ALWAYS_EAGER', default=False, cast=bool)
+CRON_KEY = config('CRON_KEY', default='')
 
 # Production-only security (HTTPS). Off locally so http://127.0.0.1 still works.
 if not DEBUG:
