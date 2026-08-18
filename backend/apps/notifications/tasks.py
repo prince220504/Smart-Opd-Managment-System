@@ -35,16 +35,17 @@ def send_appointment_reminders():
 
     sent = 0
     for appt in appointments:
-        notify(
-            appt.patient,
-            f'Reminder: appointment with Dr. {appt.doctor.display_name} tomorrow at {appt.time_slot}.',
-            Notification.Type.REMINDER,
-            link=reverse('appointments:my_appointments'),
-            email=True,
-        )
-        appt.reminder_sent = True
-        appt.save(update_fields=['reminder_sent'])
-        sent += 1
+        with transaction.atomic():
+            notify(
+                appt.patient,
+                f'Reminder: appointment with Dr. {appt.doctor.display_name} tomorrow at {appt.time_slot}.',
+                Notification.Type.REMINDER,
+                link=reverse('appointments:my_appointments'),
+                email=True,
+            )
+            appt.reminder_sent = True
+            appt.save(update_fields=['reminder_sent'])
+            sent += 1
     return sent
 
 @shared_task
