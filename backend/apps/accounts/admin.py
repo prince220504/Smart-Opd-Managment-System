@@ -12,4 +12,4 @@ class CustomUserAdmin(UserAdmin):
 
     fieldsets = UserAdmin.fieldsets + (('Hospital info', {'fields': hospital_fields}),)
 
-    add_fieldsets = UserAdmin.add_fieldsets + (('Hospital info', {'fields': hospital_fields}),)
+    add_fieldsets = UserAdmin.add_fieldsets + (('Hospital info', {'fields': ('email',) + hospital_fields}),)

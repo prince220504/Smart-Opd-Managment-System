@@ -1,7 +1,6 @@
 from .models import Notification
 from .tasks import send_notification_email
 import logging
-from kombu.exceptions import OperationalError
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +18,6 @@ def notify(recipient, message, notification_type, link='', email=False):
     if email:
         try:
             send_notification_email.delay(notification.id)
-        except OperationalError:
-            logger.exception('Could not queue email for notification %s', notification.id)
+        except Exception:
+            logger.exception('Could not send email for notification %s', notification.id)
     return notification

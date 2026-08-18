@@ -41,6 +41,8 @@ build/
 # Local-only working files (never push)
 OPD_PROJECT_STATUS.md
 PROJECT_LOG.md
+CLAUDE.md
+opd_roles_and_final_structure.html
 
 # AI-tool scratch (prompts + raw exports — converted templates are what ships)
 Public Landing Page/

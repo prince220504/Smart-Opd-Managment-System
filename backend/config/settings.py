@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 from decouple import config
 from celery.schedules import crontab
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,7 +28,7 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
 
 # Application definition
@@ -64,6 +65,7 @@ REST_FRAMEWORK = {
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -97,10 +99,10 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.parse(
+        config('DATABASE_URL', default=f'sqlite:///{BASE_DIR}/db.sqlite3'),
+        conn_max_age=600,
+    )
 }
 
 
@@ -145,6 +147,15 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
+
 # Custom user model - must be set before first migration
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
@@ -155,17 +166,16 @@ AUTHENTICATION_BACKENDS = [
 LOGIN_REDIRECT_URL = 'accounts:profile'
 LOGOUT_REDIRECT_URL = 'accounts:login'
 
-# Email
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = config('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+# Email - Brevo HTTP API. Render blocks outbound SMTP (25,465,587).
+EMAIL_BACKEND = 'anymail.backends.brevo.EmailBackend'
+ANYMAIL = {
+    'BREVO_API_KEY': config('BREVO_API_KEY'),
+    'REQUESTS_TIMEOUT': 10,
+}
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 
 # Celery
-CELERY_BROKER_URL = config('CELERY_BROKER_URL')
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULE = {
@@ -178,3 +188,15 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(hour=0, minute=30),
     },
 }
+CELERY_TASK_ALWAYS_EAGER = config('CELERY_TASK_ALWAYS_EAGER', default=False, cast=bool)
+CRON_KEY = config('CRON_KEY', default='')
+
+# Production-only security (HTTPS). Off locally so http://127.0.0.1 still works.
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True

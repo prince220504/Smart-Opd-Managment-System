@@ -8,6 +8,24 @@ from django.contrib import messages
 from django.http import Http404
 from .models import CustomUser
 
+def _dashboard_for(user):
+    if user.role == 'DOCTOR':
+        if not user.availabilities.exclude(recurrence='DATE').exists():
+            return 'appointments:doctor_schedule'
+        return 'appointments:doctor_dashboard'
+    if user.role == 'RECEPTION':
+        return 'appointments:dashboard'
+    if user.role == 'LAB':
+        return 'lab:dashboard'
+    if not user.age:
+        return 'accounts:profile_edit'
+    return 'appointments:patient_dashboard'
+
+def home_view(request):
+    if request.user.is_authenticated:
+        return redirect(_dashboard_for(request.user))
+    return render(request, 'home.html')
+
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('accounts:profile')
@@ -18,9 +36,7 @@ def login_view(request):
         if user is not None:
             login(request, user)
             if user.role == 'DOCTOR':
-                if not user.availabilities.exclude(recurrence='DATE').exists():
-                    return redirect('appointments:doctor_schedule')
-                return redirect('appointments:doctor_dashboard')
+                return redirect(_dashboard_for(user))
             if user.role == 'RECEPTION':
                 return redirect('appointments:dashboard')
             if user.role == 'LAB':
