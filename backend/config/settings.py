@@ -166,14 +166,13 @@ AUTHENTICATION_BACKENDS = [
 LOGIN_REDIRECT_URL = 'accounts:profile'
 LOGOUT_REDIRECT_URL = 'accounts:login'
 
-# Email
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = config('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+# Email - Brevo HTTP API. Render blocks outbound SMTP (25,465,587).
+EMAIL_BACKEND = 'anymail.backends.brevo.EmailBackend'
+ANYMAIL = {
+    'BREVO_API_KEY': config('BREVO_API_KEY'),
+    'REQUEST_TIMEOUT': 10,
+}
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 
 # Celery
 CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
