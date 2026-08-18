@@ -68,7 +68,9 @@
     <div class="mt-4">
       <div class="flex items-center justify-between gap-3">
         <h3 class="text-[14px]" style="font-weight:600;">Prescription</h3>
+        {% if request.user == patient %}
         <a href="{% url 'prescriptions:view' appt.id %}" class="text-[14px] text-[#1666C4] hover:text-[#1155A6]" style="font-weight:500;">Open</a>
+        {% endif %}
       </div>
       <p class="mt-2 text-[13px] text-[#64748B]">Diagnosis</p>
       <p class="text-[14px]">{{ appt.prescription.diagnosis|default:"—" }}</p>
