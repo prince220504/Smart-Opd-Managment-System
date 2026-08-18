@@ -10,9 +10,9 @@ from .models import CustomUser
 
 def _dashboard_for(user):
     if user.role == 'DOCTOR':
-        if not user.avilabilities.exclude(recurrence='DATE').exists():
+        if not user.availabilities.exclude(recurrence='DATE').exists():
             return 'appointments:doctor_schedule'
-        return 'appointment:doctor_dashboard'
+        return 'appointments:doctor_dashboard'
     if user.role == 'RECEPTION':
         return 'appointments:dashboard'
     if user.role == 'LAB':

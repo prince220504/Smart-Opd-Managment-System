@@ -170,7 +170,7 @@ LOGOUT_REDIRECT_URL = 'accounts:login'
 EMAIL_BACKEND = 'anymail.backends.brevo.EmailBackend'
 ANYMAIL = {
     'BREVO_API_KEY': config('BREVO_API_KEY'),
-    'REQUEST_TIMEOUT': 10,
+    'REQUESTS_TIMEOUT': 10,
 }
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 
