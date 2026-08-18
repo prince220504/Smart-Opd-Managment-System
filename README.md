@@ -10,6 +10,11 @@
 [![Celery](https://img.shields.io/badge/Celery-5.6-37814A?style=for-the-badge&logo=celery&logoColor=white)](https://docs.celeryq.dev)
 [![Redis](https://img.shields.io/badge/Redis-Broker-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io)
 [![Tailwind](https://img.shields.io/badge/Tailwind-CDN-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Render](https://img.shields.io/badge/Deployed_on-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://smart-opd-managment-system.onrender.com)
+
+### 🌐 **[Live App → smart-opd-managment-system.onrender.com](https://smart-opd-managment-system.onrender.com)**
+
+*Free instance — the first request may take ~50 seconds to wake the server.*
 
 ---
 
@@ -92,9 +97,12 @@
 | 📖 **API Docs** | drf-spectacular | OpenAPI schema + Swagger UI |
 | ⚙️ **Background Jobs** | Celery 5.6 + Redis | Emails, reminders, auto-cancellation |
 | 🎨 **Frontend** | Django Templates + Tailwind (CDN) | Server-rendered, no build step |
-| 🗄️ **Database** | SQLite (dev) · PostgreSQL (prod) | — |
+| 🗄️ **Database** | SQLite (dev) · PostgreSQL on Neon (prod) | — |
 | 🔒 **Config** | python-decouple | Secrets in `.env`, never in git |
 | 📈 **Charts** | Chart.js (CDN) + `{% widthratio %}` | Reception analytics · doctor weekly bars |
+| 📮 **Email** | django-anymail → Brevo API | HTTPS, because hosts block outbound SMTP |
+| 📦 **Static Files** | Whitenoise | Hashed, compressed, served by the app itself |
+| 🚀 **Hosting** | Render + gunicorn | Auto-deploy on push |
 
 </div>
 
@@ -196,7 +204,7 @@ A doctor seeing 30 patients a day gets **in-app only** — mailing every result 
 
 - Python 3.12+ (built on 3.14)
 - Docker (for Redis — optional, only needed for emails and scheduled jobs)
-- A Gmail account with an [app password](https://myaccount.google.com/apppasswords)
+- A free [Brevo](https://brevo.com) account for sending email (verified sender + API key)
 
 ### Installation
 
@@ -222,12 +230,12 @@ Then edit `backend/.env`:
 ```env
 SECRET_KEY=your-django-secret-key
 DEBUG=True
-EMAIL_HOST_USER=you@gmail.com
-EMAIL_HOST_PASSWORD=your_16_char_app_password
+BREVO_API_KEY=your-brevo-api-key
+DEFAULT_FROM_EMAIL=your-verified-sender@example.com
 CELERY_BROKER_URL=redis://localhost:6379/0
 ```
 
-> Every key is read with **no fallback** — a missing one stops the server at boot instead of failing quietly at 2 a.m.
+> Every key is read with **no fallback** — a missing one stops the server at boot instead of failing quietly at 2 a.m. `DATABASE_URL` and `ALLOWED_HOSTS` *do* have defaults, so a fresh clone runs on SQLite with nothing else configured.
 
 **4. Migrate and create your first user**
 ```powershell
@@ -278,6 +286,15 @@ Then **four terminals**:
 
 The app runs perfectly without any of this — only emails and scheduled jobs pause. Queue failures are caught and logged, so a booking still saves when Redis is down.
 
+**In production there is no Redis and no worker.** Two settings replace them:
+
+| Half of the problem | Development | Production |
+|:--------------------|:------------|:-----------|
+| Send an email | `.delay()` → Redis → worker | `CELERY_TASK_ALWAYS_EAGER=True` runs it inline |
+| Run something daily | Celery Beat | `GET /notifications/cron/daily/?key=…` from an external scheduler |
+
+A `@shared_task` is still an ordinary Python function, so "send this email" only needs *someone* to call it — but "do this every day at 08:00" needs a clock, not a queue. The cron endpoint is guarded with `constant_time_compare` and returns **404** on a bad or missing key, so it never confirms it exists.
+
 ---
 
 ## 🔌 REST API
@@ -317,6 +334,27 @@ The API enforces the same rules as the web pages:
 | **CSV, not Excel** | Excel opens CSV natively. `openpyxl` would be a dependency for nothing |
 | **`display_name` as a model property** | `full_name or username` — works in emails, CSV exports and `__str__`, where a template filter cannot reach |
 | **Email as an *option*, not a replacement** | Keeping `username` as the login field avoided a custom manager, a data migration, and a lockout risk |
+| **Email over HTTPS, not SMTP** | Hosts block outbound ports 25/465/587 to stop spam. A blocked port *hangs* instead of failing, so a booking took the whole worker down until gunicorn killed it |
+| **One codebase, two environments** | Dev and prod run identical code reading different env values — no `if PRODUCTION:` branches to drift apart |
+
+---
+
+## 🚀 Deployment
+
+Live on **Render**, database on **Neon** (PostgreSQL), email through **Brevo**, daily tasks triggered by **cron-job.org**.
+
+| Piece | Choice | Why |
+|:------|:-------|:----|
+| 🌐 **Host** | Render, no Docker | `Procfile` + `requirements.txt`, auto-deploy on push to `main` |
+| 🗄️ **Database** | Neon PostgreSQL | Render's free Postgres expires after 30 days |
+| 📦 **Static files** | Whitenoise, second in `MIDDLEWARE` | A CSS request is answered at the door, before sessions or auth run |
+| 🔐 **HTTPS** | `SECURE_SSL_REDIRECT` + `SECURE_PROXY_SSL_HEADER` | Render terminates TLS upstream — without the header, Django thinks every request is insecure and redirects forever |
+| 📮 **Email** | Brevo HTTP API | Outbound SMTP is blocked on the host |
+| ⏰ **Daily jobs** | cron-job.org → the cron endpoint | No always-on process to run Beat |
+
+Settings hold **no production branches**. `ALLOWED_HOSTS`, `DATABASE_URL` and `DEBUG` are read with `config()` and the *dev* value as the default, so a fresh clone runs locally with almost no `.env` while Render supplies real values. The only environment-shaped block is `if not DEBUG:`, which turns on the HTTPS settings.
+
+Migrations were run **from a laptop** against Neon — the free tier has no shell, so `DATABASE_URL` goes into `.env` just long enough to run the command.
 
 ---
 
@@ -334,14 +372,23 @@ The API enforces the same rules as the web pages:
 | **8** | **Dashboards** | Reception analytics with conditional aggregation · Chart.js · medical history · CSV export |
 | **9** | **Frontend Rebuild** | All 20 screens rebuilt from a Figma design · Tailwind · role-grouped templates · profile completion flow |
 | **10** | **Auth Polish & Hardening** | Email-or-username login · password reset · API permission fixes · explicit role gates |
+| **11** | **Deployment** | Whitenoise · gunicorn · Neon PostgreSQL · HTTPS settings · worker-less Celery · Brevo email · scheduled cron |
 
 ---
 
 ## 📌 Status
 
-Feature-complete across all four roles. **Not yet deployed** — production settings (`DEBUG=False`, `ALLOWED_HOSTS`, Whitenoise, PostgreSQL) are the next step.
+**Live and feature-complete across all four roles** → [smart-opd-managment-system.onrender.com](https://smart-opd-managment-system.onrender.com)
 
-Known gaps: no automated test suite · replacing a lab result leaves the old file on disk.
+Known gaps, all deliberate for a free-tier deployment:
+
+| Gap | Effect | Fix when it matters |
+|:----|:-------|:--------------------|
+| Uploaded files sit on ephemeral disk | Lab results vanish on every redeploy | Cloudinary or S3 |
+| Media URLs have no login check | Anyone with the link can open a result | Serve files through a permission-checked view |
+| No automated test suite | Every check so far was run by hand | pytest-django |
+| Free instance sleeps after 15 min | ~50 s cold start | A scheduled ping keeps it awake |
+| Replacing a lab result keeps the old file | Orphaned uploads accumulate | Delete on replace |
 
 ---
 
